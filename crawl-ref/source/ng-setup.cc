@@ -168,7 +168,7 @@ static void _jobs_stat_init(job_type which_job)
     case JOB_DEATH_KNIGHT:      s =  5; i =  3; d =  4; hp = 13; mp = 2; break;
     case JOB_ABYSSAL_KNIGHT:    s =  4; i =  4; d =  4; hp = 13; mp = 1; break;
 
-    case JOB_FARMER:            s =  4; i =  3; d =  5; hp = 13; mp = 1; break;
+    case JOB_FARMER:            s =  4; i =  4; d =  4; hp = 12; mp = 2; break;
 
     case JOB_HEALER:            s =  4; i =  4; d =  4; hp = 13; mp = 2; break;
     case JOB_PRIEST:            s =  4; i =  4; d =  4; hp = 13; mp = 2; break;
@@ -593,7 +593,7 @@ static void _give_items_skills(const newgame_def& ng)
     
     case JOB_FARMER:
         you.religion = GOD_FEDHAS;
-        you.piety = 35;
+        you.piety = 1;
         
         // WEAPONS
         newgame_make_item(0, EQ_WEAPON, OBJ_WEAPONS, WPN_QUARTERSTAFF);
@@ -609,14 +609,10 @@ static void _give_items_skills(const newgame_def& ng)
         // SKILLS
 
         // EDIT THESE LATER
-        you.skills[SK_FIGHTING] = 2;
+        you.skills[SK_FIGHTING] = 1;
         you.skills[SK_ARMOUR]   = 1;
         you.skills[SK_DODGING]  = 1;
-        if (species_apt(SK_ARMOUR) < species_apt(SK_DODGING))
-            you.skills[SK_DODGING]++;
-        else
-            you.skills[SK_ARMOUR]++;
-        weap_skill = 3;
+        weap_skill = 1;
         break;
 
 
@@ -634,6 +630,7 @@ static void _give_items_skills(const newgame_def& ng)
         // SKILLS
         you.skills[SK_FIGHTING] = 3;
         you.skills[SK_DODGING]  = 2;
+        you.skills[SK_INVOCATIONS] = 4;
         weap_skill = 3;
 
         if (you_can_wear(EQ_BODY_ARMOUR))
