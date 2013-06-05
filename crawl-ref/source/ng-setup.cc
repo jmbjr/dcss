@@ -606,6 +606,9 @@ static void _give_items_skills(const newgame_def& ng)
         newgame_make_item(2, EQ_NONE, OBJ_FOOD, FOOD_SNOZZCUMBER);
         newgame_make_item(3, EQ_NONE, OBJ_FOOD, FOOD_ORANGE);
         newgame_make_item(4, EQ_NONE, OBJ_FOOD, FOOD_APPLE);
+        newgame_make_item(5, EQ_NONE, OBJ_FOOD, FOOD_CHOKO);
+        newgame_make_item(6, EQ_NONE, OBJ_BOOKS, BOOK_FARMERS_ALMANAC);
+
         // SKILLS
 
         // EDIT THESE LATER

@@ -444,6 +444,17 @@
     SPELL_NO_SPELL,
 },
 
+{   // Book of Farmer's Almanac
+    SPELL_SUMMON_SMALL_MAMMALS,
+    SPELL_SUMMON_BUTTERFLIES,
+    SPELL_CALL_CANINE_FAMILIAR,
+    SPELL_DIG,
+    SPELL_TORNADO,
+    SPELL_NO_SPELL,
+    SPELL_NO_SPELL,
+    SPELL_NO_SPELL,
+},
+
 {   // Book of Annihilations
     SPELL_POISON_ARROW,
     SPELL_IOOD,

@@ -251,6 +251,7 @@ int book_rarity(uint8_t which_book)
 
     case BOOK_ENCHANTMENTS:
     case BOOK_PARTY_TRICKS:
+    case BOOK_FARMERS_ALMANAC:
         return 7;
 
     case BOOK_TRANSFIGURATIONS:
