@@ -593,7 +593,7 @@ static void _give_items_skills(const newgame_def& ng)
     
     case JOB_FARMER:
         you.religion = GOD_FEDHAS;
-        you.piety = 1;
+        you.piety = 20;
         
         // WEAPONS
         newgame_make_item(0, EQ_WEAPON, OBJ_WEAPONS, WPN_QUARTERSTAFF);
@@ -613,6 +613,7 @@ static void _give_items_skills(const newgame_def& ng)
         you.skills[SK_ARMOUR]   = 1;
         you.skills[SK_DODGING]  = 1;
         you.skills[SK_SPELLCASTING] = 1;
+        you.skills[SK_INVOCATIONS] = 2;
         weap_skill = 1;
         break;
 
