@@ -168,6 +168,8 @@ static void _jobs_stat_init(job_type which_job)
     case JOB_DEATH_KNIGHT:      s =  5; i =  3; d =  4; hp = 13; mp = 2; break;
     case JOB_ABYSSAL_KNIGHT:    s =  4; i =  4; d =  4; hp = 13; mp = 1; break;
 
+    case JOB_FARMER:            s =  4; i =  3; d =  5; hp = 13; mp = 1; break;
+
     case JOB_HEALER:            s =  4; i =  4; d =  4; hp = 13; mp = 2; break;
     case JOB_PRIEST:            s =  4; i =  4; d =  4; hp = 13; mp = 2; break;
 
@@ -192,6 +194,8 @@ static void _jobs_stat_init(job_type which_job)
     case JOB_NECROMANCER:       s =  0; i =  7; d =  5; hp = 10; mp = 3; break;
 
     case JOB_WANDERER:
+
+
     {
         // Wanderers get their stats randomly distributed.
         _wanderer_assign_remaining_stats(12);
@@ -585,6 +589,33 @@ static void _give_items_skills(const newgame_def& ng)
             you.skills[SK_UNARMED_COMBAT] = 3;
         }
         break;
+    
+    
+    case JOB_FARMER:
+        you.religion = GOD_FEDHAS;
+        you.piete = 35;
+        
+        // WEAPONS
+        newgame_make_item(0, EQ_WEAPON, OBJ_WEAPONS, WPN_QUARTERSTAFF);
+        _update_weapon(ng);
+
+        // ARMOUR
+        newgame_make_item(1, EQ_BODY_ARMOUR, OBJ_ARMOUR, ARM_LEATHER_ARMOUR,
+                           ARM_ROBE, 1, 2);
+        
+        // SKILLS
+
+        // EDIT THESE LATER
+        you.skills[SK_FIGHTING] = 2;
+        you.skills[SK_ARMOUR]   = 1;
+        you.skills[SK_DODGING]  = 1;
+        if (species_apt(SK_ARMOUR) < species_apt(SK_DODGING))
+            you.skills[SK_DODGING]++;
+        else
+            you.skills[SK_ARMOUR]++;
+        weap_skill = 3;
+        break;
+
 
     case JOB_BERSERKER:
         you.religion = GOD_TROG;
@@ -1188,7 +1219,10 @@ static void _give_basic_spells(job_type which_job)
     case JOB_WARPER:
         which_spell = SPELL_APPORTATION;
         break;
-
+    case JOB_FARMER:
+        which_spell = SPELL_SUMMON_SMALL_MAMMAL;
+        break;
+    
     default:
         break;
     }

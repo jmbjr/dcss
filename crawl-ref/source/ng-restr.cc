@@ -82,6 +82,23 @@ char_choice_restriction job_allowed(species_type speci, job_type job)
             return CC_UNRESTRICTED;
         }
 
+    case JOB_FARMER:
+        switch (speci)
+        {
+        case SP_DEMIGOD:
+            return CC_BANNED;
+        case SP_GHOUL:
+            return CC_BANNED;
+        case SP_VAMPIRE:
+            return CC_BANNED;
+        case SP_MUMMY:
+            return CC_BANNED;
+        case SP_OCTOPODE:
+            return CC_RESTRICTED;
+        default:
+            return CC_UNRESTRICTED;
+        }
+
     case JOB_BERSERKER:
         switch (speci)
         {
