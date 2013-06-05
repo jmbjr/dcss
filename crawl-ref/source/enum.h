@@ -1876,6 +1876,7 @@ enum job_type
     JOB_DEATH_KNIGHT,
     JOB_ABYSSAL_KNIGHT,
     JOB_JESTER,
+    JOB_FARMER,
     NUM_JOBS,                          // always after the last job
 
     JOB_UNKNOWN = 100,
