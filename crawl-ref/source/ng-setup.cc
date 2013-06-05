@@ -612,6 +612,7 @@ static void _give_items_skills(const newgame_def& ng)
         you.skills[SK_FIGHTING] = 1;
         you.skills[SK_ARMOUR]   = 1;
         you.skills[SK_DODGING]  = 1;
+        you.skills[SK_SPELLCASTING] = 1;
         weap_skill = 1;
         break;
 
@@ -630,7 +631,6 @@ static void _give_items_skills(const newgame_def& ng)
         // SKILLS
         you.skills[SK_FIGHTING] = 3;
         you.skills[SK_DODGING]  = 2;
-        you.skills[SK_INVOCATIONS] = 4;
         weap_skill = 3;
 
         if (you_can_wear(EQ_BODY_ARMOUR))
