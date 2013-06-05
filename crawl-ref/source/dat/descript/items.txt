@@ -389,6 +389,12 @@ number of spells reflecting the mystic's dream state. Critics of the work argue
 that the spells are functionally no different from ones already known, but the
 book remains popular for its uniquely bizarre imagery and cryptic digressions.
 %%%%
+book of farmer's almanac
+
+A spellbook packed with arcane knowledge of the beasts, earth, and weather.
+While its forecasting merits are questionable, its value to the wayward
+adventurer is indispensable.
+%%%%
 book of enchantments
 
 A spellbook containing an assortment of magical Hexes and Charms, which
