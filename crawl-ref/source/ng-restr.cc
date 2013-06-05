@@ -93,8 +93,7 @@ char_choice_restriction job_allowed(species_type speci, job_type job)
             return CC_BANNED;
         case SP_MUMMY:
             return CC_BANNED;
-        case SP_OCTOPODE:
-            return CC_RESTRICTED;
+        // DON'T KNOW WHICH SPECIES WORK WELL WITH THIS COMBO YET
         default:
             return CC_UNRESTRICTED;
         }
