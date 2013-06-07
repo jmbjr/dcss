@@ -4831,6 +4831,7 @@ tileidx_t tileidx_spell(spell_type spell)
     case SPELL_SUMMON_GREATER_DEMON:     return TILEG_SUMMON_GREATER_DEMON;
     case SPELL_SUMMON_HORRIBLE_THINGS:   return TILEG_SUMMON_HORRIBLE_THINGS;
     case SPELL_MALIGN_GATEWAY:           return TILEG_MALIGN_GATEWAY;
+    case SPELL_SUMMON_YAK:               return TILEG_SUMMON_ICE_BEAST;
     case SPELL_SUMMON_DRAGON:            return TILEG_SUMMON_DRAGON;
     case SPELL_SUMMON_HYDRA:             return TILEG_SUMMON_HYDRA;
 

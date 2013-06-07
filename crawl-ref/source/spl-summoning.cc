@@ -638,6 +638,73 @@ spret_type cast_summon_hydra(actor *caster, int pow, god_type god, bool fail)
     return SPRET_SUCCESS;
 }
 
+
+spret_type cast_summon_yak(actor *caster, int pow, god_type god, bool fail)
+{
+    // Yaks are always friendly. Yak type depends on power and
+    // random chance, with 4 sheep or 2 low-tier yaks  possible at high power.
+    // Duration fixed at 6.
+
+    fail_check();
+    bool success = false;
+
+    if (god == GOD_NO_GOD)
+        god = caster->deity();
+
+    monster_type mon = MONS_PROGRAM_BUG;
+
+    const int chance = random2(pow);
+    int how_many = 1;
+
+    if (chance >= 80 || one_chance_in(6))
+        mon = (coinflip()) ? MONS_DEATH_YAK : MONS_YAK;
+	if (mon == MONS_YAK)
+	    how_many = 2;
+
+    else if (chance >= 40 || one_chance_in(6))
+        switch (random2(2))
+        {
+        case 0:
+            mon = MONS_YAK;
+            break;
+        default:
+            mon = MONS_SHEEP;
+            break;
+        }
+    else
+    {
+        mon = MONS_SHEEP;
+        if (pow >= 100)
+            how_many = 4;
+    }
+
+    for (int i = 0; i < how_many; ++i)
+    {
+        if (monster *yak = create_monster(
+                mgen_data(mon, BEH_COPY, caster,
+                          6, SPELL_SUMMON_YAK,
+                          caster->pos(),
+                          (caster->is_player()) ? MHITYOU
+                            : caster->as_monster()->foe,
+                          0, god)))
+        {
+            if (you.see_cell(yak->pos()))
+                mpr("A yak appears.");
+            // Xom summoning evil dragons if you worship a good god?  Sure!
+            player_angers_monster(yak);
+            success = true;
+        }
+    }
+
+    if (!success && caster->is_player())
+        canned_msg(MSG_NOTHING_HAPPENS);
+
+    return SPRET_SUCCESS;
+}
+
+
+
+
 spret_type cast_summon_dragon(actor *caster, int pow, god_type god, bool fail)
 {
     // Dragons are always friendly. Dragon type depends on power and

@@ -1585,6 +1585,20 @@ struct spell_desc
 },
 
 {
+    SPELL_SUMMON_YAK, "Summon Yak",
+     SPTYP_SUMMONING,
+     SPFLAG_NONE,
+     6,
+     200,
+     -1, -1,
+     0,
+     NULL,
+     false,
+     false
+},
+
+
+{
     SPELL_SUMMON_DRAGON, "Summon Dragon",
      SPTYP_SUMMONING,
      SPFLAG_NONE,

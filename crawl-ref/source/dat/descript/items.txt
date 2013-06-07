@@ -389,12 +389,6 @@ number of spells reflecting the mystic's dream state. Critics of the work argue
 that the spells are functionally no different from ones already known, but the
 book remains popular for its uniquely bizarre imagery and cryptic digressions.
 %%%%
-book of farmer's almanac
-
-A spellbook packed with arcane knowledge of the beasts, earth, and weather.
-While its forecasting merits are questionable, its value to the wayward
-adventurer is indispensable.
-%%%%
 book of enchantments
 
 A spellbook containing an assortment of magical Hexes and Charms, which
@@ -408,6 +402,14 @@ A book of magic spells, glowing with a sickly green light. This book was first
 written by Olgreb, the infamous Venom Mage, who murdered many of his rivals by
 sending them highly poisonous copies as gifts. Current editions are harmless,
 though often dead bookworms and silverfish are found stuck between the pages.
+%%%%
+book of farmer's almanac
+
+A spellbook packed with arcane knowledge of the beasts, earth, and weather.
+While its forecasting merits are questionable, its ability to call forth
+loyal beasts, tunnel through rock walls, blast enemies with pesticides, 
+and even harness the awesome power of nature makes up for any lack of 
+accurate prognostication.
 %%%%
 book of fixed level
 

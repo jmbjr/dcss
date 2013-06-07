@@ -721,6 +721,11 @@ This spell opens a gate to the realm of Pandemonium and draws forth one of its
 inhabitants to serve the caster for a time (although the demon's servitude is
 by no means guaranteed).
 %%%%
+Summon Yak spell
+
+This spell summons and binds sheep, yaks, or death yaks to perform the 
+caster's bidding.
+%%%%
 Summon Dragon spell
 
 This spell summons and binds a powerful dragon to perform the caster's bidding.
