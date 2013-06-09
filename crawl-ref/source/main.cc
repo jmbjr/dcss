@@ -2245,21 +2245,6 @@ static void _decrement_petrification(int delay)
 {
     if (_decrement_a_duration(DUR_PETRIFIED, delay) && !you.paralysed())
     {
-        if (you.species == SP_GARGOYLE)
-        {
-            int possible_loss = 4;
-            if (player_sust_abil())
-                possible_loss -= 1;
-
-            for (int i = 0; i < possible_loss; ++i)
-            {
-                if (x_chance_in_y(you.gargoyle_damage_reduction, you.hp_max))
-                    lose_stat(STAT_RANDOM, 1, true, "massive damage");
-            }
-            int dur = (200 * you.gargoyle_damage_reduction / you.hp_max) / 10;
-            you.increase_duration(DUR_EXHAUSTED, dur);
-            you.gargoyle_damage_reduction = 0;
-        }
         you.redraw_evasion = true;
         mprf(MSGCH_DURATION, "You turn to %s and can move again.",
              you.form == TRAN_LICH ? "bone" :
@@ -2521,16 +2506,8 @@ static void _decrement_durations()
         you.redraw_armour_class = true;
     }
 
-    // Lava orcs don't have stoneskin decay like normal.
-    if (you.species != SP_LAVA_ORC
-        || (you.species == SP_LAVA_ORC && temperature_effect(LORC_STONESKIN)))
-    {
-        if (_decrement_a_duration(DUR_STONESKIN, delay,
-                                  "Your skin feels tender."))
-        {
-            you.redraw_armour_class = true;
-        }
-    }
+    if (_decrement_a_duration(DUR_STONESKIN, delay, "Your skin feels tender."))
+        you.redraw_armour_class = true;
 
     if (_decrement_a_duration(DUR_TELEPORT, delay))
     {
@@ -2905,6 +2882,8 @@ static void _decrement_durations()
             if (_decrement_a_duration(DUR_FLAYED, delay))
                 heal_flayed_effect(&you);
         }
+        else if (you.duration[DUR_FLAYED] < 80)
+            you.duration[DUR_FLAYED] += div_rand_round(50, delay);
     }
 
     _decrement_a_duration(DUR_RETCHING, delay, "Your fit of retching subsides.");
@@ -2990,8 +2969,7 @@ static void _regenerate_hp_and_mp(int delay)
         tmp -= 100;
     }
 
-    ASSERT(tmp >= 0);
-    ASSERT(tmp < 100);
+    ASSERT_RANGE(tmp, 0, 100);
     you.hit_points_regeneration = tmp;
 
     // XXX: Don't let DD use guardian spirit for free HP, since their
@@ -3018,8 +2996,7 @@ static void _regenerate_hp_and_mp(int delay)
         tmp -= 100;
     }
 
-    ASSERT(tmp >= 0);
-    ASSERT(tmp < 100);
+    ASSERT_RANGE(tmp, 0, 100);
     you.magic_points_regeneration = tmp;
 }
 

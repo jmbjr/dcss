@@ -268,8 +268,6 @@ string item_def::name(description_level_type descrip, bool terse, bool ident,
             equipped = true;
             buff << " (quivered)";
         }
-        else if (item_is_active_manual(*this))
-            buff << " (studied)";
     }
 
     if (descrip != DESC_BASENAME && descrip != DESC_DBNAME && with_inscription)
@@ -2598,8 +2596,7 @@ string make_name(uint32_t seed, bool all_cap, int maxlen, char start)
     if (maxlen != -1 && len > maxlen)
         len = maxlen;
 
-    ASSERT(len > 0);
-    ASSERT(len <= ITEMNAME_SIZE);
+    ASSERT_RANGE(len, 1, ITEMNAME_SIZE + 1);
 
     int j = numb[3] % 17;
     const int k = numb[4] % 17;
@@ -3561,11 +3558,6 @@ string item_prefix(const item_def &item, bool temp)
     case OBJ_RODS:
     case OBJ_MISSILES:
         if (item_is_equipped(item, true))
-            prefixes.push_back("equipped");
-        break;
-
-    case OBJ_BOOKS:
-        if (item_is_active_manual(item))
             prefixes.push_back("equipped");
         break;
 

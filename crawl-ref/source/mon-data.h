@@ -90,12 +90,13 @@
    - various things monsters can do upon seeing you
 
    intel explanation:
-   - How smart it is: I_PLANT < I_INSECT < I_ANIMAL < I_NORMAL < I_HIGH.
+   - How smart it is:
+   I_PLANT < I_INSECT < I_REPTILE < I_ANIMAL < I_NORMAL < I_HIGH.
    So far, differences here have little effects except for monster's chance
    of seeing you if stealthy and rudimentary trap handling; really stupid
    monsters will walk through clouds.
-   I_REPTILE is an alias for I_INSECT to reduce confusion a bit: these are
-   lower vertebrates (fish, amphibians, non-draconic reptiles).
+   I_REPTILE is are lower vertebrates (fish, amphibians, non-draconic reptiles),
+   smarter reptiles could be I_ANIMAL.
 
    speed
    - Increases the store of energy that the monster uses for doing things.
@@ -1346,13 +1347,13 @@ static monsterentry mondata[] = {
 },
 
 {
-    MONS_FOREST_DRAKE, 'l', LIGHTGREEN, "forest drake",
-    M_WARM_BLOOD | M_FAKE_SPELLS,
-    MR_VUL_FIRE,
-    1000, 10, MONS_DRAKE, MONS_FOREST_DRAKE, MH_NATURAL, -3,
-    { {AT_BITE, AF_PLAIN, 12}, {AT_CLAW, AF_PLAIN, 8}, AT_NO_ATK, AT_NO_ATK },
-    { 8, 3, 5, 0 },
-    3, 12, MST_NO_SPELLS, CE_CONTAMINATED, Z_BIG, S_SILENT,
+    MONS_WIND_DRAKE, 'l', WHITE, "wind drake",
+    M_SPELLCASTER | M_WARM_BLOOD | M_FAKE_SPELLS | M_FLEES | M_DEFLECT_MISSILES,
+    MR_NO_FLAGS,
+    1000, 10, MONS_DRAKE, MONS_WIND_DRAKE, MH_NATURAL, -3,
+    { {AT_BITE, AF_PLAIN, 12}, AT_NO_ATK, AT_NO_ATK, AT_NO_ATK },
+    { 8, 5, 5, 0 },
+    3, 12, MST_WIND_DRAKE, CE_CONTAMINATED, Z_BIG, S_SILENT,
     I_ANIMAL, HT_LAND, FL_WINGED, 12, DEFAULT_ENERGY,
     MONUSE_NOTHING, MONEAT_NOTHING, SIZE_LARGE
 },
@@ -2417,7 +2418,7 @@ static monsterentry mondata[] = {
     { {AT_STING, AF_PARALYSE, 13}, AT_NO_ATK, AT_NO_ATK, AT_NO_ATK },
     { 4, 3, 5, 0 },
     5, 14, MST_NO_SPELLS, CE_POISONOUS, Z_SMALL, S_SILENT,
-    I_PLANT, HT_LAND, FL_WINGED, 15, DEFAULT_ENERGY,
+    I_INSECT, HT_LAND, FL_WINGED, 15, DEFAULT_ENERGY,
     MONUSE_NOTHING, MONEAT_NOTHING, SIZE_TINY
 },
 
@@ -2429,7 +2430,7 @@ static monsterentry mondata[] = {
     { {AT_BITE, AF_VAMPIRIC, 13}, AT_NO_ATK, AT_NO_ATK, AT_NO_ATK },
     { 5, 3, 5, 0 },
     2, 15, MST_NO_SPELLS, CE_ROT, Z_SMALL, S_BUZZ,
-    I_PLANT, HT_LAND, FL_WINGED, 19, DEFAULT_ENERGY,
+    I_INSECT, HT_LAND, FL_WINGED, 19, DEFAULT_ENERGY,
     MONUSE_NOTHING, MONEAT_NOTHING, SIZE_LITTLE
 },
 
@@ -2441,7 +2442,7 @@ static monsterentry mondata[] = {
     { {AT_STING, AF_PARALYSE, 23}, AT_NO_ATK, AT_NO_ATK, AT_NO_ATK },
     { 8, 3, 5, 0 },
     7, 14, MST_NO_SPELLS, CE_POISONOUS, Z_SMALL, S_BUZZ,
-    I_PLANT, HT_LAND, FL_WINGED, 15, DEFAULT_ENERGY,
+    I_INSECT, HT_LAND, FL_WINGED, 15, DEFAULT_ENERGY,
     MONUSE_NOTHING, MONEAT_NOTHING, SIZE_TINY
 },
 
@@ -3816,17 +3817,31 @@ static monsterentry mondata[] = {
     MONUSE_NOTHING, MONEAT_NOTHING, SIZE_BIG
 },
 
-// rakshasas and efreet ('R')
+// genies and rakshasas ('R')
 {
     MONS_EFREET, 'R', RED, "efreet",
     M_SPELLCASTER | M_SPEAKS | M_GLOWS_LIGHT,
     MR_RES_POISON | mrd(MR_RES_FIRE, 3) | MR_VUL_COLD,
+    // Technically, efreet are a race of djinn, but sharing the genus
+    // would confuse people who don't know the mythology.
     0, 12, MONS_EFREET, MONS_EFREET, MH_DEMONIC, -3,
     { {AT_HIT, AF_PLAIN, 12}, AT_NO_ATK, AT_NO_ATK, AT_NO_ATK },
     { 7, 3, 5, 0 },
     10, 5, MST_EFREET, CE_NOCORPSE, Z_NOZOMBIE, S_SILENT,
     I_HIGH, HT_LAND, FL_LEVITATE, 10, DEFAULT_ENERGY,
     MONUSE_WEAPONS_ARMOUR, MONEAT_NOTHING, SIZE_LARGE
+},
+
+{
+    MONS_DJINNI, 'R', LIGHTBLUE, "djinni",
+    M_WARM_BLOOD | M_SPEAKS | M_NO_POLY_TO,
+    MR_RES_HELLFIRE | MR_VUL_COLD,
+    0, 10, MONS_DJINNI, MONS_DJINNI, MH_NATURAL /* FIXME */, -3,
+    { {AT_HIT, AF_PLAIN, 10}, AT_NO_ATK, AT_NO_ATK, AT_NO_ATK },
+    { 10, 3, 5, 0 },
+    2, 12, MST_NO_SPELLS, CE_NOCORPSE, Z_NOZOMBIE, S_SHOUT,
+    I_HIGH, HT_LAND, FL_LEVITATE, 10, DEFAULT_ENERGY,
+    MONUSE_WEAPONS_ARMOUR, MONEAT_NOTHING, SIZE_MEDIUM
 },
 
 {
@@ -5458,8 +5473,7 @@ static monsterentry mondata[] = {
 
 {
     MONS_DRYAD, '7', YELLOW, "dryad",
-    M_SPELLCASTER | M_WARM_BLOOD | M_SPEAKS | M_ACTUAL_SPELLS
-        | M_MAINTAIN_RANGE,
+    M_SPELLCASTER | M_WARM_BLOOD | M_SPEAKS | M_ACTUAL_SPELLS,
     MR_VUL_FIRE,
     500, 10, MONS_DRYAD, MONS_DRYAD, MH_NATURAL, -7,
     { {AT_HIT, AF_PLAIN, 10}, AT_NO_ATK, AT_NO_ATK, AT_NO_ATK },
@@ -5719,19 +5733,6 @@ static monsterentry mondata[] = {
     1, 2, MST_GHOST, CE_NOCORPSE, Z_NOZOMBIE, S_DEMON_TAUNT,
     I_HIGH, HT_LAND, FL_NONE, 10, DEFAULT_ENERGY,
     MONUSE_OPEN_DOORS, MONEAT_NOTHING, SIZE_LARGE
-},
-
-// djinn ('&')
-{
-    MONS_DJINNI, '&', LIGHTBLUE, "djinni",
-    M_WARM_BLOOD | M_SPEAKS | M_NO_POLY_TO,
-    MR_RES_HELLFIRE | MR_VUL_COLD,
-    0, 10, MONS_DJINNI, MONS_DJINNI, MH_NATURAL /* FIXME */, -3,
-    { {AT_HIT, AF_PLAIN, 10}, AT_NO_ATK, AT_NO_ATK, AT_NO_ATK },
-    { 10, 3, 5, 0 },
-    2, 12, MST_NO_SPELLS, CE_NOCORPSE, Z_NOZOMBIE, S_SHOUT,
-    I_HIGH, HT_LAND, FL_LEVITATE, 10, DEFAULT_ENERGY,
-    MONUSE_WEAPONS_ARMOUR, MONEAT_NOTHING, SIZE_MEDIUM
 },
 
 // explodey things / orb of fire ('*')

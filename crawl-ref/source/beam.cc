@@ -411,8 +411,7 @@ void init_zap_index()
 
 static const zap_info* _seek_zap(zap_type z_type)
 {
-    ASSERT(z_type >= 0);
-    ASSERT(z_type < NUM_ZAPS);
+    ASSERT_RANGE(z_type, 0, NUM_ZAPS);
     if (zap_index[z_type] == -1)
         return NULL;
     else
@@ -655,8 +654,7 @@ void bolt::initialise_fire()
     }
 
     ASSERT(in_bounds(source));
-    ASSERT(flavour > BEAM_NONE);
-    ASSERT(flavour < BEAM_FIRST_PSEUDO);
+    ASSERT_RANGE(flavour, BEAM_NONE + 1, BEAM_FIRST_PSEUDO);
     ASSERT(!drop_item || item && item->defined());
     ASSERTM(range >= 0, "beam '%s', source '%s', item '%s'; has range -1",
             name.c_str(),
@@ -1692,20 +1690,23 @@ int mons_adjust_flavoured(monster* mons, bolt &pbolt, int hurted,
         int dam = 0;
         // Those naturally chaotic/unclean get hit fully, those who merely
         // dabble in things Zin hates get partial resistance.
-        if (mons->is_chaotic() || !mons->is_unclean(false))
-            dam = 3;
+        if (mons->is_chaotic() || mons->is_unclean(false))
+            dam = 60;
         else if (mons->is_unclean(true))
-            dam = 2;
+            dam = 40;
         // a bit of damage to those you can recite against
         else if (mons->is_unholy() || mons->is_evil())
-            dam = 1;
-        // if monster mutations get added, here's the place for partial damage
+            dam = 20;
+        else if (mons->has_ench(ENCH_WRETCHED))
+            dam = 3 * mons->get_ench(ENCH_WRETCHED).degree;
+        // if non-abstract monster mutations get added, let's handle them too
 
-        hurted = hurted * dam / 3;
+        hurted = hurted * dam / 60;
         if (doFlavouredEffects)
         {
             simple_monster_message(mons,
-                                   hurted == 0 ? " appears unharmed."
+                                   hurted == 0 ? " appears unharmed." :
+                                   dam > 30    ? " is terribly seared!"
                                                : " is seared!");
         }
         break;
@@ -2243,14 +2244,16 @@ static coord_def _random_point_hittable_from(const coord_def &c,
 }
 
 static void _create_feat_splash(coord_def center,
-                                dungeon_feature_type overwriteable,
-                                dungeon_feature_type newfeat,
                                 int radius,
                                 int nattempts)
 {
-    // Always affect center.
-    temp_change_terrain(center, DNGN_SHALLOW_WATER, 100 + random2(100),
-                        TERRAIN_CHANGE_FLOOD);
+    // Always affect center, if compatible
+    if ((grd(center) == DNGN_FLOOR || grd(center) == DNGN_SHALLOW_WATER))
+    {
+        temp_change_terrain(center, DNGN_SHALLOW_WATER, 100 + random2(100),
+                            TERRAIN_CHANGE_FLOOD);
+    }
+
     for (int i = 0; i < nattempts; ++i)
     {
         const coord_def newp(_random_point_hittable_from(center, radius));
@@ -2499,11 +2502,7 @@ void bolt::affect_endpoint()
         }
         else
             noisy(25, pos(), "You hear a splash.");
-        _create_feat_splash(pos(),
-                            DNGN_FLOOR,
-                            DNGN_SHALLOW_WATER,
-                            2,
-                            random_range(3, 12, 2));
+        _create_feat_splash(pos(), 2, random_range(3, 12, 2));
     }
 
     // FIXME: why don't these just have is_explosion set?
@@ -2695,8 +2694,7 @@ maybe_bool bolt::affects_wall(dungeon_feature_type wall) const
             || wall == DNGN_GRANITE_STATUE
             || wall == DNGN_ORCISH_IDOL
             || wall == DNGN_CLOSED_DOOR
-            || wall == DNGN_RUNED_DOOR
-            || wall == DNGN_SEALED_DOOR)
+            || wall == DNGN_RUNED_DOOR)
         {
             return MB_TRUE;
         }

@@ -313,13 +313,12 @@ void give_basic_mutations(species_type speci)
         break;
     case SP_GARGOYLE:
         you.mutation[MUT_PETRIFICATION_RESISTANCE]   = 1;
+        you.mutation[MUT_TRAMPLE_RESISTANCE]         = 1;
         you.mutation[MUT_NEGATIVE_ENERGY_RESISTANCE] = 1;
         you.mutation[MUT_COLD_RESISTANCE]            = 1;
-        you.mutation[MUT_CLAWS]                      = 2;
         you.mutation[MUT_FANGS]                      = 1;
         you.mutation[MUT_TALONS]                     = 2;
         you.mutation[MUT_SLOW_METABOLISM]            = 1;
-        you.mutation[MUT_SELF_PETRIFICATION]         = 1;
         break;
     case SP_TENGU:
         you.mutation[MUT_BEAK]   = 1;
@@ -1019,9 +1018,6 @@ static void _give_items_skills(const newgame_def& ng)
     // Deep Dwarves get a wand of heal wounds (5).
     if (you.species == SP_DEEP_DWARF)
         newgame_make_item(-1, EQ_NONE, OBJ_WANDS, WAND_HEAL_WOUNDS, -1, 1, 5);
-
-    if (you.species == SP_GARGOYLE)
-        newgame_make_item(-1, EQ_NONE, OBJ_POTIONS, POT_RESTORE_ABILITIES, -1, 2);
 
     // Zotdef: everyone gets a bonus two potions of curing, plus two
     // free levels in Traps & Doors so they can replace old traps with

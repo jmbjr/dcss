@@ -1387,6 +1387,14 @@ bool items_similar(const item_def &item1, const item_def &item2)
     if (item1.base_type == OBJ_GOLD || item_is_rune(item1))
         return true;
 
+    if (is_artefact(item1) != is_artefact(item2))
+        return false;
+    else if (is_artefact(item1)
+             && get_artefact_name(item1) != get_artefact_name(item2))
+    {
+        return false;
+    }
+
     // These classes also require pluses and special.
     if (item1.base_type == OBJ_WEAPONS         // only throwing weapons
         || item1.base_type == OBJ_MISSILES
@@ -1440,8 +1448,7 @@ void merge_item_stacks(item_def &source, item_def &dest, int quant)
     if (quant == -1)
         quant = source.quantity;
 
-    ASSERT(quant > 0);
-    ASSERT(quant <= source.quantity);
+    ASSERT_RANGE(quant, 0 + 1, source.quantity + 1);
 
     if (is_blood_potion(source) && is_blood_potion(dest))
        merge_blood_potion_stacks(source, dest, quant);
@@ -1659,14 +1666,6 @@ int move_item_to_player(int obj, int quant_got, bool quiet,
 
         dec_mitm_item_quantity(obj, quant_got);
         you.turn_is_over = true;
-
-        if (you.religion == GOD_ASHENZARI)
-        {
-            simple_god_message(" appreciates your discovery of this rune.");
-            // Important!  This should _not_ be scaled by bondage level, as
-            // otherwise people would curse just before picking up.
-            gain_piety(10, 1);
-        }
 
         return retval;
     }
@@ -2172,9 +2171,6 @@ bool drop_item(int item_dropped, int quant_drop)
             return false;
         }
     }
-
-    if (you.manual_index == item_dropped)
-        stop_studying_manual();
 
     // [ds] easy_unequip does not apply to weapons.
     //
@@ -3032,12 +3028,6 @@ bool item_is_melded(const item_def& item)
 {
     equipment_type eq = item_equip_slot(item);
     return (eq != EQ_NONE && you.melded[eq]);
-}
-
-bool item_is_active_manual(const item_def &item)
-{
-    return (item.base_type == OBJ_BOOKS && item.sub_type == BOOK_MANUAL
-            && in_inventory(item) && item.link == you.manual_index);
 }
 
 ////////////////////////////////////////////////////////////////////////

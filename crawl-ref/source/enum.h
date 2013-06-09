@@ -73,9 +73,6 @@ enum ability_type
     ABIL_BOTTLE_BLOOD,
     // Deep Dwarves
     ABIL_RECHARGING,
-    // Gargoyles
-    ABIL_SELF_PETRIFY,
-
     ABIL_MAX_INTRINSIC = ABIL_RECHARGING,
 
     // Evoking items.
@@ -1516,7 +1513,7 @@ enum duration_type
     NUM_DURATIONS
 };
 
-// This list must match the enchant_names array in monster.cc
+// This list must match the enchant_names array in mon-ench.cc
 // Enchantments that imply other enchantments should come first
 // to avoid timeout message confusion. Currently:
 //     berserk -> haste, might; fatigue -> slow
@@ -2646,7 +2643,7 @@ enum monster_type                      // menv[].type
     MONS_LAVA_ORC,
 
     MONS_DRYAD,
-    MONS_FOREST_DRAKE,
+    MONS_WIND_DRAKE,
     MONS_FAUN,
     MONS_SATYR,
 
@@ -2851,7 +2848,7 @@ enum mutation_type
     MUT_MANA_REGENERATION,
     MUT_MANA_LINK,
     MUT_PETRIFICATION_RESISTANCE,
-    MUT_SELF_PETRIFICATION,
+    MUT_TRAMPLE_RESISTANCE,
     NUM_MUTATIONS,
 
     RANDOM_MUTATION,

@@ -381,7 +381,7 @@ static bool _mon_on_interesting_grid(monster* mon)
     case DNGN_ENTER_SPIDER_NEST:
         return mons_is_native_in_branch(mon, BRANCH_SPIDER_NEST);
 
-    // And spriggans.
+    // And the forest natives.
     case DNGN_ENTER_FOREST:
         return mons_is_native_in_branch(mon, BRANCH_FOREST);
 
@@ -3052,7 +3052,7 @@ static bool _check_slime_walls(const monster *mon,
                                const coord_def &targ)
 {
     if (!player_in_branch(BRANCH_SLIME_PITS) || mons_is_slime(mon)
-        || actor_slime_wall_immune(mon) || mons_intel(mon) <= I_INSECT)
+        || actor_slime_wall_immune(mon) || mons_intel(mon) <= I_REPTILE)
     {
         return false;
     }
@@ -3393,8 +3393,7 @@ static bool _monster_swaps_places(monster* mon, const coord_def& delta)
     m2->clear_far_constrictions();
 
     const int m2i = m2->mindex();
-    ASSERT(m2i >= 0);
-    ASSERT(m2i < MAX_MONSTERS);
+    ASSERT_RANGE(m2i, 0, MAX_MONSTERS);
     mgrd(c) = m2i;
     _swim_or_move_energy(m2);
 

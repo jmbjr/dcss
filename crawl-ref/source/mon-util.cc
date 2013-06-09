@@ -346,8 +346,7 @@ void set_resist(resists_t &all, mon_resist_flags res, int lev)
 {
     if (res > MR_LAST_MULTI)
     {
-        ASSERT(lev >= 0);
-        ASSERT(lev <= 1);
+        ASSERT_RANGE(lev, 0, 2);
         if (lev)
             all |= res;
         else
@@ -355,8 +354,7 @@ void set_resist(resists_t &all, mon_resist_flags res, int lev)
         return;
     }
 
-    ASSERT(lev >= -3);
-    ASSERT(lev <= 4);
+    ASSERT_RANGE(lev, -3, 5);
     all = all & ~(res * 7) | res * (lev & 7);
 }
 
@@ -808,7 +806,11 @@ bool mons_is_native_in_branch(const monster* mons,
         return (mons_genus(mons->type) == MONS_SPIDER);
 
     case BRANCH_FOREST:
-        return (mons_genus(mons->type) == MONS_SPRIGGAN);
+        return (mons_genus(mons->type) == MONS_SPRIGGAN
+                || mons_genus(mons->type) == MONS_TENGU
+                || mons_genus(mons->type) == MONS_FAUN
+                || mons_genus(mons->type) == MONS_SATYR
+                || mons_genus(mons->type) == MONS_DRYAD);
 
     case BRANCH_HALL_OF_BLADES:
         return (mons->type == MONS_DANCING_WEAPON);
@@ -1733,7 +1735,7 @@ int mons_class_res_wind(monster_type mc)
     // Lightning goes well with storms.
     if (mc == MONS_AIR_ELEMENTAL || mc == MONS_BALL_LIGHTNING
         || mc == MONS_TWISTER || mc == MONS_CHAOS_BUTTERFLY
-        || mc == MONS_FOREST_DRAKE)
+        || mc == MONS_WIND_DRAKE)
     {
         return 1;
     }
@@ -2899,6 +2901,10 @@ void mons_pacify(monster* mon, mon_attitude_type att, bool no_xp)
     // to good_neutral when you kill Pikel.
     if (mon->attitude >= att)
         return;
+
+    // Must be done before attitude change, so that proper targets are affected
+    if (mon->type == MONS_FLAYED_GHOST)
+        end_flayed_effect(mon);
 
     // Make the monster permanently neutral.
     mon->attitude = att;
@@ -4129,6 +4135,8 @@ mon_body_shape get_mon_shape(const monster_type mc)
         else
             return MON_SHAPE_BAT;
     case 'c': // centaurs
+        if (mc == MONS_FAUN || mc == MONS_SATYR || mc == MONS_PAN)
+            return MON_SHAPE_HUMANOID_TAILED;
         return MON_SHAPE_CENTAUR;
     case 'd': // draconions and drakes
         if (mons_genus(mc) == MONS_DRACONIAN)
@@ -4319,6 +4327,10 @@ mon_body_shape get_mon_shape(const monster_type mc)
             return MON_SHAPE_HUMANOID;
     }
 
+    case '7': // trees and tree-like creatures
+        if (mc == MONS_DRYAD)
+            return MON_SHAPE_HUMANOID;
+        return MON_SHAPE_MISC;
     case '9': // gargoyles
         return MON_SHAPE_HUMANOID_WINGED_TAILED;
     case '*': // orbs
@@ -4330,8 +4342,7 @@ mon_body_shape get_mon_shape(const monster_type mc)
 
 string get_mon_shape_str(const mon_body_shape shape)
 {
-    ASSERT(shape >= MON_SHAPE_HUMANOID);
-    ASSERT(shape <= MON_SHAPE_MISC);
+    ASSERT_RANGE(shape, MON_SHAPE_HUMANOID, MON_SHAPE_MISC + 1);
 
     static const char *shape_names[] =
     {
