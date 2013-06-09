@@ -593,7 +593,7 @@ static void _give_items_skills(const newgame_def& ng)
     
     case JOB_FARMER:
         you.religion = GOD_FEDHAS;
-        you.piety = 20;
+        you.piety = 15;
         
         // WEAPONS
         newgame_make_item(0, EQ_WEAPON, OBJ_WEAPONS, WPN_QUARTERSTAFF);
@@ -601,13 +601,10 @@ static void _give_items_skills(const newgame_def& ng)
 
         // ARMOUR
         newgame_make_item(1, EQ_BODY_ARMOUR, OBJ_ARMOUR, ARM_LEATHER_ARMOUR,
-                           ARM_ROBE, 1, 2);
+                           ARM_ROBE, 1, 1);
         // FRUIT!!!
-        newgame_make_item(2, EQ_NONE, OBJ_FOOD, FOOD_SNOZZCUMBER);
-        newgame_make_item(3, EQ_NONE, OBJ_FOOD, FOOD_ORANGE);
-        newgame_make_item(4, EQ_NONE, OBJ_FOOD, FOOD_APPLE);
-        newgame_make_item(5, EQ_NONE, OBJ_FOOD, FOOD_CHOKO);
-        newgame_make_item(6, EQ_NONE, OBJ_BOOKS, BOOK_FARMERS_ALMANAC);
+        newgame_make_item(2, EQ_NONE, OBJ_FOOD, FOOD_SULTANA, -1, 4);
+        newgame_make_item(3, EQ_NONE, OBJ_BOOKS, BOOK_FARMERS_ALMANAC);
 
         // SKILLS
 
@@ -616,6 +613,7 @@ static void _give_items_skills(const newgame_def& ng)
         you.skills[SK_ARMOUR]   = 1;
         you.skills[SK_DODGING]  = 1;
         you.skills[SK_SPELLCASTING] = 1;
+        you.skills[SK_SUMMONINGS] = 1;
         you.skills[SK_INVOCATIONS] = 2;
         weap_skill = 1;
         break;

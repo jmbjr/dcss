@@ -1588,7 +1588,7 @@ struct spell_desc
     SPELL_SUMMON_YAK, "Summon Yak",
      SPTYP_SUMMONING,
      SPFLAG_NONE,
-     6,
+     5,
      200,
      -1, -1,
      0,
