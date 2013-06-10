@@ -603,7 +603,7 @@ static void _give_items_skills(const newgame_def& ng)
                            ARM_ROBE, 1, 1);
         // FRUIT!!!
         newgame_make_item(2, EQ_NONE, OBJ_FOOD, FOOD_SULTANA, -1, 4);
-        newgame_make_item(3, EQ_NONE, OBJ_BOOKS, BOOK_FARMERS_ALMANAC);
+        newgame_make_item(3, EQ_NONE, OBJ_BOOKS, BOOK_HOMESTEADING);
 
         // SKILLS
 

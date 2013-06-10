@@ -403,13 +403,12 @@ written by Olgreb, the infamous Venom Mage, who murdered many of his rivals by
 sending them highly poisonous copies as gifts. Current editions are harmless,
 though often dead bookworms and silverfish are found stuck between the pages.
 %%%%
-book of farmer's almanac
+book of homesteading
 
-A spellbook packed with arcane knowledge of the beasts, earth, and weather.
-While its forecasting merits are questionable, its ability to call forth
-loyal beasts, tunnel through rock walls, blast enemies with pesticides, 
-and even harness the awesome power of nature makes up for any lack of 
-accurate prognostication.
+A spellbook packed with arcane knowledge on agronomy and animal husbandry.
+Armed with this tome, an aspiring farmer can call forth a myriad of loyal
+beasts, dig deep into the earth, or purge unwelcome pests with clouds of
+deadly pesticides.
 %%%%
 book of fixed level
 
