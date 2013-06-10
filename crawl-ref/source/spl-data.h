@@ -1597,6 +1597,18 @@ struct spell_desc
      false
 },
 
+{
+    SPELL_SUMMON_FLOCK, "Summon Flock",
+     SPTYP_SUMMONING,
+     SPFLAG_NONE,
+     5,
+     200,
+     -1, -1,
+     0,
+     NULL,
+     false,
+     false
+},
 
 {
     SPELL_SUMMON_DRAGON, "Summon Dragon",

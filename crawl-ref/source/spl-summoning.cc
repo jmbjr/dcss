@@ -638,6 +638,37 @@ spret_type cast_summon_hydra(actor *caster, int pow, god_type god, bool fail)
     return SPRET_SUCCESS;
 }
 
+spret_type cast_summon_flock(actor *caster, int pow, god_type god, bool fail)
+{
+
+    fail_check();
+    monster_type mon = MONS_PROGRAM_BUG;
+
+    const int chance = random2(pow);
+    if (chance < 10)
+        mon = MONS_SHEEP;
+    else if (chance < 20)
+        mon = MONS_YAK;
+    else if (chance < 50)
+        mon = MONS_DEATH_YAK;
+
+    const int dur = min(2 + (random2(pow) / 4), 6);
+
+    if (!create_monster(
+            mgen_data(mon, BEH_FRIENDLY, &you,
+                      dur, SPELL_SUMMON_FLOCK,
+                      you.pos(),
+                      MHITYOU,
+                      0, god)))
+    {
+        canned_msg(MSG_NOTHING_HAPPENS);
+    }
+
+    return SPRET_SUCCESS;
+
+}
+
+
 
 spret_type cast_summon_yak(actor *caster, int pow, god_type god, bool fail)
 {

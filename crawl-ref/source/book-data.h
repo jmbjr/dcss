@@ -433,13 +433,13 @@
     SPELL_NO_SPELL,
 },
 
-{   // Book of Farmer's Almanac
+{   // Book of Homesteading
     SPELL_SUMMON_SMALL_MAMMAL,
     SPELL_CALL_CANINE_FAMILIAR,
+    SPELL_RECALL,
     SPELL_DIG,
-    SPELL_SUMMON_YAK,
+    SPELL_SUMMON_FLOCK,
     SPELL_POISONOUS_CLOUD,
-    SPELL_TORNADO,
     SPELL_NO_SPELL,
     SPELL_NO_SPELL,
 },

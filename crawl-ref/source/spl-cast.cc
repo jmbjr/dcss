@@ -1515,6 +1515,9 @@ static spret_type _do_cast(spell_type spell, int powc,
     case SPELL_SUMMON_YAK:
         return cast_summon_yak(&you, powc, god, fail);
 
+    case SPELL_SUMMON_FLOCK:
+        return cast_summon_flock(&you, powc, god, fail);
+
     case SPELL_SUMMON_DRAGON:
         return cast_summon_dragon(&you, powc, god, fail);
 
