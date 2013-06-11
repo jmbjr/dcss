@@ -1003,6 +1003,7 @@ static void _construct_backgrounds_menu(const newgame_def* ng,
                                         const newgame_def& defaults,
                                         MenuFreeform* menu)
 {
+/**
     job_group jobs_order[] =
     {
         {
@@ -1036,6 +1037,16 @@ static void _construct_backgrounds_menu(const newgame_def* ng,
             {JOB_WIZARD, JOB_CONJURER, JOB_SUMMONER, JOB_NECROMANCER,
              JOB_FIRE_ELEMENTALIST, JOB_ICE_ELEMENTALIST,
              JOB_AIR_ELEMENTALIST, JOB_EARTH_ELEMENTALIST, JOB_VENOM_MAGE}
+        }
+    };
+*/
+    job_group jobs_order[] = 
+    {
+        {
+            "FARMERS 4 LYF!",
+            coord_def(0, 0), 15,
+            {JOB_FARMER, JOB_UNKNOWN, JOB_UNKNOWN, JOB_UNKNOWN,
+             JOB_UNKNOWN, JOB_UNKNOWN, JOB_UNKNOWN, JOB_UNKNOWN, JOB_UNKNOWN}
         }
     };
 

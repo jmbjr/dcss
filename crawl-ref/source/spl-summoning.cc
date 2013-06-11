@@ -640,29 +640,123 @@ spret_type cast_summon_hydra(actor *caster, int pow, god_type god, bool fail)
 
 spret_type cast_summon_flock(actor *caster, int pow, god_type god, bool fail)
 {
-
     fail_check();
     monster_type mon = MONS_PROGRAM_BUG;
+    bool success = false;
 
+    //determine how big the flock is
+    const int MAXFLOCK = 4;
+    const int FAC_FLOCK = 30;
+    int how_many = min((pow / FAC_FLOCK) + 1 , MAXFLOCK);    
     const int chance = random2(pow);
-    if (chance < 10)
-        mon = MONS_SHEEP;
-    else if (chance < 20)
-        mon = MONS_YAK;
-    else if (chance < 50)
-        mon = MONS_DEATH_YAK;
 
-    const int dur = min(2 + (random2(pow) / 4), 6);
+    mprf("SPELL POWER=  %i : FLOCK SIZE = %i : CHANCE = %i", pow, how_many, chance);
 
-    if (!create_monster(
-            mgen_data(mon, BEH_FRIENDLY, &you,
-                      dur, SPELL_SUMMON_FLOCK,
-                      you.pos(),
-                      MHITYOU,
-                      0, god)))
+    int numyak = 0;
+    int numdeathyak = 0;
+    int numsheep = 0;
+
+    if (chance < 30)
     {
-        canned_msg(MSG_NOTHING_HAPPENS);
+        numyak = 0;
+        numdeathyak = 0;
     }
+    else if (chance < 60)
+    {
+        numyak = 1;
+        numdeathyak = 0;
+    }
+    else if (chance < 90)
+    {
+        switch (random2(3))
+        {
+        case 0:
+            numyak = 2;
+            numdeathyak = 0;
+            break;
+        case 1:
+            numyak = 0;
+            numdeathyak = 1;
+            break;
+        default:
+            numyak = 1;
+            numdeathyak = 0;
+            break;
+        }
+    }
+    else
+    {
+        numyak = 2;
+        numdeathyak = random2(2);
+    }
+    
+    //set duration to pretty short
+    const int dur = min(2 + (random2(pow) / 4), 4);
+  
+    if (numyak + numdeathyak > how_many)
+    {
+        numsheep = 0;
+    }
+    else
+    {
+        numsheep = how_many - numyak - numdeathyak;
+    }
+
+    mprf("sheep=%i : yak=%i : deathyak=%i : dur=%i ", numsheep, numyak, numdeathyak, dur);
+    
+    for (int i = 0; i < numyak; ++i)
+    {
+        mon = MONS_YAK;
+        if (monster *yak = create_monster(
+                mgen_data(mon, BEH_FRIENDLY, &you,
+                          dur, SPELL_SUMMON_FLOCK,
+                          you.pos(),
+                          MHITYOU,
+                          0, god)))
+        {
+            if (you.see_cell(yak->pos()))
+                mpr("A yak bellows!");
+            success = true;
+        }
+    }
+
+    for (int i = 0; i < numdeathyak; ++i)
+    {
+        mon = MONS_DEATH_YAK;
+        if (monster *deathyak = create_monster(
+                mgen_data(mon, BEH_FRIENDLY, &you,
+                          dur, SPELL_SUMMON_FLOCK,
+                          you.pos(),
+                          MHITYOU,
+                          0, god)))
+        {
+            if (you.see_cell(deathyak->pos()))
+                mpr("A death yak roars!!");
+            success = true;
+        }
+    }
+
+    for (int i = 0; i < (how_many - numyak - numdeathyak); ++i)
+    {
+        mon = MONS_SHEEP;
+        if (monster *sheep = create_monster(
+                mgen_data(mon, BEH_FRIENDLY, &you,
+                          dur, SPELL_SUMMON_FLOCK,
+                          you.pos(),
+                          MHITYOU,
+                          0, god)))
+        {
+            if (you.see_cell(sheep->pos()))
+                mpr("A sheep appears.");
+            success = true;
+        }
+    }
+
+
+
+    if (!success && caster->is_player())
+        canned_msg(MSG_NOTHING_HAPPENS);
+
 
     return SPRET_SUCCESS;
 

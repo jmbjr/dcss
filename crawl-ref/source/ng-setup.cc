@@ -602,7 +602,7 @@ static void _give_items_skills(const newgame_def& ng)
         newgame_make_item(1, EQ_BODY_ARMOUR, OBJ_ARMOUR, ARM_LEATHER_ARMOUR,
                            ARM_ROBE, 1, 1);
         // FRUIT!!!
-        newgame_make_item(2, EQ_NONE, OBJ_FOOD, FOOD_SULTANA, -1, 4);
+        newgame_make_item(2, EQ_NONE, OBJ_FOOD, FOOD_SULTANA, -1, 3);
         newgame_make_item(3, EQ_NONE, OBJ_BOOKS, BOOK_HOMESTEADING);
 
         // SKILLS
@@ -613,7 +613,7 @@ static void _give_items_skills(const newgame_def& ng)
         you.skills[SK_DODGING]  = 1;
         you.skills[SK_SPELLCASTING] = 1;
         you.skills[SK_SUMMONINGS] = 1;
-        you.skills[SK_INVOCATIONS] = 2;
+        you.skills[SK_INVOCATIONS] = 1;
         weap_skill = 1;
         break;
 

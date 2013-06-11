@@ -1601,7 +1601,7 @@ struct spell_desc
     SPELL_SUMMON_FLOCK, "Summon Flock",
      SPTYP_SUMMONING,
      SPFLAG_NONE,
-     5,
+     6,
      200,
      -1, -1,
      0,
