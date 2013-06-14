@@ -1249,7 +1249,7 @@ static void tag_construct_you(writer &th)
     if (you.mutation[MUT_TELEPORT_CONTROL] == 1)
         you.mutation[MUT_TELEPORT_CONTROL] = 0;
     if (you.mutation[MUT_TRAMPLE_RESISTANCE] > 1)
-	you.mutation[MUT_TRAMPLE_RESISTANCE] = 1;
+        you.mutation[MUT_TRAMPLE_RESISTANCE] = 1;
 #endif
 
     marshallByte(th, you.demonic_traits.size());
@@ -2731,7 +2731,7 @@ static void tag_construct_level(writer &th)
         marshallByte(th, env.cloud[i].type);
         if (env.cloud[i].type == CLOUD_NONE)
             continue;
-        ASSERT(in_bounds(env.cloud[i].pos));
+        ASSERT_IN_BOUNDS(env.cloud[i].pos);
         marshallByte(th, env.cloud[i].pos.x);
         marshallByte(th, env.cloud[i].pos.y);
         marshallShort(th, env.cloud[i].decay);
@@ -3512,7 +3512,7 @@ static void tag_read_level(reader &th)
             continue;
         }
 #else
-        ASSERT(in_bounds(env.cloud[i].pos));
+        ASSERT_IN_BOUNDS(env.cloud[i].pos);
 #endif
         env.cgrid(env.cloud[i].pos) = i;
         env.cloud_no++;
@@ -3699,6 +3699,10 @@ void unmarshallMonster(reader &th, monster& m)
 
     if (mons_is_ghost_demon(m.type))
         m.set_ghost(unmarshallGhost(th));
+#if TAG_MAJOR_VERSION == 34
+    if (m.type == MONS_LABORATORY_RAT)
+        unmarshallGhost(th), m.type = MONS_RAT;
+#endif
 
     _unmarshall_constriction(th, &m);
 

@@ -435,7 +435,7 @@ void moveto_location_effects(dungeon_feature_type old_feat,
 void move_player_to_grid(const coord_def& p, bool stepped, bool allow_shift)
 {
     ASSERT(!crawl_state.game_is_arena());
-    ASSERT(in_bounds(p));
+    ASSERT_IN_BOUNDS(p);
 
     if (!stepped)
     {
@@ -3610,6 +3610,15 @@ void level_change(int source, const char* aux, bool skip_attribute_increase)
                     modify_stat(STAT_RANDOM, 1, false, "level gain");
                 break;
 
+            case SP_GARGOYLE:
+                if (!(you.experience_level % 4))
+                {
+                    modify_stat((coinflip() ? STAT_STR
+                                            : STAT_INT), 1, false,
+                                "level gain");
+                }
+                break;
+
             default:
                 break;
             }
@@ -6395,7 +6404,7 @@ int player::armour_class() const
         AC += 400 + skill(SK_ICE_MAGIC, 100) / 3;    // max 13
 
     AC += _stoneskin_bonus();
-  
+
     if (mutation[MUT_ICEMAIL])
         AC += 100 * player_icemail_armour_class();
 
@@ -6545,7 +6554,7 @@ int player::gdr_perc() const
 int player::melee_evasion(const actor *act, ev_ignore_type evit) const
 {
     return (player_evasion(evit)
-            - (const_cast<player *>(this)->is_constricted() ? 3 : 0)
+            - (is_constricted() ? 3 : 0)
             - ((!act || act->visible_to(this)
                 || (evit & EV_IGNORE_HELPLESS)) ? 0 : 10)
             - (you_are_delayed()

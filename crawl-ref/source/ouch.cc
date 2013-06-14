@@ -1148,13 +1148,9 @@ void ouch(int dam, int death_source, kill_method_type death_type,
     if (dam != INSTANT_DEATH)
     {
         if (you.petrified())
-	{
             dam /= 2;
-	}
         else if (you.petrifying())
-	{
             dam = dam * 10 / 15;
-	}
     }
     ait_hp_loss hpl(dam, death_type);
     interrupt_activity(AI_HP_LOSS, &hpl);
@@ -1315,6 +1311,7 @@ void ouch(int dam, int death_source, kill_method_type death_type,
 
             if (crawl_state.test || !yesno("Die?", false, 'n'))
             {
+                mpr("Thought so.");
                 take_note(Note(NOTE_DEATH, you.hp, you.hp_max,
                                 death_desc.c_str()), true);
                 _wizard_restore_life();

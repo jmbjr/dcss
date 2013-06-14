@@ -1,6 +1,3 @@
-#ifndef MONDATA_H
-#define MONDATA_H
-
 #define AT_NO_ATK       {AT_NONE, AF_PLAIN, 0}
 
 #include "enum.h"
@@ -199,6 +196,7 @@ static monsterentry mondata[] = {
     AXED_MON(MONS_ARACHNOID)
     AXED_MON(MONS_WOOD_GOLEM)
     AXED_MON(MONS_ANT_LARVA)
+    AXED_MON(MONS_LABORATORY_RAT)
 #endif
 
 // Real monsters begin here {dlb}:
@@ -1903,18 +1901,6 @@ static monsterentry mondata[] = {
     { {AT_BITE, AF_DRAIN_XP, 20}, AT_NO_ATK, AT_NO_ATK, AT_NO_ATK },
     { 3, 3, 5, 0 },
     7, 10, MST_NO_SPELLS, CE_POISON_CONTAM, Z_SMALL, S_ROAR,
-    I_ANIMAL, HT_LAND, FL_NONE, 12, DEFAULT_ENERGY,
-    MONUSE_NOTHING, MONEAT_NOTHING, SIZE_LITTLE
-},
-
-{
-    MONS_LABORATORY_RAT, 'r', BLACK, "laboratory rat",
-    M_WARM_BLOOD | M_NO_GEN_DERIVED | M_SPELLCASTER | M_FAKE_SPELLS,
-    MR_NO_FLAGS,
-    300, 10, MONS_RAT, MONS_LABORATORY_RAT, MH_NATURAL, -3,
-    { {AT_BITE, AF_PLAIN, 10}, AT_NO_ATK, AT_NO_ATK, AT_NO_ATK },
-    { 4, 3, 5, 0 },
-    5, 5, MST_NO_SPELLS, CE_POISON_CONTAM, Z_SMALL, S_ROAR,
     I_ANIMAL, HT_LAND, FL_NONE, 12, DEFAULT_ENERGY,
     MONUSE_NOTHING, MONEAT_NOTHING, SIZE_LITTLE
 },
@@ -6720,7 +6706,7 @@ static monsterentry mondata[] = {
     M_UNIQUE | M_FIGHTER | M_WARM_BLOOD | M_SPEAKS,
     MR_NO_FLAGS,
     550, 15, MONS_HUMAN, MONS_HUMAN, MH_NATURAL, -5,
-    { {AT_HIT, AF_PLAIN, 24}, AT_NO_ATK, AT_NO_ATK, AT_NO_ATK },
+    { {AT_HIT, AF_PLAIN, 32}, AT_NO_ATK, AT_NO_ATK, AT_NO_ATK },
     { 13, 0, 0, 118 },
     0, 10, MST_NO_SPELLS, CE_CONTAMINATED, Z_NOZOMBIE, S_SHOUT,
     I_NORMAL, HT_LAND, FL_NONE, 10, DEFAULT_ENERGY,
@@ -7053,6 +7039,5 @@ static monsterentry mondata[] = {
     - row 8: intel, habitat, flight class, speed, energy_usage
     - row 9: gmon_use class, gmon_eat class, body size
 */
-#endif
 
 };

@@ -4,9 +4,6 @@
  *             spl-util.cc.
 **/
 
-#ifndef SPLDATA_H
-#define SPLDATA_H
-
 /*
 struct spell_desc
 {
@@ -3126,5 +3123,3 @@ struct spell_desc
      false,
      false
 },
-
-#endif

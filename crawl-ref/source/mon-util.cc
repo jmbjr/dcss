@@ -9,6 +9,7 @@
 
 #include "mon-util.h"
 
+#include "areas.h"
 #include "artefact.h"
 #include "beam.h"
 #include "colour.h"
@@ -226,11 +227,14 @@ void init_mon_name_cache()
     }
 }
 
-monster_type get_monster_by_name(string name, bool exact)
+monster_type get_monster_by_name(string name, bool substring)
 {
+    if (name.empty())
+        return MONS_PROGRAM_BUG;
+
     lowercase(name);
 
-    if (exact)
+    if (!substring)
     {
         mon_name_map::iterator i = Mon_Name_Cache.find(name);
 
@@ -239,6 +243,8 @@ monster_type get_monster_by_name(string name, bool exact)
 
         return MONS_PROGRAM_BUG;
     }
+
+    int best = 0x7fffffff;
 
     monster_type mon = MONS_PROGRAM_BUG;
     for (unsigned i = 0; i < ARRAYSZ(mondata); ++i)
@@ -252,10 +258,13 @@ monster_type get_monster_by_name(string name, bool exact)
         if (match == string::npos)
             continue;
 
-        mon = monster_type(mtype);
+        int qual = 0x7ffffffe;
         // We prefer prefixes over partial matches.
         if (match == 0)
-            break;
+            qual = candidate.length();;
+
+        if (qual < best)
+            best = qual, mon = monster_type(mtype);
     }
     return mon;
 }
@@ -748,6 +757,14 @@ bool mons_allows_beogh(const monster* mon)
 
     return mons_genus(mon->type) == MONS_ORC
            && mon->is_priest() && mon->god == GOD_BEOGH;
+}
+
+bool mons_allows_beogh_now(const monster* mon)
+{
+    // Do the expensive LOS check last.
+    return mon && mons_allows_beogh(mon) && !silenced(mon->pos())
+               && !mons_is_confused(mon) && !mons_is_immotile(mon)
+               && you.visible_to(mon) && you.can_see(mon);
 }
 
 bool mons_behaviour_perceptible(const monster* mon)
@@ -1305,13 +1322,12 @@ shout_type mons_shouts(monster_type mc, bool demon_shout)
 
 bool mons_is_ghost_demon(monster_type mc)
 {
-    return (mc == MONS_UGLY_THING
+    return mc == MONS_UGLY_THING
             || mc == MONS_VERY_UGLY_THING
             || mc == MONS_PLAYER_GHOST
             || mc == MONS_PLAYER_ILLUSION
             || mc == MONS_DANCING_WEAPON
-            || mc == MONS_PANDEMONIUM_LORD
-            || mc == MONS_LABORATORY_RAT);
+            || mc == MONS_PANDEMONIUM_LORD;
 }
 
 bool mons_is_pghost(monster_type mc)
@@ -2381,14 +2397,6 @@ void define_monster(monster* mons)
         mons->set_ghost(ghost);
         mons->uglything_init();
         break;
-    }
-
-    case MONS_LABORATORY_RAT:
-    {
-        ghost_demon ghost;
-        ghost.init_labrat();
-        mons->set_ghost(ghost);
-        mons->ghost_demon_init();
     }
 
     // Load with dummy values so certain monster properties can be queried

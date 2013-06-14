@@ -3319,7 +3319,10 @@ bool ashenzari_end_transfer(bool finished, bool force)
              skill_name(you.transfer_from_skill),
              skill_name(you.transfer_to_skill));
         if (!yesno("Are you sure you want to cancel the transfer?", false, 'n'))
+        {
+            canned_msg(MSG_OK);
             return false;
+        }
     }
 
     mprf("You %s forgetting about %s and learning about %s.",
@@ -3340,10 +3343,8 @@ bool can_convert_to_beogh()
 
     for (radius_iterator ri(you.pos(), LOS_RADIUS); ri; ++ri)
     {
-        const monster *mon = monster_at(*ri);
-        if (!mon || !you.can_see(mon))
-            continue;
-        if (mons_allows_beogh(mon) && !silenced(*ri))
+        const monster * const mon = monster_at(*ri);
+        if (mons_allows_beogh_now(mon))
             return true;
     }
 
@@ -3368,7 +3369,7 @@ void spare_beogh_convert()
         // An invis player converting is ok, for simplicity.
         if (!mon || !cell_see_cell(you.pos(), *ri, LOS_DEFAULT))
             continue;
-        if (mon->wont_attack())
+        if (mon->attitude != ATT_HOSTILE)
             continue;
         if (mons_genus(mon->type) != MONS_ORC)
             continue;
@@ -3385,7 +3386,7 @@ void spare_beogh_convert()
                     continue;
                 if (mons_genus(orc->type) != MONS_ORC)
                     continue;
-                if (orc->wont_attack())
+                if (mon->attitude != ATT_HOSTILE)
                     continue;
                 witnesses.insert(orc->mid);
             }
@@ -3401,6 +3402,7 @@ void spare_beogh_convert()
             continue;
 
         ++witc;
+        orc->del_ench(ENCH_CHARM);
         mons_pacify(orc, ATT_GOOD_NEUTRAL, true);
     }
 

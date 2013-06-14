@@ -115,7 +115,7 @@ static int _weapon_colour(const item_def &item)
             break;
         default:
             // huh?
-            item_colour = MAGENTA;
+            item_colour = LIGHTGREEN;
             break;
         }
     }
@@ -143,7 +143,7 @@ static int _weapon_colour(const item_def &item)
             break;
         default:
             // huh?
-            item_colour = random_colour();
+            item_colour = LIGHTGREEN;
             break;
         }
     }
@@ -337,7 +337,7 @@ void item_colour(item_def &item)
             item.colour = WHITE;
             break;
         case 11:        //"fluorescent wand"
-            item.colour = random_colour();
+            item.colour = LIGHTGREEN;
             break;
         }
 
@@ -445,7 +445,7 @@ void item_colour(item_def &item)
         //randarts are bright, normal jewellery is dark
         else if (is_random_artefact(item))
         {
-            item.colour = make_high_colour(random_colour());
+            item.colour = random_range(LIGHTBLUE, WHITE);
             break;
         }
 
@@ -564,7 +564,8 @@ void item_colour(item_def &item)
         case 0:
         case 1:
         default:
-            item.colour = random_colour();
+            do item.colour = random_colour();
+                while (item.colour == DARKGREY);
             break;
         case 2:
             item.colour = BROWN;
@@ -717,7 +718,7 @@ void item_colour(item_def &item)
             break;
 
         default:
-            item.colour = random_colour();
+            item.colour = LIGHTGREEN;
             break;
         }
         break;

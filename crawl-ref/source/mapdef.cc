@@ -3665,6 +3665,14 @@ mons_list::mons_spec_slot mons_list::parse_mons_spec(string spec)
         }
 
         vector<string> parts = split_string(";", s);
+
+        if (parts.size() == 0)
+        {
+            error = make_stringf("Not enough non-semicolons for '%s' spec.",
+                                 s.c_str());
+            return slot;
+        }
+
         string mon_str = parts[0];
 
         if (parts.size() > 2)
@@ -4213,7 +4221,7 @@ mons_spec mons_list::drac_monspec(string name) const
 {
     mons_spec spec;
 
-    spec.type = get_monster_by_name(name, true);
+    spec.type = get_monster_by_name(name);
 
     // Check if it's a simple drac name, we're done.
     if (spec.type != MONS_PROGRAM_BUG)
@@ -4243,7 +4251,7 @@ mons_spec mons_list::drac_monspec(string name) const
         return spec;
 
     // Check for recognition again to match any (nonbase) <colour> draconian.
-    const monster_type colour = get_monster_by_name(name, true);
+    const monster_type colour = get_monster_by_name(name);
     if (colour != MONS_PROGRAM_BUG)
     {
         spec.monbase = colour;
@@ -4260,7 +4268,7 @@ mons_spec mons_list::drac_monspec(string name) const
         return MONS_PROGRAM_BUG;
 
     name = trimmed_string(name.substr(wordend + 1));
-    spec.type = get_monster_by_name(name, true);
+    spec.type = get_monster_by_name(name);
 
     // We should have a non-base draconian here.
     if (spec.type == MONS_PROGRAM_BUG
@@ -4335,19 +4343,6 @@ mons_spec mons_list::mons_by_name(string name) const
             return spec;
         }
     }
-    if (name.find(" laboratory rat") != string::npos)
-    {
-        const string::size_type wordend = name.find(' ');
-        const string first_word = name.substr(0, wordend);
-
-        const int colour = colour_for_labrat_adjective(first_word);
-        if (colour != BLACK)
-        {
-            mons_spec spec = mons_by_name(name.substr(wordend+1));
-            spec.colour = colour;
-            return spec;
-        }
-    }
 
     mons_spec spec;
     get_zombie_type(name, spec);
@@ -4357,7 +4352,7 @@ mons_spec mons_list::mons_by_name(string name) const
     if (name.find("draconian") != string::npos)
         return drac_monspec(name);
 
-    return get_monster_by_name(name, true);
+    return get_monster_by_name(name);
 }
 
 //////////////////////////////////////////////////////////////////////

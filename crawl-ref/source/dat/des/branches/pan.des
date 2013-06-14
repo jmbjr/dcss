@@ -1157,33 +1157,33 @@ xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 xxxxxxx.......................xxxxxx
 xxxxx...3.x...x...x...x...x.3...xxxx
 xxxx.............................xxx
-xxx....x..ccccccccccccccccc...x...xx
-xxx.3.....c...x...x...x...cc...x..xx
-xx........c....x.x.x.x.x.x.cc......x
-xx.x.xx.x.c.....x...x...x...cc..3..x
-xx.....4..+......x.x.x.x.x.x.cc....x
-xx........+.......x...x.2.x...cc...x
-xx.....4..+......x.x.x.x.x.x.x.cc..x
-xx.x.xx.x.c.....x...x...x...x...c..x
-xxx......xc....ccccccccc.x.x.x.xc..x
-xx.x....x.c...ccccc.2.x...x.2.xcc..x
-xxx.x..x.xccccc....x.x.x.x.x.x.xc..x
-xx.x.xx.x.cc........x...x...x...c4.x
-xx..x..x..c.c......x.x.x.x.x.x.xc...
-xx..x..x..cOc.1...x...x.2.x...xcc..@
-xx.x.xx.x.c.c......x.x.x.x.x.x.xc...
-xxx.x..x.xcc........x...x...x...c4.x
-xx.x....x.ccccc....x.x.x.x.x.x.xc..x
-xxx......xc...ccccc.2.x...x.2.xcc..x
-xx........c....ccccccccc.x.x.x.xc..x
-xx.x.xx.x.c.....x...x...x...x...c..x
-xx.....4..+......x.x.x.x.x.x.x.cc..x
-xx........+.......x...x.2.x...cc...x
-xx.....4..+......x.x.x.x.x.x.cc....x
-xx.x.xx.x.c.....x...x...x...cc..3..x
-xx........c....x.x.x.x.x.x.cc......x
-xxx.3.....c...x...x...x...cc...x..xx
-xxx....x..ccccccccccccccccc...x...xx
+xxx...x..ccccccccccccccccc....x...xx
+xxx.3....c...x...x...x...cc....x..xx
+xx.......c....x.x.x.x.x.x.cc.......x
+xx.x.x.x.c.....x...x...x...cc....3.x
+xx....4..+......x.x.x.x.x.x.cc.....x
+xx.......+.......x...x.2.x...cc..x.x
+xx....4..+......x.x.x.x.x.x.x.cc...x
+xx.x.x.x.c.....x...x...x...x...c...x
+xxx.....xc....ccccccccc.x.x.x.xc...x
+xx.x...x.c...ccccc.2.x...x.2.xcc.x.x
+xxx.x.x.xccccc....x.x.x.x.x.x.xc...x
+xx.x.x.x.cc........x...x...x...c.4.x
+xxx.x.x.xc.c......x.x.x.x.x.x.xc....
+xx.x.x.x.cOc.1...x...x.2.x...xcc.x.@
+xxx.x.x.xc.c......x.x.x.x.x.x.xc....
+xx.x.x.x.cc........x...x...x...c.4.x
+xxx.x.x.xccccc....x.x.x.x.x.x.xc...x
+xx.x...x.c...ccccc.2.x...x.2.xcc.x.x
+xxx.....xc....ccccccccc.x.x.x.xc...x
+xx.x.x.x.c.....x...x...x...x...c...x
+xx....4..+......x.x.x.x.x.x.x.cc...x
+xx.......+.......x...x.2.x...cc..x.x
+xx....4..+......x.x.x.x.x.x.cc.....x
+xx.x.x.x.c.....x...x...x...cc....3.x
+xx.......c....x.x.x.x.x.x.cc.......x
+xxx.3....c...x...x...x...cc....x..xx
+xxx...x..ccccccccccccccccc....x...xx
 xxxx.............................xxx
 xxxxx...3.x...x...x...x...x.3...xxxx
 xxxxxxx.......................xxxxxx
@@ -2231,16 +2231,16 @@ ENDMAP
 
 ###################################
 
-# Sadly, this vault works well only in text. If we could get changing tiles,
-# it would be great, but for now, these are static.
-#
 NAME:   pan_disco_hall
 TAGS:   pan no_rotate
 ORIENT: float
-SUBST:  - = 0:1 / .:10
 COLOUR: D = random
-COLOUR: .x = disco
-COLOUR: 0123456789 = disco
+COLOUR: .x-0123456789 = disco
+# WALL_ZOT_BLUE and FLOOR_PEBBLE are the bases for coloured variants of the
+# tiles thereof.
+RTILE:  x = wall_zot_blue
+FTILE:  D.-0123456789 = floor_pebble
+SUBST:  - = 0:1 / .:10
 KFEAT:  D = granite_statue
 : set_feature_name("granite_statue", "weirdly glowing ball")
 MARKER: D = lua:props_marker { veto_fragmentation="veto", \
@@ -2250,11 +2250,6 @@ MONS:   col:random name:demonic name_adjective plant tile:mons_demonic_plant
 MONS:   red devil ; demon trident good_item ego:distortion
 MONS:   red devil ; lajatang good_item ego:distortion
 MONS:   red devil ; demon blade good_item ego:distortion
-RTILE:  x = wall_zot_blue / wall_zot_green / wall_zot_cyan / wall_zot_red /\
-            wall_zot_magenta / wall_zot_yellow
-# alas, floor tiles are not distinguished from walls enough, commenting out:
-# FTILE: . = floor_moss / floor_dirt / floor_orc / floor_rough_red /\
-#            floor_snake / floor_swamp
 KFEAT:  _ = floor
 FTILE:  _ = floor_hall
 MAP
