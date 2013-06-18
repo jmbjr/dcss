@@ -2574,10 +2574,10 @@ void bolt::drop_object()
             }
         }
 
-        copy_item_to_grid(*item, pos(), agent()->mindex(), 1);
+        copy_item_to_grid(*item, pos(), 1);
     }
     else
-        item_was_destroyed(*item, agent()->mindex());
+        item_was_destroyed(*item, NON_MONSTER);
 }
 
 // Returns true if the beam hits the player, fuzzing the beam if necessary
@@ -3010,6 +3010,12 @@ bool bolt::is_harmless(const monster* mon) const
 
     case BEAM_PETRIFY:
         return (mon->res_petrify() || mon->petrified());
+
+    case BEAM_MEPHITIC:
+        return mon->res_poison() > 0 || mon->is_unbreathing();
+
+    case BEAM_GHOSTLY_FLAME:
+        return mon->holiness() == MH_UNDEAD;
 
     default:
         return false;
