@@ -69,7 +69,7 @@
 #    ask for a package with convenience libraries instead -- we'll try to provide
 #    them somewhere in the near future.
 
-GAME = crawl
+GAME = crawl-farmer
 
 # Disable GNU Make implicit rules and variables. Leaving them enabled will slow
 # down MinGW and Cygwin builds by a very VERY noticeable degree. Besides, we have
