@@ -61,12 +61,6 @@
 #include "env.h"
 #include "terrain.h"
 
-// This determines which cells are considered out of range during
-// precalculations (only positive quadrant used).
-// For the LOS code to work correctly, any LOS shape that
-// is used needs to be contained in bds_precalc.
-static const circle_def bds_precalc = circle_def(LOS_MAX_RANGE, C_ROUND);
-
 // These determine what rays are cast in the precomputation,
 // and affect start-up time significantly.
 // XXX: Argue that these values are sufficient.
@@ -122,27 +116,21 @@ void clear_rays_on_exit()
 }
 
 // Pre-squared LOS radius.
-static int _los_radius_sq = LOS_RADIUS_SQ;
+int los_radius2 = LOS_RADIUS_SQ;
 
 static void _handle_los_change();
 
 void set_los_radius(int r)
 {
     ASSERT(r <= LOS_RADIUS);
-    _los_radius_sq = r * r + 1;
+    los_radius2 = r * r + 1;
     invalidate_los();
     _handle_los_change();
 }
 
-// XXX: just for monster_los
-int get_los_radius_sq()
-{
-    return _los_radius_sq;
-}
-
 bool double_is_zero(const double x)
 {
-    return (x > -EPSILON_VALUE) && (x < EPSILON_VALUE);
+    return x > -EPSILON_VALUE && x < EPSILON_VALUE;
 }
 
 struct los_ray : public ray_def
@@ -179,7 +167,7 @@ struct los_ray : public ray_def
                 break;
             }
             c = copy.pos();
-            if (!bds_precalc.contains(c))
+            if (c.abs() > LOS_RADIUS_SQ)
                 break;
             cs.push_back(c);
             ASSERT((c - old).rdist() == 1);
@@ -227,7 +215,7 @@ struct cellray
     }
 
     // The end-point's index inside ray_coord.
-    int index() const { return (ray.start + end); }
+    int index() const { return ray.start + end; }
 
     // The end-point.
     coord_def target() const { return ray_coords[index()]; }
@@ -263,7 +251,7 @@ static bool _is_better(const cellray& a, const cellray& b)
     else if (a.imbalance > b.imbalance)
         return false;
     else
-        return (a.first_diag && !b.first_diag);
+        return a.first_diag && !b.first_diag;
 }
 
 enum compare_type
@@ -307,8 +295,8 @@ static compare_type _compare_cellrays(const cellray& a, const cellray& b)
             curb++;
         }
     }
-    maybe_sub = maybe_sub && (cura == enda);
-    maybe_super = maybe_super && (curb == endb);
+    maybe_sub = maybe_sub && cura == enda;
+    maybe_super = maybe_super && curb == endb;
 
     if (maybe_sub)
         return C_SUBRAY;    // includes equality
@@ -559,15 +547,15 @@ void cellray::calc_params()
 // opc has been translated for this quadrant.
 // XXX: Allow finding ray of minimum opacity.
 static bool _find_ray_se(const coord_def& target, ray_def& ray,
-                  const opacity_func& opc, const circle_def& bds,
-                  bool cycle)
+                  const opacity_func& opc, int range, bool cycle)
 {
-    ASSERT(target.x >= 0 && target.y >= 0);
+    ASSERT(target.x >= 0);
+    ASSERT(target.y >= 0);
     ASSERT(!target.origin());
-    if (!bds.contains(target))
+    if (target.abs() > range * range + 1)
         return false;
 
-    ASSERT(bds_precalc.contains(target));
+    ASSERT(target.abs() <= LOS_RADIUS_SQ);
 
     // Ensure the precalculations have been done.
     raycast();
@@ -636,7 +624,7 @@ struct opacity_trans : public opacity_func
 // assume that ray is appropriately filled in, and look for the next
 // ray. We only ever use ray.cycle_idx.
 bool find_ray(const coord_def& source, const coord_def& target,
-              ray_def& ray, const opacity_func& opc, const circle_def &bds,
+              ray_def& ray, const opacity_func& opc, int range,
               bool cycle)
 {
     if (target == source || !map_bounds(source) || !map_bounds(target))
@@ -649,7 +637,7 @@ bool find_ray(const coord_def& source, const coord_def& target,
     const coord_def abs = coord_def(absx, absy);
     opacity_trans opc_trans = opacity_trans(opc, source, signx, signy);
 
-    if (!_find_ray_se(abs, ray, opc_trans, bds, cycle))
+    if (!_find_ray_se(abs, ray, opc_trans, range, cycle))
         return false;
 
     if (signx < 0)
@@ -666,10 +654,10 @@ bool find_ray(const coord_def& source, const coord_def& target,
 }
 
 bool exists_ray(const coord_def& source, const coord_def& target,
-                const opacity_func& opc, const circle_def &bds)
+                const opacity_func& opc, int range)
 {
     ray_def ray;
-    return find_ray(source, target, ray, opc, bds);
+    return find_ray(source, target, ray, opc, range);
 }
 
 // Assuming that target is in view of source, but line of
@@ -690,7 +678,7 @@ dungeon_feature_type ray_blocker(const coord_def& source,
     {
         blocked += opc_solid_see(ray.pos());
         if (blocked >= OPC_OPAQUE)
-            return (env.grid(ray.pos()));
+            return env.grid(ray.pos());
         ray.advance();
     }
     ASSERT(false);
@@ -723,7 +711,8 @@ int num_feats_between(const coord_def& source, const coord_def& target,
     int     count    = 0;
     int     max_dist = grid_distance(source, target);
 
-    ASSERT(map_bounds(source) && map_bounds(target));
+    ASSERT(map_bounds(source));
+    ASSERT(map_bounds(target));
 
     if (source == target)
         return 0; // XXX: might want to count the cell.
@@ -863,7 +852,7 @@ struct los_param_funcs : public los_param
 
     bool los_bounds(const coord_def& p) const
     {
-        return (map_bounds(p + center) && bounds.contains(p));
+        return map_bounds(p + center) && bounds.contains(p);
     }
 
     opacity_type opacity(const coord_def& p) const

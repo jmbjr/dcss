@@ -34,6 +34,10 @@ Locust
 
 Louse
 
+Mantidfly
+
+Tick
+
 # invertebrates
 Slug
 
@@ -58,6 +62,8 @@ Barnacle
 
 Lobster
 
+Quahog
+
 # amphibians and reptiles
 Tortoise
 
@@ -73,7 +79,28 @@ Salamander
 
 Serpent
 
+# fish
+Barracuda
+
+Catfish
+
+Mackerel
+
+Marlin
+
+Salmon
+
+Sturgeon
+
+Sunfish
+
+Trout
+
+Tuna
+
 # birds
+Albatross
+
 Turtledove
 
 Nightingale
@@ -109,6 +136,8 @@ Bull
 
 Camelopard
 
+Catamount
+
 Dolphin
 
 Echidna
@@ -118,6 +147,10 @@ Hart
 Lion
 
 Stallion
+
+Stag
+
+Okapi
 
 # not strictly an animal... :)
 Monkey's Uncle
@@ -139,6 +172,9 @@ Jackalope
 Wild Haggis
 
 Chupacabra
+
+Yeti
+
 %%%%
 _flower_name_
 
@@ -384,6 +420,8 @@ Terror
 
 Good Intentions
 
+Absence
+
 the Arcane
 
 Anaesthesia
@@ -405,6 +443,10 @@ Untold Secrets
 the Earth
 
 Limited Liability
+
+Incorporation
+
+Mezcal
 
 Hadjma
 
@@ -433,6 +475,12 @@ Too Many Cooks
 Thrice Damned Blessings
 
 Duck's Teeth
+
+Forking Paths
+
+the Pink Corner
+
+Philately
 %%%%
 # Lemuel's suggestions
 _celestial_bodies_
@@ -680,6 +728,16 @@ the Duke
 
 the Duchess
 
+the Doge
+
+the Ban
+
+the Castellan
+
+the Komtur
+
+the Voivode
+
 the Rabble
 
 the Prince
@@ -755,6 +813,7 @@ the Other World
 
 Inevitability
 %%%%
+# "something" rather than of Something
 _plain_armour_name_
 
 Forget-Me-Not
@@ -762,4 +821,6 @@ Forget-Me-Not
 Hero's Friend
 
 Trusted Companion
+
+fgsfds
 %%%%

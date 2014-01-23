@@ -1,4 +1,4 @@
-{   // Minor Magic
+{   // Book of Minor Magic
     SPELL_MAGIC_DART,
     SPELL_BLINK,
     SPELL_CALL_IMP,
@@ -11,7 +11,7 @@
 
 {   // Book of Conjurations
     SPELL_MAGIC_DART,
-    SPELL_FORCE_LANCE,
+    SPELL_SEARING_RAY,
     SPELL_DAZZLING_SPRAY,
     SPELL_ISKENDERUNS_MYSTIC_BLAST,
     SPELL_BATTLESPHERE,
@@ -51,7 +51,6 @@
     SPELL_SUMMON_UGLY_THING,
     SPELL_NO_SPELL,
     SPELL_NO_SPELL,
-
 },
 
 {   // Book of Fire
@@ -61,7 +60,7 @@
     SPELL_BOLT_OF_FIRE,
     SPELL_DELAYED_FIREBALL,
     SPELL_RING_OF_FLAMES,
-    SPELL_DRAGON_FORM,
+    SPELL_NO_SPELL,
     SPELL_NO_SPELL,
 },
 
@@ -93,7 +92,7 @@
     SPELL_TUKIMAS_DANCE,
     SPELL_DEFLECT_MISSILES,
     SPELL_HASTE,
-    SPELL_NO_SPELL,
+    SPELL_DISCORD,
     SPELL_NO_SPELL,
     SPELL_NO_SPELL,
 },
@@ -155,10 +154,10 @@
 
 {   // Book of Transfigurations
     SPELL_STONESKIN,
-    SPELL_POLYMORPH,
     SPELL_ICE_FORM,
     SPELL_STATUE_FORM,
     SPELL_DRAGON_FORM,
+    SPELL_NO_SPELL,
     SPELL_NO_SPELL,
     SPELL_NO_SPELL,
     SPELL_NO_SPELL,
@@ -174,7 +173,18 @@
     SPELL_NO_SPELL,
     SPELL_NO_SPELL,
 },
-
+#if TAG_MAJOR_VERSION > 34
+{   // Book of Battle
+    SPELL_INFUSION,
+    SPELL_SHROUD_OF_GOLUBRIA,
+    SPELL_SONG_OF_SLAYING,
+    SPELL_SPECTRAL_WEAPON,
+    SPELL_REGENERATION,
+    SPELL_NO_SPELL,
+    SPELL_NO_SPELL,
+    SPELL_NO_SPELL,
+},
+#endif
 {   // Book of Clouds
     SPELL_MEPHITIC_CLOUD,
     SPELL_CONJURE_FLAME,
@@ -241,7 +251,6 @@
     SPELL_NO_SPELL,
 },
 
-
 {   // Book of the Warp
     SPELL_RECALL,
     SPELL_CONTROL_TELEPORT,
@@ -287,12 +296,12 @@
 },
 
 #if TAG_MAJOR_VERSION == 34
-{   // Book of Morphology
-    SPELL_STICKS_TO_SNAKES,
-    SPELL_PETRIFY,
-    SPELL_POLYMORPH,
-    SPELL_IGNITE_POISON,
-    SPELL_NO_SPELL,
+{   // Book of Battle (replacing Morphology)
+    SPELL_INFUSION,
+    SPELL_SHROUD_OF_GOLUBRIA,
+    SPELL_SONG_OF_SLAYING,
+    SPELL_SPECTRAL_WEAPON,
+    SPELL_REGENERATION,
     SPELL_NO_SPELL,
     SPELL_NO_SPELL,
     SPELL_NO_SPELL,
@@ -324,7 +333,7 @@
 {   // Book of Wizardry
     SPELL_SUMMON_ELEMENTAL,
     SPELL_AGONY,
-    SPELL_LIGHTNING_BOLT,
+    SPELL_FORCE_LANCE,
     SPELL_FIREBALL,
     SPELL_HASTE,
     SPELL_INVISIBILITY,
@@ -336,7 +345,7 @@
     SPELL_ISKENDERUNS_MYSTIC_BLAST,
     SPELL_VENOM_BOLT,
     SPELL_BOLT_OF_MAGMA,
-    SPELL_POISONOUS_CLOUD,
+    SPELL_FULMINANT_PRISM,
     SPELL_IRON_SHOT,
     SPELL_IOOD,
     SPELL_NO_SPELL,
@@ -389,7 +398,7 @@
     SPELL_NO_SPELL,
 },
 
-{   // Tome of the Dragon
+{   // Book of the Dragon
     SPELL_FLY,
     SPELL_CAUSE_FEAR,
     SPELL_BOLT_OF_FIRE,
@@ -457,11 +466,11 @@
 
 {   // Book of Annihilations
     SPELL_POISON_ARROW,
-    SPELL_IOOD,
     SPELL_CHAIN_LIGHTNING,
     SPELL_LEHUDIBS_CRYSTAL_SPEAR,
     SPELL_ICE_STORM,
     SPELL_FIRE_STORM,
+    SPELL_NO_SPELL,
     SPELL_NO_SPELL,
     SPELL_NO_SPELL,
 },
@@ -477,9 +486,9 @@
     SPELL_NO_SPELL,
 },
 
-{   // Necronomicon - Kikubaaqudgha special
-    SPELL_BORGNJORS_REVIVIFICATION,
+{   // Necronomicon
     SPELL_HAUNT,
+    SPELL_BORGNJORS_REVIVIFICATION,
     SPELL_DEATHS_DOOR,
     SPELL_NECROMUTATION,
     SPELL_NO_SPELL,
@@ -512,7 +521,7 @@
     SPELL_NO_SPELL,
 },
 
-{   // Rod of destruction (fire)
+{   // Rod of fiery destruction
     SPELL_THROW_FLAME,
     SPELL_FIREBALL,
     SPELL_BOLT_OF_FIRE,
@@ -523,7 +532,7 @@
     SPELL_NO_SPELL,
 },
 
-{   // Rod of destruction (ice)
+{   // Rod of frigid destruction
     SPELL_THROW_FROST,
     SPELL_THROW_ICICLE,
     SPELL_FREEZING_CLOUD,
@@ -579,7 +588,7 @@
 },
 
 {   // Rod of striking
-    SPELL_STRIKING,
+    SPELL_MELEE,
     SPELL_NO_SPELL,
     SPELL_NO_SPELL,
     SPELL_NO_SPELL,

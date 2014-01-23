@@ -28,8 +28,8 @@ monster_type debug_prompt_for_monster(void)
 {
     char specs[1024];
 
-    mpr("Which monster by name? ", MSGCH_PROMPT);
-    if (!cancelable_get_line_autohist(specs, sizeof specs))
+    mprf(MSGCH_PROMPT, "Which monster by name? ");
+    if (!cancellable_get_line_autohist(specs, sizeof specs))
     {
         if (specs[0] == '\0')
             return MONS_NO_MONSTER;
@@ -49,7 +49,7 @@ void debug_dump_levgen()
     string method;
     string type;
 
-    if (Generating_Level)
+    if (crawl_state.generating_level)
     {
         mpr("Currently generating level.");
         method = env.level_build_method;
@@ -81,7 +81,7 @@ void debug_dump_levgen()
     mprf("Level build method = %s, level layout type  = %s, absdepth0 = %d",
          method.c_str(), type.c_str(), env.absdepth0);
 
-    if (!env.level_vault_list.empty())
+    if (!env.level_vaults.empty())
     {
         mpr("Level vaults:");
         for (size_t i = 0; i < env.level_vaults.size(); ++i)
@@ -395,9 +395,9 @@ string debug_art_val_str(const item_def& item)
 
 int debug_cap_stat(int stat)
 {
-    return (stat <  1  ?   1 :
-            stat > 127 ? 127
-                       : stat);
+    return stat < -128 ? -128 :
+           stat >  127 ?  127
+                       : stat;
 }
 
 #ifdef DEBUG
@@ -451,11 +451,11 @@ void wizard_toggle_dprf()
                                  Options.quiet_debug_messages[i] ? "</white>" : "");
             if (i % 5 == 4 || i == NUM_DIAGNOSTICS - 1)
             {
-                mpr(line, MSGCH_PROMPT);
+                mprf(MSGCH_PROMPT, "%s", line.c_str());
                 line.clear();
             }
         }
-        mpr("Toggle which debug class (ESC to exit)? ", MSGCH_PROMPT);
+        mprf(MSGCH_PROMPT, "Toggle which debug class (ESC to exit)? ");
 
         int keyin = toalower(get_ch());
 

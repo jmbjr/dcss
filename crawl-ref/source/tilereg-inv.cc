@@ -224,7 +224,7 @@ static bool _is_true_equipped_item(const item_def &item)
         return is_weapon(item);
 
     // Cursed armour and rings are only truly equipped if *not* wielded.
-    return (item.link != you.equip[EQ_WEAPON]);
+    return item.link != you.equip[EQ_WEAPON];
 }
 
 // Returns whether there's any action you can take with an item in inventory
@@ -233,17 +233,17 @@ static bool _can_use_item(const item_def &item, bool equipped)
 {
 #if TAG_MAJOR_VERSION == 34
     // There's nothing you can do with an empty box if you can't unwield it.
-    if (!equipped && item.sub_type == MISC_EMPTY_EBONY_CASKET)
+    if (!equipped && item.sub_type == MISC_BUGGY_EBONY_CASKET)
         return false;
 #endif
 
     // Vampires can drain corpses.
     if (item.base_type == OBJ_CORPSES)
     {
-        return (you.species == SP_VAMPIRE
-                && item.sub_type != CORPSE_SKELETON
-                && !food_is_rotten(item)
-                && mons_has_blood(item.mon_type));
+        return you.species == SP_VAMPIRE
+               && item.sub_type != CORPSE_SKELETON
+               && !food_is_rotten(item)
+               && mons_has_blood(item.mon_type);
     }
 
     if (equipped && item.cursed())
@@ -259,7 +259,7 @@ static bool _can_use_item(const item_def &item, bool equipped)
 
     // Mummies can't do anything with food or potions.
     if (you.species == SP_MUMMY)
-        return (item.base_type != OBJ_POTIONS && item.base_type != OBJ_FOOD);
+        return item.base_type != OBJ_POTIONS && item.base_type != OBJ_FOOD;
 
     // In all other cases you can use the item in some way.
     return true;
@@ -534,8 +534,10 @@ bool InventoryRegion::update_tip_text(string& tip)
                 // For Sublimation of Blood.
                 if (wielded)
                     _handle_wield_tip(tmp, cmd, "\n[Ctrl + L-Click] ", true);
-                else if (item.sub_type == FOOD_CHUNK
-                         && you.has_spell(SPELL_SUBLIMATION_OF_BLOOD))
+                else if (food_is_meaty(item)
+                             && you.has_spell(SPELL_SIMULACRUM)
+                         || item.sub_type == FOOD_CHUNK
+                             && you.has_spell(SPELL_SUBLIMATION_OF_BLOOD))
                 {
                     _handle_wield_tip(tmp, cmd, "\n[Ctrl + L-Click] ");
                 }
@@ -619,7 +621,7 @@ bool InventoryRegion::update_alt_text(string &alt)
         inf.title = "Previous page";
     }
     else
-        get_item_desc(*item, inf, true);
+        get_item_desc(*item, inf);
 
     alt_desc_proc proc(crawl_view.msgsz.x, crawl_view.msgsz.y);
     process_description<alt_desc_proc>(proc, inf);
@@ -865,12 +867,12 @@ void InventoryRegion::update()
 bool InventoryRegion::_is_prev_button(int idx)
 {
     // idx is an index in m_items as returned by cursor_index()
-    return (m_grid_page>0 && idx == mx*my*m_grid_page-2*m_grid_page);
+    return m_grid_page>0 && idx == mx*my*m_grid_page-2*m_grid_page;
 }
 
 bool InventoryRegion::_is_next_button(int idx)
 {
     // idx is an index in m_items as returned by cursor_index()
-    return (idx == mx*my*(m_grid_page+1)-1);
+    return idx == mx*my*(m_grid_page+1)-1;
 }
 #endif

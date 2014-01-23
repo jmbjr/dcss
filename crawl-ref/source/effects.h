@@ -3,7 +3,6 @@
  * @brief Misc stuff.
 **/
 
-
 #ifndef EFFECTS_H
 #define EFFECTS_H
 
@@ -34,11 +33,10 @@ int place_ring(vector<coord_def>& ring_points,
                int arc_occupancy,
                int& seen_count);
 
-class los_base;
-// Collect lists of points that are within LOS (under the given losgrid),
-// unoccupied, and not solid (walls/statues).
+// Collect lists of points that are within LOS, unoccupied, and not solid
+// (walls/statues).
 void collect_radius_points(vector<vector<coord_def> > &radius_points,
-                           const coord_def &origin, const los_base* los);
+                           const coord_def &origin, los_type los);
 
 void random_uselessness(int scroll_slot = -1);
 
@@ -49,18 +47,15 @@ void direct_effect(monster* src, spell_type spl, bolt &pbolt, actor *defender);
 
 void yell(bool force = false);
 
-void holy_word(int pow, int caster, const coord_def& where, bool silent = false,
-               actor *attacker = NULL);
+void holy_word(int pow, holy_word_source_type source, const coord_def& where,
+               bool silent = false, actor *attacker = NULL);
 
-void holy_word_monsters(coord_def where, int pow, int caster,
+void holy_word_monsters(coord_def where, int pow, holy_word_source_type source,
                         actor *attacker = NULL);
 
 int torment(actor *attacker, int taux, const coord_def& where);
 int torment_player(actor *attacker, int taux);
 int torment_monsters(coord_def where, actor *attacker, int taux);
-
-void immolation(int pow, int caster, coord_def where, bool known = false,
-                actor *attacker = NULL);
 
 void conduct_electricity(coord_def where, actor *attacker);
 

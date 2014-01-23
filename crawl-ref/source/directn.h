@@ -3,7 +3,6 @@
  * @brief Functions used when picking squares.
 **/
 
-
 #ifndef DIRECT_H
 #define DIRECT_H
 
@@ -21,11 +20,11 @@ public:
 };
 
 // An object that modifies the behaviour of the direction prompt.
-class targetting_behaviour
+class targeting_behaviour
 {
 public:
-    targetting_behaviour(bool just_looking = false);
-    virtual ~targetting_behaviour();
+    targeting_behaviour(bool just_looking = false);
+    virtual ~targeting_behaviour();
 
     // Returns a keystroke for the prompt.
     virtual int get_key();
@@ -66,6 +65,7 @@ public:
     bool isEndpoint;    // Does the player want the attack to stop at target?
     bool isCancel;      // user cancelled (usually <ESC> key)
     bool choseRay;      // user wants a specific beam
+
     coord_def target;   // target x,y or logical extension of beam to map edge
     coord_def delta;    // delta x and y if direction - always -1,0,1
     ray_def ray;        // ray chosen if necessary
@@ -74,7 +74,7 @@ public:
 struct direction_chooser_args
 {
     targetter *hitfunc;
-    targetting_type restricts;
+    targeting_type restricts;
     targ_mode_type mode;
     int range;
     bool just_looking;
@@ -83,10 +83,11 @@ struct direction_chooser_args
     bool may_target_self;
     const char *target_prefix;
     string top_prompt;
-    targetting_behaviour *behaviour;
+    targeting_behaviour *behaviour;
     bool cancel_at_self;
     bool show_floor_desc;
     desc_filter get_desc_func;
+    coord_def default_place;
 
     direction_chooser_args() :
         hitfunc(NULL),
@@ -101,7 +102,8 @@ struct direction_chooser_args
         behaviour(NULL),
         cancel_at_self(false),
         show_floor_desc(false),
-        get_desc_func(NULL) {}
+        get_desc_func(NULL),
+        default_place(0, 0) {}
 };
 
 class direction_chooser
@@ -115,7 +117,7 @@ private:
 
     bool do_main_loop();
 
-    // Return the location where targetting should start.
+    // Return the location where targeting should start.
     coord_def find_default_target() const;
 
     void handle_mlist_cycle_command(command_type key_command);
@@ -148,7 +150,7 @@ private:
     // Mark item for pickup, initiate movement.
     bool pickup_item();
 
-    // Return true if we need to abort targetting due to a signal.
+    // Return true if we need to abort targeting due to a signal.
     bool handle_signals();
 
     void reinitialize_move_flags();
@@ -157,17 +159,18 @@ private:
     const coord_def& target() const;
     void set_target(const coord_def& new_target);
 
-    string build_targetting_hint_string() const;
+    string build_targeting_hint_string() const;
 
     actor* targeted_actor() const;
     monster* targeted_monster() const;
 
+    bool find_default_monster_target(coord_def& result) const;
     // Functions which print things to the user.
     // Each one is commented with a sample output.
 
     // Whatever the caller defines. Typically something like:
     // Casting: Venom Bolt.
-    // Can be modified by the targetting_behaviour.
+    // Can be modified by the targeting_behaviour.
     void print_top_prompt() const;
 
     // Press: ? - help, Shift-Dir - straight line, t - megabat
@@ -207,7 +210,7 @@ private:
     // pointer is in bounds.
     bool tiles_update_target();
 
-    // Display the prompt when beginning targetting.
+    // Display the prompt when beginning targeting.
     void show_initial_prompt();
 
     void toggle_beam();
@@ -228,7 +231,7 @@ private:
 
     // Parameters.
     dist& moves;                // Output.
-    targetting_type restricts;   // What kind of target do we want?
+    targeting_type restricts;   // What kind of target do we want?
     targ_mode_type mode;        // Hostiles or friendlies?
     int range;                  // Max range to consider
     bool just_looking;
@@ -237,16 +240,19 @@ private:
     bool may_target_self;       // If true then player won't be prompted
     const char *target_prefix;  // A string displayed before describing target
     string top_prompt;          // Shown at the top of the message window
-    targetting_behaviour *behaviour; // Can be NULL for default
-    bool cancel_at_self;        // Disallow self-targetting?
+    targeting_behaviour *behaviour; // Can be NULL for default
+    bool cancel_at_self;        // Disallow self-targeting?
     bool show_floor_desc;       // Describe the floor of the current target
     targetter *hitfunc;         // Determine what would be hit.
+    coord_def default_place;    // Start somewhere other than you.pos()?
 
     // Internal data.
     ray_def beam;               // The (possibly invalid) beam.
     bool show_beam;             // Does the user want the beam displayed?
     bool have_beam;             // Is the currently stored beam valid?
     coord_def objfind_pos, monsfind_pos; // Cycling memory
+    bool valid_jump;            // If jumping, do we currently have a monster
+                                // target with a valid landing position?
 
     // What we need to redraw.
     bool need_beam_redraw;
@@ -256,10 +262,8 @@ private:
 
     bool show_items_once;       // Should we show items this time?
     bool target_unshifted;      // Do unshifted direction keys fire?
-
     // Default behaviour, saved across instances.
-    static targetting_behaviour stock_behaviour;
-
+    static targeting_behaviour stock_behaviour;
 };
 
 // Monster equipment description level.
@@ -282,8 +286,7 @@ string thing_do_grammar(description_level_type dtype, bool add_stop,
 string get_terse_square_desc(const coord_def &gc);
 void terse_describe_square(const coord_def &c, bool in_range = true);
 void full_describe_square(const coord_def &c);
-void get_square_desc(const coord_def &c, describe_info &inf,
-                     bool examine_mons = false, bool show_floor = false);
+void get_square_desc(const coord_def &c, describe_info &inf);
 
 void describe_floor();
 string get_monster_equipment_desc(const monster_info& mi,
@@ -307,6 +310,7 @@ string feature_description(dungeon_feature_type grid,
 vector<dungeon_feature_type> features_by_desc(const base_pattern &pattern);
 
 void full_describe_view(void);
+void do_look_around(const coord_def &whence = coord_def(0, 0));
 
 extern const struct coord_def Compass[9];
 

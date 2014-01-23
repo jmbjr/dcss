@@ -25,6 +25,7 @@
 #include "hints.h"
 #include "initfile.h"
 #include "itemname.h"
+#include "itemprop.h"
 #include "items.h"
 #include "libutil.h"
 #include "macro.h"
@@ -98,6 +99,7 @@ static void _initialize()
     info[0] = 0;
 
     reset_all_monsters();
+    init_anon();
 
     igrd.init(NON_ITEM);
     mgrd.init(NON_MONSTER);
@@ -144,11 +146,6 @@ static void _initialize()
     if (crawl_state.build_db)
         end(0);
 
-    if (!crawl_state.io_inited)
-        cio_init();
-
-    // System initialisation stuff.
-    textbackground(0);
 #ifdef USE_TILE_LOCAL
     if (!Options.tile_skip_title && crawl_state.title_screen)
     {
@@ -157,15 +154,21 @@ static void _initialize()
     }
 #endif
 
-    clrscr();
-
 #ifdef DEBUG_DIAGNOSTICS
     if (crawl_state.map_stat_gen)
     {
+        release_cli_signals();
         generate_map_stats();
         end(0, false);
     }
 #endif
+
+    if (!crawl_state.test_list)
+    {
+        if (!crawl_state.io_inited)
+            cio_init();
+        clrscr();
+    }
 
     if (crawl_state.test)
     {
@@ -177,11 +180,10 @@ static void _initialize()
 #ifdef USE_TILE
         init_player_doll();
 #endif
+        dgn_reset_level();
         crawl_state.show_more_prompt = false;
-        run_tests(true);
-        // Superfluous, just to make it clear that this is the end of
-        // the line.
-        end(0, false);
+        run_tests();
+        // doesn't return
 #else
         end(1, false, "Non-debug Crawl cannot run tests. "
             "Please use a debug build (defined FULLDEBUG, DEBUG_DIAGNOSTIC "
@@ -307,6 +309,10 @@ static void _post_init(bool newc)
     }
 
     // This just puts the view up for the first turn.
+    you.redraw_title = true;
+    textcolor(LIGHTGREY);
+    set_redraw_status(REDRAW_LINE_2_MASK | REDRAW_LINE_3_MASK);
+    print_stats();
     viewwindow();
 
     activate_notes(true);
@@ -524,9 +530,9 @@ static int _find_save(const vector<player_save_info>& chars, const string& name)
 
 static bool _game_defined(const newgame_def& ng)
 {
-    return (ng.type != NUM_GAME_TYPE
-            && ng.species != SP_UNKNOWN
-            && ng.job != JOB_UNKNOWN);
+    return ng.type != NUM_GAME_TYPE
+           && ng.species != SP_UNKNOWN
+           && ng.job != JOB_UNKNOWN;
 }
 
 static const int SCROLLER_MARGIN_X  = 18;
@@ -882,7 +888,7 @@ static void _choose_arena_teams(newgame_def* choice,
     cgotoxy(1, 2);
 
     char buf[80];
-    if (cancelable_get_line(buf, sizeof(buf)))
+    if (cancellable_get_line(buf, sizeof(buf)))
         game_ended();
     choice->arena_teams = buf;
     if (choice->arena_teams.empty())
@@ -914,7 +920,6 @@ bool startup_step()
     // Name from environment overwrites the one from command line.
     if (!SysEnv.crawl_name.empty())
         choice.name = SysEnv.crawl_name;
-
 
 #ifndef DGAMELAUNCH
     if (crawl_state.last_type == GAME_TYPE_TUTORIAL

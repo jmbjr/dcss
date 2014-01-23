@@ -35,7 +35,7 @@
 
  -- This defines rough standards used for monster placement in these subvaults.
  -- Try to stick with using this for most subvaults, depending on openness:
- -- "small for ~11x11, "large" for ~>14x14, and "medium" for some inbetween.
+ -- "small for ~11x11, "large" for ~>14x14, and "medium" for some in between.
  -- Otherwise, use "custom", or not bother with the function.
 
 function vaults_room_setup(e, nsubst_glyph, nsubst_size)
@@ -251,7 +251,7 @@ MONS:   Ijyb / Blork the orc / Urug / Erolcha / Snorg / Terence / Jessica /\
         Sigmund / Psyche / Erica / Agnes / Maud / Louise / Rupert /\
         Wiglaf / Norris / goblin
 KITEM:  ! = any potion / potion of confusion, \
-            any potion / potion of paralysis, any potion / potion of slowing
+            any potion / potion of paralysis, any potion
 KITEM:  $ = q:132 gold / q:66 gold / q:33 gold
 MAP
 vvvvvvvvvvvvv....
@@ -1704,4 +1704,42 @@ x.1....
 x......
 xbbbbbx
 xxxxxxx
+ENDMAP
+
+NAME: nicolae_vaults_ninety_degrees
+TAGS: vaults_room vaults_orient_s vaults_orient_w
+NSUBST: a = + / x, b = + / x
+SUBST: ( = (.00%%
+MAP
+...
+......
+.(......
+.....(...
+aaaa......
+...aaa..(..
+.....aa.....
+.(....aa....
+....(..aa.(..
+bbb..(..a....
+..bb....aa...
+...bb....a....
+.(..b.(..a.(..
+....b....a....
+ENDMAP
+
+NAME: nicolae_vaults_sealed_display
+WEIGHT: 5
+TAGS: vaults_room no_windows
+KMASK: >* = no_monster_gen
+KMONS: 0 = 0 band / 0
+MAP
+xxxxxxx
+x..%x>x
+x+xxx+x
+x..x**x
+x.0x**x
+x..xmmx
+x.....x
+x.....x
+xxxx..x
 ENDMAP

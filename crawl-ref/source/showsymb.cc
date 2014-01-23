@@ -24,16 +24,21 @@
 #include "travel.h"
 #include "viewchar.h"
 
-static
-unsigned short _cell_feat_show_colour(const map_cell& cell,
-                                      const coord_def& loc, bool coloured)
+static unsigned short _cell_feat_show_colour(const map_cell& cell,
+                                             const coord_def& loc,
+                                             bool coloured)
 {
     dungeon_feature_type feat = cell.feat();
     unsigned short colour = BLACK;
     const feature_def &fdef = get_feature_def(feat);
 
-    // These aren't shown mossy/bloody/slimy.
-    const bool norecolour = is_critical_feature(feat) || feat_is_trap(feat);
+    // These aren't shown mossy/bloody/slimy, nor obey vault recolouring.
+    const bool norecolour = feat > DNGN_OPEN_DOOR
+                            && feat != DNGN_STONE_ARCH
+                            && feat != DNGN_DRY_FOUNTAIN
+                            && feat != DNGN_EXPIRED_PORTAL
+                            // unknown traps won't get here
+                            || feat == DNGN_MALIGN_GATEWAY;
 
     if (is_stair_exclusion(loc))
         colour = Options.tc_excluded;
@@ -123,7 +128,7 @@ unsigned short _cell_feat_show_colour(const map_cell& cell,
             if (cell.flags & MAP_SILENCED)
                 colour = BLUE; // Silence gets darker
             else
-                colour = ETC_DEATH; // If no holy or silence
+                colour = MAGENTA; // If no holy or silence
         }
         else if (cell.flags & MAP_SILENCED)
             colour = CYAN; // Silence but no holy/unholy
@@ -133,8 +138,6 @@ unsigned short _cell_feat_show_colour(const map_cell& cell,
             colour = BLUE;
         else if (cell.flags & MAP_DISJUNCT)
             colour = ETC_DISJUNCTION;
-        else if (cell.flags & MAP_SUPPRESSED)
-            colour = LIGHTGREEN;
         else if (cell.flags & MAP_HOT)
             colour = ETC_FIRE;
     }
@@ -173,7 +176,7 @@ static monster_type _show_mons_type(const monster_info& mi)
 static int _get_mons_colour(const monster_info& mi)
 {
     if (crawl_state.viewport_monster_hp) // show hp directly on the monster
-        return (dam_colour(mi) | COLFLAG_ITEM_HEAP);
+        return dam_colour(mi) | COLFLAG_ITEM_HEAP;
 
     int col = mi.colour;
 
@@ -210,7 +213,6 @@ static int _get_mons_colour(const monster_info& mi)
     else if (mons_class_is_stationary(mi.type))
     {
         if (Options.feature_item_brand != CHATTR_NORMAL
-            && is_critical_feature(grd(mi.pos))
             && feat_stair_direction(grd(mi.pos)) != CMD_NO_CMD)
         {
             col |= COLFLAG_FEATURE_ITEM;
@@ -294,12 +296,16 @@ show_class get_cell_show_class(const map_cell& cell,
         return SH_MONSTER;
     }
 
-    if (cell.cloud() != CLOUD_NONE && cell.cloud() != CLOUD_GLOOM)
+    if (cell.cloud() != CLOUD_NONE)
         return SH_CLOUD;
 
-    if (feat_is_trap(cell.feat())
-     || is_critical_feature(cell.feat())
-     || (cell.feat() && cell.feat() < DNGN_MINMOVE))
+    const dungeon_feature_type feat = cell.feat();
+    if (feat && feat < DNGN_MINMOVE
+        || feat > DNGN_OPEN_DOOR
+           && feat != DNGN_ABANDONED_SHOP
+           && feat != DNGN_STONE_ARCH
+           && feat != DNGN_EXPIRED_PORTAL
+           && (feat < DNGN_FOUNTAIN_BLUE || feat > DNGN_DRY_FOUNTAIN))
     {
         return SH_FEATURE;
     }
@@ -453,14 +459,6 @@ static cglyph_t _get_cell_glyph_with_class(const map_cell& cell,
         g.ch = cell.seen() ? fdef.symbol : fdef.magic_symbol;
     }
 
-    if (cell_cloud == CLOUD_GLOOM)
-    {
-        if (coloured)
-            g.col = cell.cloud_colour();
-        else
-            g.col = DARKGREY;
-    }
-
     if (g.col)
         g.col = real_colour(g.col, loc);
 
@@ -480,7 +478,7 @@ cglyph_t get_cell_glyph(const coord_def& loc, bool only_stationary_monsters,
 
 ucs_t get_feat_symbol(dungeon_feature_type feat)
 {
-    return (get_feature_def(feat).symbol);
+    return get_feature_def(feat).symbol;
 }
 
 ucs_t get_item_symbol(show_item_type it)

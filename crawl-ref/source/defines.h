@@ -57,6 +57,7 @@ enum extra_monster_index_type
 {
     MAX_MONSTERS = 700,                  // max size of monster array {dlb}
     ANON_FRIENDLY_MONSTER = MAX_MONSTERS,// unknown/dead ally, for actor blaming
+    YOU_FAULTLESS,                       // full xp but no penalty (reflection)
     NON_MONSTER  = NON_ENTITY,           // no monster
 
     MHITNOT = NON_MONSTER,
@@ -73,6 +74,7 @@ enum extra_monster_index_type
 #define MAX_NUM_ATTACKS 4
 
 // size of Pan monster sets. Also used for wave data in ZotDef.
+#define PAN_MONS_ALLOC 10
 #define MAX_MONS_ALLOC 20
 
 #define MAX_SUBTYPES   60
@@ -225,7 +227,7 @@ const int ANTITRAIN_PENALTY = 2;
 #define NUMBER_OF_RUNES_NEEDED    3
 
 // Size of unique_items in player class
-#define MAX_UNRANDARTS 100
+#define MAX_UNRANDARTS 150
 
 // Haste/slow boost.
 #define haste_mul(x) div_rand_round((x) * 3, 2)

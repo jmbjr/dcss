@@ -21,7 +21,6 @@
 #include "colour.h"
 #include "coordit.h"
 #include "database.h"
-#include "describe.h"
 #include "itemname.h"
 #include "itemprop.h"
 #include "items.h"
@@ -135,12 +134,6 @@ static bool _god_fits_artefact(const god_type which_god, const item_def &item,
 
     switch (which_god)
     {
-    case GOD_BEOGH:
-        // Orc god: no orc slaying.
-        if (brand == SPWPN_ORC_SLAYING)
-            return false;
-        break;
-
     case GOD_ELYVILON:
         // Peaceful healer god: no berserking.
         if (artefact_wpn_property(item, ARTP_ANGRY)
@@ -305,7 +298,8 @@ string replace_name_parts(const string &name_in, const item_def& item)
 // Functions defined in art-func.h are referenced in art-data.h
 #include "art-func.h"
 
-static const unrandart_entry unranddata[] = {
+static const unrandart_entry unranddata[] =
+{
 #include "art-data.h"
 };
 
@@ -321,32 +315,32 @@ bool is_known_artefact(const item_def &item)
 
 bool is_artefact(const item_def &item)
 {
-    return (item.flags & ISFLAG_ARTEFACT_MASK);
+    return item.flags & ISFLAG_ARTEFACT_MASK;
 }
 
 // returns true is item is a pure randart
 bool is_random_artefact(const item_def &item)
 {
-    return (item.flags & ISFLAG_RANDART);
+    return item.flags & ISFLAG_RANDART;
 }
 
 // returns true if item in an unrandart
 bool is_unrandom_artefact(const item_def &item)
 {
-    return (item.flags & ISFLAG_UNRANDART);
+    return item.flags & ISFLAG_UNRANDART;
 }
 
 bool is_special_unrandom_artefact(const item_def &item)
 {
-    return (item.flags & ISFLAG_UNRANDART
-            && (_seekunrandart(item)->flags & UNRAND_FLAG_SPECIAL));
+    return item.flags & ISFLAG_UNRANDART
+           && (_seekunrandart(item)->flags & UNRAND_FLAG_SPECIAL);
 }
 
 bool is_randapp_artefact(const item_def &item)
 {
-    return (item.flags & ISFLAG_UNRANDART
-            && !(item.flags & ISFLAG_KNOW_TYPE)
-            && (_seekunrandart(item)->flags & UNRAND_FLAG_RANDAPP));
+    return item.flags & ISFLAG_UNRANDART
+           && !(item.flags & ISFLAG_KNOW_TYPE)
+           && (_seekunrandart(item)->flags & UNRAND_FLAG_RANDAPP);
 }
 
 void autoid_unrand(item_def &item)
@@ -642,7 +636,7 @@ static int _randart_add_one_property(const item_def &item,
     }
     while (false);
 
-    return (negench ? -1 : 1);
+    return negench ? -1 : 1;
 }
 
 // An artefact will pass this check if it has any non-stat properties, and
@@ -708,19 +702,7 @@ static void _get_randart_properties(const item_def &item,
 
     if (aclass == OBJ_WEAPONS) // Only weapons get brands, of course.
     {
-        proprt[ARTP_BRAND] = SPWPN_FLAMING + random2(16);        // brand
-
-        if (one_chance_in(6))
-            proprt[ARTP_BRAND] = SPWPN_FLAMING + random2(2);
-
-        if (one_chance_in(6))
-            proprt[ARTP_BRAND] = SPWPN_ORC_SLAYING + random2(5);
-
-        if (one_chance_in(6))
-            proprt[ARTP_BRAND] = SPWPN_VORPAL;
-
-        if (proprt[ARTP_BRAND] == SPWPN_PROTECTION || proprt[ARTP_BRAND] == SPWPN_EVASION)
-            proprt[ARTP_BRAND] = SPWPN_NORMAL;      // no protection or evasion
+        power_level++; // at least a brand
 
         if (is_range_weapon(item))
         {
@@ -744,50 +726,42 @@ static void _get_randart_properties(const item_def &item,
                     proprt[ARTP_BRAND] = SPWPN_PENETRATION;
             }
         }
-
-        // Quarter of the chance of distortion elsewhere.
-        if (!is_range_weapon(item) && one_chance_in(100))
-            proprt[ARTP_BRAND] = SPWPN_DISTORTION;
-        else if (is_demonic(item))
+        else if (is_demonic(item) && x_chance_in_y(7, 9))
         {
-            switch (random2(9))
-            {
-            case 0:
-                proprt[ARTP_BRAND] = SPWPN_DRAINING;
-                break;
-            case 1:
-                proprt[ARTP_BRAND] = SPWPN_FLAMING;
-                break;
-            case 2:
-                proprt[ARTP_BRAND] = SPWPN_FREEZING;
-                break;
-            case 3:
-                proprt[ARTP_BRAND] = SPWPN_ELECTROCUTION;
-                break;
-            case 4:
-                proprt[ARTP_BRAND] = SPWPN_VAMPIRICISM;
-                break;
-            case 5:
-                proprt[ARTP_BRAND] = SPWPN_PAIN;
-                break;
-            case 6:
-                proprt[ARTP_BRAND] = SPWPN_VENOM;
-                break;
-            default:
-                power_level -= 2;
-            }
-            power_level += 2;
+            proprt[ARTP_BRAND] = random_choose(
+                SPWPN_DRAINING,
+                SPWPN_FLAMING,
+                SPWPN_FREEZING,
+                SPWPN_ELECTROCUTION,
+                SPWPN_VAMPIRICISM,
+                SPWPN_PAIN,
+                SPWPN_VENOM,
+                -1);
+            power_level++; // Demon weapons get an extra penalty -- why?
+            // fall back to regular melee brands 2/9 of the time
         }
-        else if (one_chance_in(3))
-            proprt[ARTP_BRAND] = SPWPN_NORMAL;
         else
-            power_level++;
-
-        if (!is_weapon_brand_ok(atype, proprt[ARTP_BRAND], true))
         {
-            proprt[ARTP_BRAND] = SPWPN_NORMAL;
-            power_level--;
+            proprt[ARTP_BRAND] = random_choose_weighted(
+                73, SPWPN_VORPAL,
+                34, SPWPN_FLAMING,
+                34, SPWPN_FREEZING,
+                26, SPWPN_DRAGON_SLAYING,
+                26, SPWPN_VENOM,
+                26, SPWPN_DRAINING,
+                13, SPWPN_HOLY_WRATH,
+                13, SPWPN_ELECTROCUTION,
+                13, SPWPN_SPEED,
+                13, SPWPN_VAMPIRICISM,
+                13, SPWPN_PAIN,
+                13, SPWPN_ANTIMAGIC,
+                 3, SPWPN_DISTORTION,
+                 0);
         }
+
+        // no brand = magic flag to reject and retry
+        if (!is_weapon_brand_ok(atype, proprt[ARTP_BRAND], true))
+            proprt[ARTP_BRAND] = SPWPN_NORMAL;
     }
 
     if (!one_chance_in(5))
@@ -1003,13 +977,13 @@ static void _get_randart_properties(const item_def &item,
     }
 
     if (!done_powers && one_chance_in(10) && aclass == OBJ_ARMOUR
-        && (atype == ARM_CAP || atype == ARM_SHIELD))
+        && (atype == ARM_HAT || atype == ARM_SHIELD))
     {
         proprt[ARTP_BRAND] = SPARM_SPIRIT_SHIELD;
         power_level++;
     }
 
-    // Armours get fewer powers, and are also less likely to be cursed
+    // Armours get fewer powers, and are also more likely to be cursed
     // than weapons.
     if (aclass == OBJ_ARMOUR)
         power_level -= 4;
@@ -1191,23 +1165,38 @@ static bool _init_artefact_book(item_def &book)
     return book_good;
 }
 
+void setup_unrandart(item_def &item)
+{
+    ASSERT(is_unrandom_artefact(item));
+    CrawlVector &rap = item.props[ARTEFACT_PROPS_KEY].get_vector();
+    const unrandart_entry *unrand = _seekunrandart(item);
+
+    if (unrand->prpty[ARTP_NO_UPGRADE] && item.props.exists(ARTEFACT_NAME_KEY))
+        return; // don't mangle mutable items
+
+    for (int i = 0; i < ART_PROPERTIES; i++)
+        rap[i] = static_cast<short>(unrand->prpty[i]);
+
+    item.base_type = unrand->base_type;
+    item.sub_type  = unrand->sub_type;
+    item.plus      = unrand->plus;
+    item.plus2     = unrand->plus2;
+    item.colour    = unrand->colour;
+}
+
 static bool _init_artefact_properties(item_def &item)
 {
     ASSERT(is_artefact(item));
 
+    if (is_unrandom_artefact(item))
+    {
+        setup_unrandart(item);
+        return true;
+    }
+
     CrawlVector &rap = item.props[ARTEFACT_PROPS_KEY].get_vector();
     for (vec_size i = 0; i < ART_PROPERTIES; i++)
         rap[i] = static_cast<short>(0);
-
-    if (is_unrandom_artefact(item))
-    {
-        const unrandart_entry *unrand = _seekunrandart(item);
-
-        for (int i = 0; i < ART_PROPERTIES; i++)
-            rap[i] = static_cast<short>(unrand->prpty[i]);
-
-        return true;
-    }
 
     if (item.base_type == OBJ_BOOKS)
         return _init_artefact_book(item);
@@ -1275,7 +1264,6 @@ void artefact_wpn_properties(const item_def &item,
     else
         _get_randart_properties(item, proprt);
 }
-
 
 void artefact_wpn_properties(const item_def &item,
                               artefact_properties_t &proprt)
@@ -1595,12 +1583,10 @@ int find_okay_unrandart(uint8_t aclass, uint8_t atype, bool in_abyss)
                && (aclass != OBJ_WEAPONS
                    || weapon_skill(entry->base_type, atype) !=
                       weapon_skill(entry->base_type, entry->sub_type)
-                   || hands_reqd(entry->base_type,
-                                 atype,
-                                 you.body_size()) !=
-                      hands_reqd(entry->base_type,
-                                 entry->sub_type,
-                                 you.body_size())))
+                   || hands_reqd(&you, entry->base_type,
+                                 atype) !=
+                      hands_reqd(&you, entry->base_type,
+                                 entry->sub_type)))
         {
             continue;
         }
@@ -1823,8 +1809,8 @@ bool randart_is_bad(const item_def &item, artefact_properties_t &proprt)
         return true;
     }
 
-    return (_randart_is_redundant(item, proprt)
-            || _randart_is_conflicting(item, proprt));
+    return _randart_is_redundant(item, proprt)
+           || _randart_is_conflicting(item, proprt);
 }
 
 bool randart_is_bad(const item_def &item)
@@ -1943,13 +1929,10 @@ static void _make_faerie_armour(item_def &item)
             continue;
         }
 
-        // These make little sense for a casting mon.
-        if (artefact_wpn_property(doodad, ARTP_BERSERK)
-            || artefact_wpn_property(doodad, ARTP_ANGRY)
-            || artefact_wpn_property(doodad, ARTP_PREVENT_SPELLCASTING)
-            || artefact_wpn_property(doodad, ARTP_CAUSE_TELEPORTATION)
-            || artefact_wpn_property(doodad, ARTP_PREVENT_TELEPORTATION)
-            || artefact_wpn_property(doodad, ARTP_MUTAGENIC))
+        // -CAST makes no sense on someone called "the Enchantress",
+        // +TELE is not implemented for monsters yet.
+        if (artefact_wpn_property(doodad, ARTP_PREVENT_SPELLCASTING)
+            || artefact_wpn_property(doodad, ARTP_CAUSE_TELEPORTATION))
         {
             continue;
         }
@@ -1971,7 +1954,7 @@ static void _make_faerie_armour(item_def &item)
     doodad.props[ARTEFACT_APPEAR_KEY].get_string()
         = item.props[ARTEFACT_APPEAR_KEY].get_string();
     item.props = doodad.props;
-    item.plus = 2 + random2(5);
+    item.plus = random2(6) + random2(6) - 2;
 }
 
 static jewellery_type octoring_types[8] =
@@ -2010,11 +1993,6 @@ bool make_item_unrandart(item_def &item, int unrand_index)
     item.special = unrand_index;
 
     const unrandart_entry *unrand = &unranddata[unrand_index - UNRAND_START];
-    item.base_type = unrand->base_type;
-    item.sub_type  = unrand->sub_type;
-    item.plus      = unrand->plus;
-    item.plus2     = unrand->plus2;
-    item.colour    = unrand->colour;
 
     item.flags |= ISFLAG_UNRANDART;
     _artefact_setup_prop_vectors(item);
@@ -2048,6 +2026,8 @@ bool make_item_unrandart(item_def &item, int unrand_index)
         _make_faerie_armour(item);
     else if (unrand_index == UNRAND_OCTOPUS_KING_RING)
         _make_octoring(item);
+    else if (unrand_index == UNRAND_ARGA)
+        set_equip_race(item, ISFLAG_DWARVEN);
     else if (unrand_index == UNRAND_WOE && you.species != SP_FELID
              && !you.could_wield(item, true, true))
     {

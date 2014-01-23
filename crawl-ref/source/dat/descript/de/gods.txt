@@ -1,16 +1,4 @@
 %%%%
-No God
-
-"Gott ist tot!" – Nietzsche (Wenn du das hier jemals siehst, ist es ein Fehler)
-%%%%
-random
-
-Random (Wenn du das hier jemals siehst, ist es ein Fehler)
-%%%%
-Buggy
-
-Buggy (Wenn du das hier jemals siehst, ist es ein Fehler)
-%%%%
 Zin
 
 Zin ist ein Gott für die, die sich auf innere Stärke konzentrieren möchten.
@@ -214,7 +202,7 @@ Xom powers
 
 Xom anzubeten bedeutet, riskant zu leben. In guter Laune wird Xom dich mit
 Geschenken überhäufen, doch zu anderen Zeitpunkten könnte der launische Gott
-sich dazu entscheiden, "etwas Spannung ins Spiel zu bringen", und dich so ins
+sich dazu entscheiden, „etwas Spannung ins Spiel zu bringen“, und dich so ins
 Verderben zu stürzen. Wenn du dich als der stärkere erweist, umso besser – wenn
 nicht, nun, es wird auch andere Spielzeuge geben...
 %%%%
@@ -273,12 +261,17 @@ Rettung sicher sein.
 %%%%
 Lugonu powers
 
-Anhänger Lugonus erhalten die Kraft, den Abgrund nach Belieben zu verlassen,
-Monster dorthin zu verbannen, und sich schließlich selbst an diesen Ort des
-Chaos zu transportieren – das kostet sie allerdings einen Teil ihrer Seele.
-Außerdem können sie bei ihren Gegnern Formveränderungsschaden verursachen und
-die geordnete Welt beschädigen, um ein Tor zu öffnen, durch das Wesen aus dem
-Abgrund kommen können.
+Lugonus Anhänger erhalten Kräfte, um den Abgrund bei Bedarf zu verlassen, den
+umgebenden Raum zu verformen, und um Monster in den Abgrund zu verbannen.
+Später werden sie in der Lage sein, die geordnete Welt zu verderben, für die
+Kreaturen des Abgrunds ein Tor zur Passage zu öffnen und sich selbst direkt in
+den Abgrund zu begeben. Lugonu wird vermutlich anbieten die Waffe des Anhängers
+zu verderben, indem sie diese mit den verzerrenden Energien des Abgrundes
+durchtränkt. Zudem wird sie ihre Anhänger vor den normalerweise schädlichen
+Effekten schützen, die das Ablegen einer solchen Waffe mit sich bringt. Lugonu
+erwartet von ihren Anhängern, dass sie unendliches Chaos in der Oberwelt
+verbreiten und gewährt deswegen ihren Gläubigen keine Frömmigkeit, wenn diese
+sich im Abgrund aufhalten.
 %%%%
 Beogh powers
 
@@ -287,7 +280,11 @@ benutzen. Seine Anhänger können ihre Feinde peinigen und werden sogar eigene
 orkische Anhänger erhalten, die von Beogh im Kampf gesegnet und auf der selben
 Ebene zurückgerufen werden können. Schließlich werden sie die Kraft erhalten,
 auf Wasser zu gehen. Beogh wird manchmal direkt eingreifen, um das Leben eines
-Anhängers zu schützen.
+Anhängers zu schützen. {{
+    if you.race() == "Lava Orc" then
+        return "Beogh unterdrückt die Hitzeaura von Lava Orc Anhängern."
+    end
+}}
 %%%%
 Fedhas powers
 

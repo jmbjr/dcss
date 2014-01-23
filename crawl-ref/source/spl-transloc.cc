@@ -13,6 +13,7 @@
 #include "externs.h"
 
 #include "abyss.h"
+#include "act-iter.h"
 #include "areas.h"
 #include "cloud.h"
 #include "coord.h"
@@ -23,7 +24,6 @@
 #include "env.h"
 #include "fprop.h"
 #include "invent.h"
-#include "item_use.h"
 #include "itemprop.h"
 #include "items.h"
 #include "libutil.h"
@@ -31,9 +31,7 @@
 #include "message.h"
 #include "misc.h"
 #include "mon-behv.h"
-#include "mon-iter.h"
 #include "mon-util.h"
-#include "mon-stuff.h"
 #include "orb.h"
 #include "random.h"
 #include "shout.h"
@@ -53,7 +51,7 @@
 static bool _abyss_blocks_teleport(bool cblink)
 {
     // Controlled Blink (the spell) works more reliably in the Abyss.
-    return (cblink ? coinflip() : !one_chance_in(3));
+    return cblink ? coinflip() : !one_chance_in(3);
 }
 
 // XXX: can miscast before cancelling.
@@ -72,7 +70,7 @@ spret_type cast_disjunction(int pow, bool fail)
     you.duration[DUR_DISJUNCTION] = min(90 + pow / 12,
         max(you.duration[DUR_DISJUNCTION] + rand,
         30 + rand));
-    contaminate_player(1, true);
+    contaminate_player(1000, true);
     disjunction();
     return SPRET_SUCCESS;
 }
@@ -94,7 +92,7 @@ void disjunction()
         if (mvec.empty())
             return;
         // blink should be isotropic
-        random_shuffle(mvec.begin(), mvec.end());
+        shuffle_array(mvec);
         for (vector<monster*>::iterator mitr = mvec.begin();
             mitr != mvec.end(); mitr++)
         {
@@ -158,10 +156,10 @@ int blink(int pow, bool high_level_controlled_blink, bool wizard_blink,
     {
         if (pre_msg)
             mpr(pre_msg->c_str());
-        mpr("The orb interferes with your control of the blink!", MSGCH_ORB);
+        mprf(MSGCH_ORB, "The orb interferes with your control of the blink!");
         // abort still wastes the turn
         if (high_level_controlled_blink && coinflip())
-            return (cast_semi_controlled_blink(pow, false, false) ? 1 : 0);
+            return cast_semi_controlled_blink(pow, false, false) ? 1 : 0;
         random_blink(false);
     }
     else if (!allow_control_teleport(true) && !wizard_blink)
@@ -171,7 +169,7 @@ int blink(int pow, bool high_level_controlled_blink, bool wizard_blink,
         mpr("A powerful magic interferes with your control of the blink.");
         // FIXME: cancel shouldn't waste a turn here -- need to rework Abyss handling
         if (high_level_controlled_blink)
-            return (cast_semi_controlled_blink(pow, false/*true*/, false) ? 1 : -1);
+            return cast_semi_controlled_blink(pow, false/*true*/, false) ? 1 : -1;
         random_blink(false);
     }
     else
@@ -264,10 +262,10 @@ int blink(int pow, bool high_level_controlled_blink, bool wizard_blink,
 
         // Allow wizard blink to send player into walls, in case the
         // user wants to alter that grid to something else.
-        if (wizard_blink && feat_is_solid(grd(beam.target)))
+        if (wizard_blink && cell_is_solid(beam.target))
             grd(beam.target) = DNGN_FLOOR;
 
-        if (feat_is_solid(grd(beam.target)) || monster_at(beam.target))
+        if (cell_is_solid(beam.target) || monster_at(beam.target))
         {
             mpr("Oops! Maybe something was there already.");
             random_blink(false);
@@ -288,7 +286,7 @@ int blink(int pow, bool high_level_controlled_blink, bool wizard_blink,
 
             // Controlling teleport contaminates the player. -- bwr
             if (!wizard_blink)
-                contaminate_player(1, true);
+                contaminate_player(1000, true);
         }
     }
 
@@ -342,7 +340,8 @@ void random_blink(bool allow_partial_control, bool override_abyss, bool override
         move_player_to_grid(target, false, true);
 
         // Leave a purple cloud.
-        place_cloud(CLOUD_TLOC_ENERGY, origin, 1 + random2(3), &you);
+        if (!cell_is_solid(origin))
+            place_cloud(CLOUD_TLOC_ENERGY, origin, 1 + random2(3), &you);
     }
 }
 
@@ -357,7 +356,7 @@ bool allow_control_teleport(bool quiet)
     if (!quiet && !retval && player_control_teleport())
     {
         if (orb_haloed(you.pos()))
-            mpr("The orb prevents control of your teleportation!", MSGCH_ORB);
+            mprf(MSGCH_ORB, "The orb prevents control of your teleportation!");
         else if (you.beheld())
             mpr("It is impossible to concentrate on your destination whilst mesmerised.");
         else
@@ -404,7 +403,7 @@ void you_teleport(void)
         }
         else if (orb_haloed(you.pos()))
         {
-            mpr("You feel the orb delaying this translocation!", MSGCH_ORB);
+            mprf(MSGCH_ORB, "You feel the orb delaying this translocation!");
             teleport_delay += 5 + random2(5);
         }
 
@@ -447,8 +446,6 @@ static void _handle_teleport_update(bool large_change, const coord_def old_pos)
             else if (see_cell)
                 behaviour_event(*mi, ME_EVAL);
         }
-
-        handle_interrupted_swap(true);
     }
 
 #ifdef USE_TILE
@@ -530,10 +527,10 @@ static bool _teleport_player(bool allow_control, bool new_abyss_area,
             // location, so cancel the teleport.
             if (crawl_state.seen_hups)
             {
-                mpr("Controlled teleport interrupted by HUP signal, "
-                    "cancelling teleport.", MSGCH_ERROR);
+                mprf(MSGCH_ERROR, "Controlled teleport interrupted by HUP signal, "
+                                  "cancelling teleport.");
                 if (!wizard_tele)
-                    contaminate_player(1, true);
+                    contaminate_player(1000, true);
                 return false;
             }
 
@@ -550,7 +547,7 @@ static bool _teleport_player(bool allow_control, bool new_abyss_area,
                     }
                 }
                 if (!wizard_tele)
-                    contaminate_player(1, true);
+                    contaminate_player(1000, true);
                 return false;
             }
 
@@ -606,7 +603,7 @@ static bool _teleport_player(bool allow_control, bool new_abyss_area,
             {
                 if (wizard_tele)
                 {
-                    mpr("Even you can't go there right now. Sorry!", MSGCH_WARN);
+                    mprf(MSGCH_WARN, "Even you can't go there right now. Sorry!");
                     return false;
                 }
 
@@ -618,24 +615,24 @@ static bool _teleport_player(bool allow_control, bool new_abyss_area,
             {
                 is_controlled = false;
                 large_change = false;
-                mpr("A strong magical force throws you back!", MSGCH_WARN);
+                mprf(MSGCH_WARN, "A strong magical force throws you back!");
             }
             else
             {
                 // Leave a purple cloud.
-                if (!wizard_tele)
+                if (!wizard_tele && !cell_is_solid(old_pos))
                     place_cloud(CLOUD_TLOC_ENERGY, old_pos, 1 + random2(3), &you);
 
                 move_player_to_grid(pos, false, true);
 
                 // Controlling teleport contaminates the player. - bwr
                 if (!wizard_tele)
-                    contaminate_player(1, true);
+                    contaminate_player(1000, true);
             }
             // End teleport control.
             if (you.duration[DUR_CONTROL_TELEPORT])
             {
-                mpr("You feel uncertain.", MSGCH_DURATION);
+                mprf(MSGCH_DURATION, "You feel uncertain.");
                 you.duration[DUR_CONTROL_TELEPORT] = 0;
             }
         }
@@ -672,15 +669,22 @@ static bool _teleport_player(bool allow_control, bool new_abyss_area,
             need_distance_check = success;
         }
 
+        int tries = 500;
         do
             newpos = random_in_bounds();
-        while (_cell_vetoes_teleport(newpos)
-               || (newpos - old_pos).abs() > dist_range(range)
-               || need_distance_check && (newpos - centre).abs()
-                                          <= dist_range(min(range - 1, 34))
-               || testbits(env.pgrid(newpos), FPROP_NO_RTELE_INTO));
+        while (--tries > 0
+               && (_cell_vetoes_teleport(newpos)
+                   || (newpos - old_pos).abs() > dist_range(range)
+                   || need_distance_check && (newpos - centre).abs()
+                                              <= dist_range(min(range - 1, 34))
+                   || testbits(env.pgrid(newpos), FPROP_NO_RTELE_INTO)));
 
-        if (newpos == old_pos)
+        // Running out of tries should only happen for limited-range teleports,
+        // which are all involuntary; no message.  Return false so it doesn't
+        // count as a random teleport for Xom purposes.
+        if (tries == 0)
+            return false;
+        else if (newpos == old_pos)
             mpr("Your surroundings flicker for a moment.");
         else if (you.see_cell(newpos))
             mpr("Your surroundings seem slightly different.");
@@ -691,13 +695,14 @@ static bool _teleport_player(bool allow_control, bool new_abyss_area,
         }
 
         // Leave a purple cloud.
-        place_cloud(CLOUD_TLOC_ENERGY, old_pos, 1 + random2(3), &you);
+        if (!cell_is_solid(old_pos))
+            place_cloud(CLOUD_TLOC_ENERGY, old_pos, 1 + random2(3), &you);
 
         move_player_to_grid(newpos, false, true);
     }
 
     _handle_teleport_update(large_change, old_pos);
-    return (!is_controlled);
+    return !is_controlled;
 }
 
 bool you_teleport_to(const coord_def where_to, bool move_monsters)
@@ -758,7 +763,8 @@ bool you_teleport_to(const coord_def where_to, bool move_monsters)
 
     // If we got this far, we're teleporting the player.
     // Leave a purple cloud.
-    place_cloud(CLOUD_TLOC_ENERGY, old_pos, 1 + random2(3), &you);
+    if (!cell_is_solid(old_pos))
+        place_cloud(CLOUD_TLOC_ENERGY, old_pos, 1 + random2(3), &you);
 
     bool large_change = you.see_cell(where);
 
@@ -784,10 +790,7 @@ void you_teleport_now(bool allow_control, bool new_abyss_area,
         && (player_in_branch(BRANCH_LABYRINTH)
             || !player_in_branch(BRANCH_ABYSS) && player_in_a_dangerous_place()))
     {
-        if (player_in_branch(BRANCH_LABYRINTH) && you.species == SP_MINOTAUR)
-            xom_is_stimulated(100);
-        else
-            xom_is_stimulated(200);
+        xom_is_stimulated(200);
     }
 }
 
@@ -851,10 +854,12 @@ spret_type cast_apportation(int pow, bolt& beam, bool fail)
 
     item_def& item = mitm[item_idx];
 
-    // Can't apport the Orb in zotdef
-    if (crawl_state.game_is_zotdef() && item_is_orb(item))
+    // Can't apport the Orb in zotdef or sprint
+    if (item_is_orb(item)
+        && (crawl_state.game_is_zotdef()
+            || crawl_state.game_is_sprint()))
     {
-        mpr("You cannot apport the sacred Orb!");
+        mpr("You cannot apport the Orb!");
         return SPRET_ABORT;
     }
 
@@ -996,7 +1001,7 @@ static bool _quadrant_blink(coord_def dir, int pow)
     // walls nearby.
     coord_def target;
     bool found = false;
-    for (int i = 0; i < (pow*pow) / 500 + 1; ++i)
+    for (int i = 0; i < pow*pow / 500 + 1; ++i)
     {
         // Find a space near our base point...
         // First try to find a random square not adjacent to the basepoint,
@@ -1030,7 +1035,8 @@ static bool _quadrant_blink(coord_def dir, int pow)
     move_player_to_grid(target, false, true);
 
     // Leave a purple cloud.
-    place_cloud(CLOUD_TLOC_ENERGY, origin, 1 + random2(3), &you);
+    if (!cell_is_solid(origin))
+        place_cloud(CLOUD_TLOC_ENERGY, origin, 1 + random2(3), &you);
 
     return true;
 }
@@ -1044,7 +1050,7 @@ spret_type cast_semi_controlled_blink(int pow, bool cheap_cancel, bool end_ctele
 
     while (1)
     {
-        mpr("Which direction? [ESC to cancel]", MSGCH_PROMPT);
+        mprf(MSGCH_PROMPT, "Which direction? [ESC to cancel]");
         direction(bmove, args);
 
         if (crawl_state.seen_hups)
@@ -1070,11 +1076,11 @@ spret_type cast_semi_controlled_blink(int pow, bool cheap_cancel, bool end_ctele
     if (you.attempt_escape(2) && _quadrant_blink(bmove.delta, pow))
     {
         // Controlled blink causes glowing.
-        contaminate_player(1, true);
+        contaminate_player(1000, true);
         // End teleport control if this was a random blink upgraded by cTele.
         if (end_ctele && you.duration[DUR_CONTROL_TELEPORT])
         {
-            mpr("You feel uncertain.", MSGCH_DURATION);
+            mprf(MSGCH_DURATION, "You feel uncertain.");
             you.duration[DUR_CONTROL_TELEPORT] = 0;
         }
     }

@@ -38,21 +38,15 @@ function ice_cave_portal(e)
   e.lua_marker('O',
       timed_marker {
         disappear = "The archway melts and disappears.",
-        desc = "frozen archway",
         entity = 'archway',
-        dst = "IceCv",
-        dstname = "ice_cave",
-        overview = "frozen archway",
         turns = timeout_turns_long,
         turns_short = timeout_turns_short,
         floor = "expired_portal",
         feat_tile = "dngn_portal_ice_cave_gone",
         msg = messager })
-  e.tags("uniq_ice_cave chance_icecave")
-  e.chance("5%")
-  e.kfeat("O = enter_portal_vault")
-  e.colour("O = white")
-  e.tile("O = dngn_portal_ice_cave")
+  e.tags("uniq_icecv chance_icecave")
+  e.chance(500)
+  e.kfeat("O = enter_ice_cave")
   e.colour("X = white")
   e.kfeat("X = x")
   e.rtile("X = wall_zot_cyan")
@@ -98,16 +92,12 @@ end
 -- substitutions have been performed:
 -- : ice_cave_appearance(_G)
 function ice_cave_appearance(e)
-  e.kfeat("< = exit_portal_vault")
-  e.colour("< = white")
-  e.tile("< = dngn_portal_ice_cave")
+  e.kfeat("< = exit_ice_cave")
   -- Don't trap amphibious players.
   e.kprop("w = no_rtele_into")
 
   -- Alter short feature descriptions for all ice cave destination vaults.
   e.set_feature_name("rock_wall", "ice covered rock wall")
-  e.set_feature_name("exit_portal_vault",
-                             "ice covered gate leading back out of here")
   e.set_feature_name("stone_arch", "ice choked empty arch of ancient stone")
   e.set_feature_name("shallow_water", "Some ice crusted shallow water")
   e.set_feature_name("deep_water", "Some ice crusted deep water")
@@ -138,7 +128,7 @@ function savage_simulacrum(e)
    savage_ice = "wolf spider simulacrum w:2 / elephant simulacrum w:2 / " ..
                 "polar bear simulacrum w:4 / alligator simulacrum w:2 / " ..
                 "death yak simulacrum w:4 / wolf simulacrum w:4 / " ..
-                "rock worm simulacrum w:1 / swamp dragon simulacrum w:1"
+                "swamp dragon simulacrum w:1"
 end
 
 function cruel_simulacrum(e)
@@ -187,21 +177,21 @@ function ice_cave_caverns_undead_demon_monster_set(e)
   e.mons("freezing wraith / blue devil / white very ugly thing w:1")
   e.mons("patrolling ice fiend")
   e.kmons("8 = blizzard demon")
-  e.shuffle("7` / `8 / `8")
+  e.shuffle("7` / 7` / `8")
 end
 
 -- : ice_cave_caverns_natural_giant_monster_set(_G)
 function ice_cave_caverns_natural_giant_monster_set(e)
-  e.mons("wolf / yak w:3 / nothing w:1")
+  e.mons("wolf w:5 / yak w:3 / nothing w:1")
   e.mons("polar bear / nothing w:5")
   e.mons("ice statue")
   e.mons("polar bear / death yak w:5")
   e.mons("polar bear / yak")
-  e.mons("wolf")
+  e.mons("wolf / nothing w:3")
   e.mons("patrolling frost giant / patrolling white draconian w:1")
 end
 
-function ice_caven_item_attributes(e)
+function ice_cave_item_attributes(e)
   freezeweap = "ego:freezing ident:type"
   goodfreezeweap = "ego:freezing good_item ident:type"
   coldres = "ego:cold_resistance ident:type"
@@ -210,19 +200,19 @@ end
 
 -- : ice_cave_caverns_undead_demon_loot(_G)
 function ice_cave_caverns_undead_demon_loot(e)
-  ice_caven_item_attributes(e)
-  e.item("cloak " .. coldres .. " good_item w:8 / wizard hat good_item / \
+  ice_cave_item_attributes(e)
+  e.item("cloak " .. coldres .. " good_item w:8 / hat good_item / \
           pair of gloves good_item / pair of boots good_item / nothing")
   e.item("book of ice / book of unlife / staff of cold / staff of death / \
           randbook disc:ice disc2:necromancy numspells:6 w:2 / nothing w:30")
   e.item("ring of ice / ring of protection from cold / \
-          ring of life protection / wand of cold / wand of draining / \
+          ring of positive energy / wand of cold / wand of draining / \
           any ring w:1 / any wand w:1 / nothing")
 end
 
 -- : ice_cave_caverns_natural_giant_loot(_G)
 function ice_cave_caverns_natural_giant_loot(e)
-  ice_caven_item_attributes(e)
+  ice_cave_item_attributes(e)
   e.item("animal skin " .. goodcoldres .. " / \
           battleaxe " .. goodfreezeweap .. " w:4 / \
           glaive " .. goodfreezeweap .. " w:4 / \
@@ -231,14 +221,14 @@ function ice_cave_caverns_natural_giant_loot(e)
           crossbow ego:frost good_item no_uniq ident:type / \
           longbow ego:frost good_item no_uniq ident:type / nothing w:20")
   e.item("ring of ice / ring of protection from cold / wand of cold / \
-          arrow ego:ice q:25 / bolt ego:ice q:20 / nothing")
+          arrow ego:frost q:25 / bolt ego:frost q:20 / nothing")
 end
 
 }}
 
 # Entries ##########################################
 
-default-depth: D:11-19, Lair, Orc, Elf, Vaults:1-4
+default-depth: D:11-, Lair, Orc, Elf, Vaults:1-4
 
 NAME:   portal_ice_cave_entry_pillars_01
 WEIGHT: 4
@@ -309,9 +299,9 @@ ENDMAP
 
 NAME:   portal_ice_cave_entry_animals_and_master
 TAGS:   patrolling no_monster_gen
-DEPTH:  D:14-19, Lair:6-8, Orc:4, Elf
+DEPTH:  D:14-, Lair:6-, Orc:$, Elf
 : ice_cave_portal(_G)
-MONS:   wolf / yak w:5 / nothing w:1
+MONS:   wolf / yak / nothing w:1
 MONS:   yak / polar bear w:5 / nothing w:1
 MONS:   polar bear / nothing w:2
 MONS:   ice dragon w:8 / nothing w:2
@@ -334,7 +324,7 @@ ENDMAP
 
 NAME:   portal_ice_cave_entry_horrid_things
 TAGS:   patrolling no_monster_gen
-DEPTH:  D:14-19, Elf
+DEPTH:  D:14-, Elf
 : ice_cave_portal(_G)
 MONS:   ice beast / freezing wraith w:2 / nothing w:2
 MONS:   freezing wraith / nothing w:3
@@ -353,7 +343,7 @@ ENDMAP
 
 NAME:   portal_ice_cave_demonic_guard
 TAGS:   patrolling no_monster_gen
-DEPTH:  D:14-19, Elf
+DEPTH:  D:14-, Elf
 : ice_cave_portal(_G)
 MONS:   ice devil
 MAP
@@ -372,7 +362,7 @@ ENDMAP
 
 NAME:   portal_ice_cave_entry_ice_statue_01
 WEIGHT: 5
-DEPTH:  D:11-19, Elf
+DEPTH:  D:11-, Elf
 : ice_cave_portal(_G)
 MONS:   ice statue
 MAP
@@ -389,7 +379,7 @@ ENDMAP
 
 NAME:   portal_ice_cave_entry_ice_statue_02
 WEIGHT: 5
-DEPTH:  D:14-19, Elf:2-, Vaults:1-4
+DEPTH:  D:14-, Elf:2-, Vaults:1-4
 : ice_cave_portal(_G)
 MONS:   ice statue, ice statue w:9 / patrolling ice dragon w:1
 MAP
@@ -407,7 +397,7 @@ ENDMAP
 NAME:   portal_ice_cave_entry_dragon
 TAGS:   no_monster_gen
 WEIGHT: 4
-DEPTH:  D:14-19, Elf
+DEPTH:  D:14-, Elf
 MONS:   ice dragon
 : ice_cave_portal(_G)
 MAP
@@ -424,7 +414,7 @@ ENDMAP
 NAME:   portal_ice_cave_entry_frozen_things
 TAGS:   no_monster_gen
 WEIGHT: 4
-DEPTH:  D:14-19, Elf:2-, Vaults:1-4
+DEPTH:  D:14-, Elf:2-, Vaults:1-4
 MONS:   freezing wraith
 MONS:   azure jelly / freezing wraith / nothing
 : ice_cave_portal(_G)
@@ -443,7 +433,7 @@ ENDMAP
 
 NAME:     portal_ice_cave_entry_ugly_swarm
 TAGS:     no_monster_gen no_item_gen
-DEPTH:    D:14-19, Elf, Vaults:1-4
+DEPTH:    D:14-, Elf, Vaults:1-4
 WEIGHT:   2
 SUBST:    : = 1.
 NSUBST:   2 = 1:2 / 1:12 / * = 1.
@@ -517,13 +507,13 @@ ITEM:    giant club / giant spiked club / great mace w:9 / \
          nothing w:58
 ITEM:    great mace good_item / battleaxe good_item / glaive good_item / \
          halberd good_item / great sword good_item / nothing w:50
-: ice_caven_item_attributes(_G)
+: ice_cave_item_attributes(_G)
 : item("battleaxe " .. freezeweap .. " / glaive " .. freezeweap ..
 :   " / halberd " .. freezeweap .. " / great sword " .. freezeweap ..
 :   " / battleaxe " .. goodfreezeweap .. " / glaive " .. goodfreezeweap ..
 :   " / halberd " .. goodfreezeweap .. " / great sword " .. goodfreezeweap ..
 :   " / nothing w:80")
-: item("cap " .. coldres .. " / cloak " .. coldres ..
+: item("hat " .. coldres .. " / cloak " .. coldres ..
 :   " / shield " .. coldres ..  " / large shield " .. coldres ..
 :   " / animal skin " .. coldres .. " / nothing w:60")
 ITEM:    potion of resistance w:5 / potion of beneficial mutation / \
@@ -647,7 +637,7 @@ SUBST:   - = ........-
 KFEAT:   - = alarm trap
 : ice_cave_appearance(_G)
 : ice_cave_random_monster_list_undead_necromancer(_G)
-: ice_caven_item_attributes(_G)
+: ice_cave_item_attributes(_G)
 MONS:    ice beast
 MONS:    white imp
 MONS:    freezing wraith
@@ -668,7 +658,7 @@ ITEM:    nothing
 KITEM:   de = book of ice / book of frost / randbook disc:ice numspells:6 w:2
 : end
 
-: item("cap " .. coldres .. " / pair of gloves " .. coldres ..
+: item("hat " .. coldres .. " / pair of gloves " .. coldres ..
 :   " / cloak " .. coldres .. " / naga barding " .. coldres .. " w:5 " ..
 :   " / centaur barding " .. coldres .. " / buckler " .. coldres .. " w:5 " ..
 :   " / helmet " .. coldres)
@@ -739,6 +729,7 @@ SUBST:   ! = w
 ice_cave_appearance(_G)
 dgn.set_random_mon_list("white imp w:35 / ufetubus w:35 / blue devil w:20 / \
                          ice devil")
+ice_cave_item_attributes(_G)
 }}
 : if dgn.persist.ice_cave_hard then
 MONS:    white imp / ufetubus
@@ -761,15 +752,15 @@ SUBST:   ` = .
 : item("battleaxe " .. freezeweap .. " / executioner's axe " .. freezeweap ..
 :   " / glaive " .. freezeweap .. " / bardiche " .. freezeweap ..
 :   " / quick blade " .. freezeweap .. " / great sword " .. freezeweap ..
-:   " / triple sword " .. freezeweap .. " / giant spiked club " .. freezeweap ..
+:   " / claymore " .. freezeweap .. " / giant spiked club " .. freezeweap ..
 :   " / demon trident " .. freezeweap)
 : item("battleaxe " .. goodfreezeweap .. " / executioner's axe " .. goodfreezeweap ..
 :   " / glaive " .. goodfreezeweap .. " / halberd " .. goodfreezeweap ..
 :   " / great sword " .. goodfreezeweap .. " / quick blade " .. goodfreezeweap ..
-:   " / triple sword " .. goodfreezeweap .. " / demon trident " .. goodfreezeweap ..
+:   " / claymore " .. goodfreezeweap .. " / demon trident " .. goodfreezeweap ..
 :   " / giant spiked club " .. goodfreezeweap)
 ITEM: demon whip good_item / demon blade good_item / demon trident good_item
-: item("cap " .. coldres .. " / pair of gloves " .. coldres ..
+: item("hat " .. coldres .. " / pair of gloves " .. coldres ..
 :   " / cloak " .. coldres .. " / buckler " .. coldres ..
 :   " / pair of boots " .. coldres)
 : item("crystal plate armour " .. coldres ..

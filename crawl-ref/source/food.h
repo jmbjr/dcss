@@ -3,23 +3,23 @@
  * @brief Functions for eating and butchering.
 **/
 
-
 #ifndef FOOD_H
 #define FOOD_H
 
 #define BERSERK_NUTRITION     700
 
-#define HUNGER_STARVING      1000
-#define HUNGER_NEAR_STARVING 1533
-#define HUNGER_VERY_HUNGRY   2066
-#define HUNGER_HUNGRY        2600
-#define HUNGER_SATIATED      7000
-#define HUNGER_FULL          9000
-#define HUNGER_VERY_FULL    11000
-#define HUNGER_ENGORGED     40000
+#define HUNGER_FAINTING       400
+#define HUNGER_STARVING       900
+#define HUNGER_NEAR_STARVING 1433
+#define HUNGER_VERY_HUNGRY   1966
+#define HUNGER_HUNGRY        2500
+#define HUNGER_SATIATED      6900
+#define HUNGER_FULL          8900
+#define HUNGER_VERY_FULL    10900
+#define HUNGER_ENGORGED     39900
 
-#define HUNGER_DEFAULT       6000
-#define HUNGER_MAXIMUM      12000
+#define HUNGER_DEFAULT       5900
+#define HUNGER_MAXIMUM      11900
 
 int count_corpses_in_pack(bool blood_only = false);
 bool butchery(int which_corpse = -1, bool bottle_blood = false);
@@ -49,14 +49,13 @@ bool can_ingest(int what_isit, int kindof_thing, bool suppress_msg,
                 bool check_hunger = true, bool rotten = false);
 
 bool chunk_is_poisonous(int chunktype);
-void eat_floor_item(int item_link);
+bool eat_item(item_def &food);
 
 int eat_from_floor(bool skip_chunks = true);
 bool eat_from_inventory();
 int prompt_eat_chunks(bool only_auto = false);
 
 bool food_change(bool initial = false);
-void eat_inventory_item(int which_inventory_slot);
 
 bool prompt_eat_inventory_item(int slot = -1);
 
@@ -69,6 +68,8 @@ void finished_eating_message(int food_type);
 int you_max_hunger();
 int you_min_hunger();
 bool you_foodless(bool can_eat = false);
+// Is the player always foodless or just because of a temporary change?
+bool you_foodless_normally();
 
 void handle_starvation();
 string hunger_cost_string(const int hunger);

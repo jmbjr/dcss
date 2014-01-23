@@ -2,7 +2,7 @@
 A closed door
 
 Dřevěné dveře. Chcete-li je otevřít, zkuste do nich jednoduše vejít, nebo
-stiskněte "O".
+stiskněte „O“.
 %%%%
 A crawl-hole back to the Lair
 
@@ -31,10 +31,6 @@ Tato brána vede do předsálí pekla. Jen málokdo by tam šel dobrovolně.
 A gateway to the decaying netherworld of Tartarus
 
 Toto místo se zdá vyzařuje negativní energii.
-%%%%
-A magical trap
-
-Magické zařízení určené k ohrožení vetřelců, které nelze deaktivovat.
 %%%%
 A mechanical trap
 

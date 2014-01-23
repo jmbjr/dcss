@@ -13,7 +13,6 @@
 #include "delay.h"
 #include "env.h"
 #include "fprop.h"
-#include "item_use.h"
 #include "los.h"
 #include "losglobal.h"
 #include "monster.h"
@@ -33,7 +32,7 @@ bool player::blink_to(const coord_def& dest, bool quiet)
     if (dest == pos())
         return false;
 
-    if (you.no_tele(true, true, true))
+    if (no_tele(true, true, true))
     {
         if (!quiet)
             canned_msg(MSG_STRANGE_STASIS);
@@ -48,14 +47,18 @@ bool player::blink_to(const coord_def& dest, bool quiet)
     const coord_def origin = pos();
     move_player_to_grid(dest, false, true);
 
-    place_cloud(CLOUD_TLOC_ENERGY, origin, 1 + random2(3), this);
+    if (!cell_is_solid(origin))
+        place_cloud(CLOUD_TLOC_ENERGY, origin, 1 + random2(3), this);
 
     return true;
 }
 
 bool monster::blink_to(const coord_def& dest, bool quiet)
 {
-    return blink_to(dest, quiet, false);
+    // For this call, let the monster choose whether it's blinking
+    // or jumping. When blinked by another source, use the other
+    // overload.
+    return blink_to(dest, quiet, is_jumpy());
 }
 
 bool monster::blink_to(const coord_def& dest, bool quiet, bool jump)
@@ -97,8 +100,11 @@ bool monster::blink_to(const coord_def& dest, bool quiet, bool jump)
         return false;
 
     // Leave a cloud.
-    place_cloud(jump ? CLOUD_DUST_TRAIL : CLOUD_TLOC_ENERGY,
-                oldplace, 1 + random2(3), this);
+    if (!cell_is_solid(oldplace))
+    {
+        place_cloud(jump ? CLOUD_DUST_TRAIL : CLOUD_TLOC_ENERGY,
+                    oldplace, 1 + random2(3), this);
+    }
 
     check_redraw(oldplace);
     apply_location_effects(oldplace);
@@ -108,28 +114,25 @@ bool monster::blink_to(const coord_def& dest, bool quiet, bool jump)
     return true;
 }
 
-
 typedef pair<coord_def, int> coord_weight;
 
 // Try to find a "safe" place for moved close or far from the target.
 // keep_los indicates that the destination should be in view of the target.
 //
 // XXX: Check the result against in_bounds(), not coord_def::origin(),
-// beceause of a memory problem described below. (isn't this fixed now? -rob)
+// because of a memory problem described below. (isn't this fixed now? -rob)
 static coord_def random_space_weighted(actor* moved, actor* target,
                                        bool close, bool keep_los = true,
-                                       bool allow_sanct = true,
-                                       bool path_solid = false)
+                                       bool allow_sanct = true)
 {
     vector<coord_weight> dests;
     const coord_def tpos = target->pos();
 
-    for (radius_iterator ri(moved->get_los_no_trans()); ri; ++ri)
+    for (radius_iterator ri(moved->pos(), LOS_NO_TRANS); ri; ++ri)
     {
         if (!moved->is_habitable(*ri) || actor_at(*ri)
             || keep_los && !target->see_cell_no_trans(*ri)
-            || !allow_sanct && is_sanctuary(*ri)
-            || path_solid && !cell_see_cell(moved->pos(), *ri, LOS_SOLID))
+            || !allow_sanct && is_sanctuary(*ri))
         {
             continue;
         }
@@ -145,7 +148,7 @@ static coord_def random_space_weighted(actor* moved, actor* target,
     }
 
     coord_def* choice = random_choose_weighted(dests);
-    return (choice ? *choice : coord_def(0, 0));
+    return choice ? *choice : coord_def(0, 0);
 }
 
 // Blink the victim closer to the monster at target.
@@ -159,30 +162,34 @@ void blink_other_close(actor* victim, const coord_def &target)
     coord_def dest = random_space_weighted(victim, caster, true);
     if (!in_bounds(dest))
         return;
-    victim->blink_to(dest);
+    // If it's a monster, force them to "blink" rather than "jump"
+    if (victim->is_monster())
+        victim->as_monster()->blink_to(dest, false, false);
+    else
+        victim->blink_to(dest);
 }
 
 // Blink a monster away from the caster.
-bool blink_away(monster* mon, actor* caster, bool from_seen, bool jumping)
+bool blink_away(monster* mon, actor* caster, bool from_seen, bool self_cast)
 {
     if (from_seen && !mon->can_see(caster))
         return false;
-    coord_def dest = random_space_weighted(mon, caster, false, false, true,
-                                           jumping);
+    bool jumpy = self_cast && mon->is_jumpy();
+    coord_def dest = random_space_weighted(mon, caster, false, false, true);
     if (dest.origin())
         return false;
-    bool success = mon->blink_to(dest, false, jumping);
+    bool success = mon->blink_to(dest, false, jumpy);
     ASSERT(success || mon->is_constricted());
     return success;
 }
 
 // Blink the monster away from its foe.
-bool blink_away(monster* mon)
+bool blink_away(monster* mon, bool self_cast)
 {
     actor* foe = mon->get_foe();
     if (!foe)
         return false;
-    return blink_away(mon, foe, true, mon->type == MONS_JUMPING_SPIDER);
+    return blink_away(mon, foe, true, self_cast);
 }
 
 // Blink the monster within range but at distance to its foe.
@@ -207,12 +214,10 @@ void blink_close(monster* mon)
     actor* foe = mon->get_foe();
     if (!foe || !mon->can_see(foe))
         return;
-    const bool jumping = mon->type == MONS_JUMPING_SPIDER;
-    coord_def dest = random_space_weighted(mon, foe, true, true, true,
-                                           jumping);
+    coord_def dest = random_space_weighted(mon, foe, true, true, true);
     if (dest.origin())
         return;
-    bool success = mon->blink_to(dest, false, jumping);
+    bool success = mon->blink_to(dest, false);
     ASSERT(success || mon->is_constricted());
 #ifndef DEBUG
     UNUSED(success);

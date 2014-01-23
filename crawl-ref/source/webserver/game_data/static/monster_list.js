@@ -1,5 +1,8 @@
-define(["jquery", "./map_knowledge", "./cell_renderer", "./dungeon_renderer"],
-function ($, map_knowledge, cr, dungeon_renderer) {
+define(["jquery", "./map_knowledge", "./cell_renderer", "./dungeon_renderer",
+        "./options"],
+function ($, map_knowledge, cr, dungeon_renderer, options) {
+    "use strict";
+
     var monsters, $list, monster_groups, max_rows;
 
     function init()
@@ -153,10 +156,9 @@ function ($, map_knowledge, cr, dungeon_renderer) {
 
             renderer.set_cell_size(dungeon_renderer.cell_width,
                                    dungeon_renderer.cell_height);
-            for (key in dungeon_renderer)
+            for (var key in dungeon_renderer)
             {
-                if (key.match(/^glyph_mode/) || key == "display_mode"
-                    || key == "smooth_scaling")
+                if (key.match(/^glyph_mode/))
                     renderer[key] = dungeon_renderer[key];
             }
             var w = renderer.cell_width;
@@ -177,9 +179,9 @@ function ($, map_knowledge, cr, dungeon_renderer) {
             }
 
             if (monsters.length == 1)
-                group.name_span.html(monsters[0].mon.name);
+                group.name_span.text(monsters[0].mon.name);
             else
-                group.name_span.html(monsters.length + " " + monsters[0].mon.plural);
+                group.name_span.text(monsters.length + " " + monsters[0].mon.plural);
 
             $.each(attitude_classes, function (i, cls) {
                 group.name_span.removeClass(cls);
@@ -214,10 +216,21 @@ function ($, map_knowledge, cr, dungeon_renderer) {
 
     function clear()
     {
-        $list.html("");
+        $list.empty();
         monster_groups = [];
         monsters = {};
     }
+
+    options.add_listener(function ()
+    {
+        if (options.get("tile_font_lbl_size") === 0)
+            $("#monster_list").css("font-size", "");
+        else
+        {
+            $("#monster_list").css("font-size",
+                options.get("tile_font_lbl_size") + "px");
+        }
+    });
 
     return {
         update_loc: update_loc,

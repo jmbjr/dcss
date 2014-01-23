@@ -15,7 +15,7 @@
 #include "options.h"
 #include "species.h"
 
-#include "abl-show.h"
+#include "ability.h"
 #include "areas.h"
 #include "artefact.h"
 #include "branch.h"
@@ -29,6 +29,7 @@
 #include "godabil.h"
 #include "initfile.h"
 #include "itemname.h"
+#include "items.h"
 #include "lang-fake.h"
 #include "libutil.h"
 #include "menu.h"
@@ -45,14 +46,12 @@
 #include "state.h"
 #include "status.h"
 #include "stuff.h"
-#include "tagstring.h"
 #include "throw.h"
 #include "transform.h"
 #include "travel.h"
 #include "viewchar.h"
 #include "viewgeom.h"
 #include "showsymb.h"
-#include "spl-transloc.h"
 
 #ifndef USE_TILE_LOCAL
 #include "directn.h"
@@ -288,7 +287,6 @@ static void _nowrap_eol_cprintf_touchui(const char *format, ...)
 #define NOWRAP_EOL_CPRINTF nowrap_eol_cprintf
 #endif
 
-
 static string _god_powers(bool simple = false);
 
 // Color for captions like 'Health:', 'Str:', etc.
@@ -325,8 +323,8 @@ class colour_bar
 
     bool wants_redraw() const
     {
-        return (m_request_redraw_after
-                && you.num_turns >= m_request_redraw_after);
+        return m_request_redraw_after
+               && you.num_turns >= m_request_redraw_after;
     }
 
     void draw(int ox, int oy, int val, int max_val, bool temp = false)
@@ -499,10 +497,10 @@ void update_turn_count()
     textcolor(HUD_VALUE_COLOUR);
     if (Options.show_game_turns)
     {
-       CPRINTF("%.1f (%.1f)%s", you.elapsed_time / 10.0,
-               (you.elapsed_time - you.elapsed_time_at_last_input) / 10.0,
-               // extra spaces to erase excess if previous output was longer
-               "    ");
+        CPRINTF("%.1f (%.1f)%s", you.elapsed_time / 10.0,
+                (you.elapsed_time - you.elapsed_time_at_last_input) / 10.0,
+                // extra spaces to erase excess if previous output was longer
+                "    ");
     }
     else
         CPRINTF("%d", you.num_turns);
@@ -522,7 +520,6 @@ static int _count_digits(int val)
 
 static void _print_stats_temperature(int x, int y)
 {
-
     cgotoxy(x, y, GOTO_STAT);
     textcolor(HUD_CAPTION_COLOUR);
     cprintf("Temperature: ");
@@ -580,26 +577,29 @@ static void _print_stats_contam(int x, int y)
     if (you.species != SP_DJINNI)
         return;
 
-    const int max_contam = 16;
+    const int max_contam = 8000;
     int contam = min(you.magic_contamination, max_contam);
 
     // Calculate colour
-    int contam_level = get_contamination_level();
-
-    if (contam_level > 3)
+    if (you.magic_contamination > 15000)
     {
         Contam_Bar.m_default = RED;
         Contam_Bar.m_change_pos = Contam_Bar.m_change_neg = RED;
     }
-    else if (contam_level > 2)
+    else if (you.magic_contamination > 5000) // harmful
     {
         Contam_Bar.m_default = LIGHTRED;
         Contam_Bar.m_change_pos = Contam_Bar.m_change_neg = RED;
     }
-    else if (contam_level > 1)
+    else if (you.magic_contamination > 3333)
     {
         Contam_Bar.m_default = YELLOW;
         Contam_Bar.m_change_pos = Contam_Bar.m_change_neg = BROWN;
+    }
+    else if (you.magic_contamination > 1666)
+    {
+        Contam_Bar.m_default = LIGHTGREY;
+        Contam_Bar.m_change_pos = Contam_Bar.m_change_neg = DARKGREY;
     }
     else
     {
@@ -683,13 +683,13 @@ static void _print_stats_hp(int x, int y)
 
 static short _get_stat_colour(stat_type stat)
 {
-    if (you.stat_zero[stat] > 0)
+    if (you.stat_zero[stat])
         return LIGHTRED;
 
     // Check the stat_colour option for warning thresholds.
     for (unsigned int i = 0; i < Options.stat_colour.size(); ++i)
         if (you.stat(stat) <= Options.stat_colour[i].first)
-            return (Options.stat_colour[i].second);
+            return Options.stat_colour[i].second;
 
     // Stat is magically increased.
     if (you.duration[DUR_DIVINE_STAMINA]
@@ -756,7 +756,9 @@ static void _print_stats_ac(int x, int y)
 static void _print_stats_ev(int x, int y)
 {
     CGOTOXY(x+4, y, GOTO_STAT);
-    textcolor(you.duration[DUR_PHASE_SHIFT] || you.duration[DUR_AGILITY]
+    textcolor(you.duration[DUR_PETRIFYING] || you.duration[DUR_GRASPING_ROOTS]
+              || you.cannot_move() ? RED :
+              you.duration[DUR_PHASE_SHIFT] || you.duration[DUR_AGILITY]
               ? LIGHTBLUE : HUD_VALUE_COLOUR);
     CPRINTF("%2d ", player_evasion());
 }
@@ -801,6 +803,7 @@ static void _print_stats_wp(int y)
             col = GREEN;
             break;
         case TRAN_LICH:
+        case TRAN_SHADOW:
             col = MAGENTA;
             break;
         case TRAN_BAT:
@@ -925,7 +928,8 @@ static void _get_status_lights(vector<status_light>& out)
     }
 #endif
 
-    const int statuses[] = {
+    const int statuses[] =
+    {
         STATUS_STR_ZERO, STATUS_INT_ZERO, STATUS_DEX_ZERO,
         STATUS_BURDEN,
         STATUS_HUNGER,
@@ -942,7 +946,7 @@ static void _get_status_lights(vector<status_light>& out)
         DUR_BERSERK,
         DUR_RESISTANCE,
         STATUS_AIRBORNE,
-        DUR_INVIS,
+        STATUS_INVISIBLE,
         DUR_CONTROL_TELEPORT,
         DUR_DISJUNCTION,
         DUR_SILENCE,
@@ -956,7 +960,6 @@ static void _get_status_lights(vector<status_light>& out)
         DUR_LOWERED_MR,
         STATUS_BEHELD,
         DUR_LIQUID_FLAMES,
-        DUR_MISLED,
         DUR_POISONING,
         STATUS_SICK,
         STATUS_ROT,
@@ -975,7 +978,6 @@ static void _get_status_lights(vector<status_light>& out)
         DUR_MIRROR_DAMAGE,
         DUR_SCRYING,
         STATUS_CLINGING,
-        STATUS_HOVER,
         DUR_TORNADO,
         DUR_LIQUEFYING,
         DUR_HEROISM,
@@ -990,7 +992,6 @@ static void _get_status_lights(vector<status_light>& out)
         STATUS_CONSTRICTED,
         DUR_DIVINE_STAMINA,
         STATUS_AUGMENTED,
-        STATUS_SUPPRESSED,
         STATUS_TERRAIN,
         STATUS_SILENCE,
         STATUS_NO_CTELE,
@@ -1003,13 +1004,21 @@ static void _get_status_lights(vector<status_light>& out)
         DUR_WEAK,
         DUR_DIMENSION_ANCHOR,
         STATUS_BEOGH,
+        DUR_INFUSION,
+        DUR_SONG_OF_SLAYING,
+        STATUS_DRAINED,
+        DUR_TOXIC_RADIANCE,
+        STATUS_RAY,
+        DUR_RECITE,
+        DUR_GRASPING_ROOTS,
+        DUR_FIRE_VULN,
+        STATUS_ELIXIR,
     };
 
     status_info inf;
     for (unsigned i = 0; i < ARRAYSZ(statuses); ++i)
     {
-        fill_status_info(statuses[i], &inf);
-        if (!inf.light_text.empty())
+        if (fill_status_info(statuses[i], &inf) && !inf.light_text.empty())
         {
             status_light sl(inf.light_colour, inf.light_text);
             out.push_back(sl);
@@ -1172,10 +1181,10 @@ static void _redraw_title(const string &your_name, const string &job_name)
     CGOTOXY(1, 2, GOTO_STAT);
     string species = species_name(you.species);
     NOWRAP_EOL_CPRINTF("%s", species.c_str());
-    if (you.religion != GOD_NO_GOD)
+    if (!you_worship(GOD_NO_GOD))
     {
         string god = " of ";
-        god += you.religion == GOD_JIYVA ? god_name_jiyva(true)
+        god += you_worship(GOD_JIYVA) ? god_name_jiyva(true)
                                          : god_name(you.religion);
         NOWRAP_EOL_CPRINTF("%s", god.c_str());
 
@@ -1418,31 +1427,19 @@ static string _get_monster_name(const monster_info& mi, int count, bool fullname
 {
     string desc = "";
 
-    bool adj = false;
-    if (mi.attitude == ATT_FRIENDLY)
-    {
-        desc += "friendly ";
-        adj = true;
-    }
-    else if (mi.attitude != ATT_HOSTILE)
-    {
-        desc += "neutral ";
-        adj = true;
-    }
+    const char * const adj = mi.attitude == ATT_FRIENDLY ? "friendly"
+                           : mi.attitude == ATT_HOSTILE  ? nullptr
+                                                         : "neutral";
 
     string monpane_desc;
     int col;
-    mi.to_string(count, monpane_desc, col, fullname);
+    mi.to_string(count, monpane_desc, col, fullname, adj);
 
     if (count == 1)
     {
         if (!mi.is(MB_NAME_THE))
-        {
-            desc = ((!adj && is_vowel(monpane_desc[0])) ? "an "
-                                                        : "a ")
-                   + desc;
-        }
-        else if (adj)
+            desc = (is_vowel(monpane_desc[0]) ? "an " : "a ") + desc;
+        else if (adj || !mi.is(MB_NAME_UNQUALIFIED))
             desc = "the " + desc;
     }
 
@@ -1515,7 +1512,7 @@ static void _print_next_monster_desc(const vector<monster_info>& mons,
     {
         int printed = 0;
 
-        // for targetting
+        // for targeting
         if (idx >= 0)
         {
             textcolor(WHITE);
@@ -1635,7 +1632,7 @@ int update_monster_pane()
         // i_mons is incremented by _print_next_monster_desc
         if (i_print >= skip_lines && i_mons < (int) mons.size())
         {
-             int idx = crawl_state.mlist_targetting ? i_print - skip_lines : -1;
+             int idx = crawl_state.mlist_targeting ? i_print - skip_lines : -1;
              _print_next_monster_desc(mons, i_mons, full_info, idx);
         }
         else
@@ -1662,29 +1659,40 @@ int update_monster_pane()
 }
 #endif
 
-static const char* _itosym1(int stat)
+// Converts a numeric resistance to its symbolic counterpart.
+// Can handle any maximum level. The default is for single level resistances
+// (the most common case). Negative resistances are allowed.
+// Resistances with a maximum of up to 4 are spaced (arbitrary choice), and
+// starting at 5 levels, they are continuous.
+// params:
+//  level : actual resistance level
+//  max : maximum number of levels of the resistance
+static string _itosym(int level, int max = 1)
 {
-    return ((stat >= 1) ? "+  " :
-            (stat == 0) ? ".  " :
-                          "x  ");
-}
+    if (max < 1)
+        return "";
 
-static const char* _itosym2(int stat)
-{
-    return ((stat >= 2) ? "+ +" :
-            (stat == 1) ? "+ ." :
-                          ". .");
-}
+    string sym;
+    bool spacing = (max >= 5) ? false : true;
 
-static const char* _itosym3(int stat)
-{
-    return ((stat >=  3) ? "+ + +" :
-            (stat ==  2) ? "+ + ." :
-            (stat ==  1) ? "+ . ." :
-            (stat ==  0) ? ". . ." :
-            (stat == -1) ? "x . ." :
-            (stat == -2) ? "x x ." :
-                           "x x x");
+    while (max > 0)
+    {
+        if (level == 0)
+            sym += ".";
+        else if (level > 0)
+        {
+            sym += "+";
+            --level;
+        }
+        else // negative resistance
+        {
+            sym += "x";
+            ++level;
+        }
+        sym += (spacing) ? " " : "";
+        --max;
+    }
+    return sym;
 }
 
 static const char *s_equip_slot_names[] =
@@ -1693,13 +1701,17 @@ static const char *s_equip_slot_names[] =
     "Shield", "Armour", "Left Ring", "Right Ring", "Amulet",
     "First Ring", "Second Ring", "Third Ring", "Fourth Ring",
     "Fifth Ring", "Sixth Ring", "Seventh Ring", "Eighth Ring",
+    "Amulet Ring"
 };
 
 const char *equip_slot_to_name(int equip)
 {
+    COMPILE_CHECK(ARRAYSZ(s_equip_slot_names) == NUM_EQUIP);
+
     if (equip == EQ_RINGS
         || equip == EQ_LEFT_RING || equip == EQ_RIGHT_RING
-        || equip >= EQ_RING_ONE && equip <= EQ_RING_EIGHT)
+        || equip >= EQ_RING_ONE && equip <= EQ_RING_EIGHT
+        || equip == EQ_RING_AMULET)
     {
         return "Ring";
     }
@@ -1729,6 +1741,10 @@ int equip_name_to_slot(const char *s)
 // Take maximum possible level into account.
 static const char* _determine_colour_string(int level, int max_level)
 {
+    // No colouring for larger bars.
+    if (max_level > 3)
+        return "<lightgrey>";
+
     switch (level)
     {
     case 3:
@@ -1754,7 +1770,8 @@ static string _status_mut_abilities(int sw);
 
 // helper for print_overview_screen
 static void _print_overview_screen_equip(column_composer& cols,
-                                         vector<char>& equip_chars)
+                                         vector<char>& equip_chars,
+                                         int sw)
 {
     const int e_order[] =
     {
@@ -1762,9 +1779,12 @@ static void _print_overview_screen_equip(column_composer& cols,
         EQ_GLOVES, EQ_BOOTS, EQ_AMULET, EQ_RIGHT_RING, EQ_LEFT_RING,
         EQ_RING_ONE, EQ_RING_TWO, EQ_RING_THREE, EQ_RING_FOUR,
         EQ_RING_FIVE, EQ_RING_SIX, EQ_RING_SEVEN, EQ_RING_EIGHT,
+        EQ_RING_AMULET,
     };
 
-    char buf[100];
+    sw = min(max(sw, 79), 640);
+
+    char buf[641];
     for (int i = 0; i < NUM_EQUIP; i++)
     {
         int eqslot = e_order[i];
@@ -1782,7 +1802,13 @@ static void _print_overview_screen_equip(column_composer& cols,
             continue;
         }
 
-        if (you.species != SP_OCTOPODE && eqslot > EQ_AMULET)
+        if (you.species != SP_OCTOPODE
+            && eqslot >= EQ_RING_ONE && eqslot <= EQ_RING_EIGHT)
+        {
+            continue;
+        }
+
+        if (eqslot == EQ_RING_AMULET && !you_can_wear(eqslot))
             continue;
 
         const string slot_name_lwr = lowercase_string(equip_slot_to_name(eqslot));
@@ -1813,7 +1839,8 @@ static void _print_overview_screen_equip(column_composer& cols,
                      equip_char,
                      colname,
                      melded ? "melded " : "",
-                     chop_string(item.name(DESC_PLAIN, true), 42, false).c_str(),
+                     chop_string(item.name(DESC_PLAIN, true),
+                                 melded ? sw - 38 : sw - 31, false).c_str(),
                      colname);
             equip_chars.push_back(equip_char);
         }
@@ -1883,17 +1910,17 @@ static string _overview_screen_title(int sw)
     {
         switch (count)
         {
-          case 0:
-              snprintf(species_job, sizeof species_job,
-                       "(%s%s)",
-                       get_species_abbrev(you.species),
-                       get_job_abbrev(you.char_class));
-              break;
-          case 1:
-              strcpy(title, "");
-              break;
-          default:
-              break;
+        case 0:
+            snprintf(species_job, sizeof species_job,
+                     "(%s%s)",
+                     get_species_abbrev(you.species),
+                     get_job_abbrev(you.char_class));
+            break;
+        case 1:
+            strcpy(title, "");
+            break;
+        default:
+            break;
         }
         linelength = strwidth(you.your_name) + strwidth(title)
                      + strwidth(species_job) + strwidth(time_turns);
@@ -1919,33 +1946,33 @@ static string _overview_screen_title(int sw)
 static string _wiz_god_powers()
 {
     string godpowers = god_name(you.religion);
-    return (make_stringf("%s %d (%d)", god_name(you.religion).c_str(),
-                                       you.piety,
-                                       you.duration[DUR_PIETY_POOL]));
+    return make_stringf("%s %d (%d)", god_name(you.religion).c_str(),
+                                      you.piety,
+                                      you.duration[DUR_PIETY_POOL]);
 }
 #endif
 
 static string _god_powers(bool simple)
 {
     string godpowers = simple ? "" : god_name(you.religion) ;
-    if (you.religion == GOD_XOM)
+    if (you_worship(GOD_XOM))
     {
         if (!you.gift_timeout)
             godpowers += simple ? "- BORED" : " - BORED";
         else if (you.gift_timeout == 1)
             godpowers += simple ? "- getting BORED" : " - getting BORED";
-        return (simple ? godpowers
-                       : colour_string(godpowers, god_colour(you.religion)));
+        return simple ? godpowers
+                      : colour_string(godpowers, god_colour(you.religion));
     }
-    else if (you.religion != GOD_NO_GOD)
+    else if (!you_worship(GOD_NO_GOD))
     {
         if (player_under_penance())
-            return (simple ? "*" : colour_string("*" + godpowers, RED));
+            return simple ? "*" : colour_string("*" + godpowers, RED);
         else
         {
             // piety rankings
             int prank = piety_rank() - 1;
-            if (prank < 0 || you.religion == GOD_XOM)
+            if (prank < 0 || you_worship(GOD_XOM))
                 prank = 0;
 
             // Careful about overflow. We erase some of the god's name
@@ -2155,117 +2182,117 @@ static vector<formatted_string> _get_overview_stats()
     return cols1.formatted_lines();
 }
 
-static vector<formatted_string> _get_overview_resistances(
-    vector<char> &equip_chars,
-    bool calc_unid = false)
+// generator of resistance strings:
+// params :
+//      name : name of the resist, correct spacing is handled here
+//      spacing : width of the name column
+//      value : actual value of the resistance (can be negative)
+//      max : maximum value of the resistance (for color AND representation),
+//          default is the most common case (1)
+//      pos_resist : false for "bad" resistances (no tele, random tele, *Rage),
+//          inverts the value for the colour choice
+static string _resist_composer(
+    const char * name, int spacing, int value, int max = 1, bool pos_resist = true)
 {
-    char buf[1000];
+    string out;
+    out += _determine_colour_string(pos_resist ? value : -value, max);
+    out += chop_string(name, spacing);
+    out += _itosym(value, max);
 
-    // 3 columns, splits at columns 21, 38
-    column_composer cols(3, 21, 38);
+    return out;
+}
+
+static vector<formatted_string> _get_overview_resistances(
+    vector<char> &equip_chars, bool calc_unid, int sw)
+{
+    // 3 columns, splits at columns 18, 33
+    column_composer cols(3, 18, 33);
+    // First column, resist name is 7 chars
+    int cwidth = 7;
+    string out;
 
     const int rfire = player_res_fire(calc_unid);
+    out += _resist_composer("rFire", cwidth, rfire, 3) + "\n";
+
     const int rcold = player_res_cold(calc_unid);
+    out += _resist_composer("rCold", cwidth, rcold, 3) + "\n";
+
     const int rlife = player_prot_life(calc_unid);
+    out += _resist_composer("rNeg", cwidth, rlife, 3) + "\n";
+
     const int rpois = player_res_poison(calc_unid);
+    out += _resist_composer("rPois", cwidth, rpois) + "\n";
+
     const int relec = player_res_electricity(calc_unid);
+    out += _resist_composer("rElec", cwidth, relec) + "\n";
+
     const int rsust = player_sust_abil(calc_unid);
+    out += _resist_composer("SustAb", cwidth, rsust, 2) + "\n";
+
     const int rmuta = (you.rmut_from_item(calc_unid)
-                       || player_mutation_level(MUT_MUTATION_RESISTANCE) == 3
-                       || you.religion == GOD_ZIN && you.piety >= 150);
-    const int rrott = you.res_rotting();
+                       || player_mutation_level(MUT_MUTATION_RESISTANCE) == 3);
+    out += _resist_composer("rMut", cwidth, rmuta) + "\n";
 
-    snprintf(buf, sizeof buf,
-             "%sRes.Fire  : %s\n"
-             "%sRes.Cold  : %s\n"
-             "%sLife Prot.: %s\n"
-             "%sRes.Poison: %s\n"
-             "%sRes.Elec. : %s\n"
-             "%sSust.Abil.: %s\n"
-             "%sRes.Mut.  : %s\n"
-             "%sRes.Rott. : %s\n",
-             _determine_colour_string(rfire, 3), _itosym3(rfire),
-             _determine_colour_string(rcold, 3), _itosym3(rcold),
-             _determine_colour_string(rlife, 3), _itosym3(rlife),
-             _determine_colour_string(rpois, 1), _itosym1(rpois),
-             _determine_colour_string(relec, 1), _itosym1(relec),
-             _determine_colour_string(rsust, 2), _itosym2(rsust),
-             _determine_colour_string(rmuta, 1), _itosym1(rmuta),
-             _determine_colour_string(rrott, 1), _itosym1(rrott));
-    cols.add_formatted(0, buf, false);
+    const int saplevel = player_mutation_level(MUT_SAPROVOROUS);
+    const bool show_gourm = (you.species != SP_MUMMY
+                             && you.species != SP_VAMPIRE
+                             && player_mutation_level(MUT_HERBIVOROUS) < 3
+                             && you.gourmand());
+    out += _resist_composer(show_gourm ? "Gourm" : "Saprov",
+                            cwidth,
+                            show_gourm ? 1 : saplevel,
+                            show_gourm ? 1 : 3) + "\n";
 
-    int saplevel = player_mutation_level(MUT_SAPROVOROUS);
-    const char* pregourmand;
-    const char* postgourmand;
+    const int rmagi = player_res_magic(calc_unid) / 40;
+    out += _resist_composer("MR", cwidth, rmagi, 5) + "\n";
 
-    if (you.species != SP_MUMMY
-        && you.species != SP_VAMPIRE
-        && player_mutation_level(MUT_HERBIVOROUS) < 3
-        && you.gourmand())
-    {
-        pregourmand = "Gourmand  : ";
-        postgourmand = _itosym1(1);
-        saplevel = 1;
-    }
-    else
-    {
-        pregourmand = "Saprovore : ";
-        postgourmand = _itosym3(saplevel);
-    }
-    snprintf(buf, sizeof buf, "%s%s%s",
-             _determine_colour_string(saplevel, 3), pregourmand, postgourmand);
-    cols.add_formatted(0, buf, false);
+    cols.add_formatted(0, out, false);
 
-
+    // Second column, resist name is 9 chars
+    out.clear();
+    cwidth = 9;
     const int rinvi = you.can_see_invisible(calc_unid);
-    const int rward = you.warding(calc_unid);
-    const int rcons = you.conservation(calc_unid);
-    const int rcorr = you.res_corr(calc_unid);
-    const int rclar = you.clarity(calc_unid);
-    const int rspir = you.spirit_shield(calc_unid);
-    snprintf(buf, sizeof buf,
-             "%sSee Invis. : %s\n"
-             "%sWarding    : %s\n"
-             "%sConserve   : %s\n"
-             "%sRes.Corr.  : %s\n"
-             "%sClarity    : %s\n"
-             "%sSpirit.Shd : %s\n"
-             ,
-             _determine_colour_string(rinvi, 1), _itosym1(rinvi),
-             _determine_colour_string(rward, 1), _itosym1(rward),
-             _determine_colour_string(rcons, 1), _itosym1(rcons),
-             _determine_colour_string(rcorr, 1), _itosym1(rcorr),
-             _determine_colour_string(rclar, 1), _itosym1(rclar),
-             _determine_colour_string(rspir, 1), _itosym1(rspir));
-    cols.add_formatted(1, buf, false);
+    out += _resist_composer("SeeInvis", cwidth, rinvi) + "\n";
 
+    const int rclar = you.clarity(calc_unid);
     const int stasis = you.stasis(calc_unid);
+    // TODO: what about different levels of anger/berserkitis?
+    const bool show_angry = (you.angry(calc_unid)
+                             || player_mutation_level(MUT_BERSERK))
+                            && !rclar && !stasis;
+    out += show_angry ? _resist_composer("Rnd*Rage", cwidth, 1, 1, false) + "\n"
+                      : _resist_composer("Clarity", cwidth, rclar) + "\n";
+
+    const int rcons = you.conservation(calc_unid);
+    out += _resist_composer("Conserve", cwidth, rcons) + "\n";
+    const int rcorr = you.res_corr(calc_unid);
+    out += _resist_composer("rCorr", cwidth, rcorr) + "\n";
+    const int rrott = you.res_rotting();
+    out += _resist_composer("rRot", cwidth, rrott) + "\n";
+    const int rspir = you.spirit_shield(calc_unid);
+    out += _resist_composer("Spirit", cwidth, rspir) + "\n";
+    const int rward = you.warding(calc_unid);
+    out += _resist_composer("Warding", cwidth, rward) + "\n";
+
     const int notele = you.no_tele(calc_unid);
     const int rrtel = !!player_teleport(calc_unid);
     if (notele && !stasis)
-    {
-        snprintf(buf, sizeof buf, "%sPrev.Telep.: %s",
-                 _determine_colour_string(-1, 1), _itosym1(1));
-    }
+        out += _resist_composer("NoTele", cwidth, 1, 1, false) + "\n";
     else if (rrtel && !stasis)
-    {
-        snprintf(buf, sizeof buf, "%sRnd.Telep. : %s",
-                 _determine_colour_string(-1, 1), _itosym1(1));
-    }
+        out += _resist_composer("Rnd*Tele", cwidth, 1, 1, false) + "\n";
     else
+        out += _resist_composer("Stasis", cwidth, stasis) + "\n";
+    cols.add_formatted(1, out, false);
+
+    const int no_cast = you.no_cast(calc_unid);
+    if (no_cast)
     {
-        snprintf(buf, sizeof buf, "%sStasis     : %s",
-                 _determine_colour_string(stasis, 1), _itosym1(stasis));
+        out.clear();
+        out += _resist_composer("NoCast", cwidth, 1, 1, false);
+        cols.add_formatted(1, out, false);
     }
-    cols.add_formatted(1, buf, false);
 
-    const int rflyi = you.airborne();
-    snprintf(buf, sizeof buf,
-             "%sFlight     : %s\n",
-             _determine_colour_string(rflyi, 1), _itosym1(rflyi));
-    cols.add_formatted(1, buf, false);
-
-    _print_overview_screen_equip(cols, equip_chars);
+    _print_overview_screen_equip(cols, equip_chars, sw);
 
     return cols.formatted_lines();
 }
@@ -2275,15 +2302,9 @@ static char _get_overview_screen_results()
 {
     bool calc_unid = false;
     formatted_scroller overview;
+
     overview.set_flags(MF_SINGLESELECT | MF_ALWAYS_SHOW_MORE | MF_NOWRAP);
-    overview.set_more(formatted_string::parse_string(
-#ifdef USE_TILE_LOCAL
-                        "<cyan>[ +/L-click : Page down.   - : Page up."
-                        "           Esc/R-click exits.]"));
-#else
-                        "<cyan>[ + : Page down.   - : Page up."
-                        "                           Esc exits.]"));
-#endif
+    overview.set_more();
     overview.set_tag("resists");
 
     overview.add_text(_overview_screen_title(get_number_of_cols()));
@@ -2295,11 +2316,10 @@ static char _get_overview_screen_results()
         overview.add_text(" ");
     }
 
-
     {
         vector<char> equip_chars;
         vector<formatted_string> blines =
-            _get_overview_resistances(equip_chars, calc_unid);
+            _get_overview_resistances(equip_chars, calc_unid, get_number_of_cols());
 
         for (unsigned int i = 0; i < blines.size(); ++i)
         {
@@ -2331,7 +2351,7 @@ string dump_overview_screen(bool full_id)
     text += "\n";
 
     vector<char> equip_chars;
-    blines = _get_overview_resistances(equip_chars, full_id);
+    blines = _get_overview_resistances(equip_chars, full_id, 640);
     for (unsigned int i = 0; i < blines.size(); ++i)
     {
         text += blines[i];
@@ -2376,7 +2396,7 @@ string stealth_desc(int stealth)
          (stealth < 400) ? "extraordinarily " :
          (stealth < 520) ? "incredibly "
                          : "uncannily ";
-    return (prefix + "stealthy");
+    return prefix + "stealthy";
 }
 
 string magic_res_adjective(int mr)
@@ -2385,15 +2405,11 @@ string magic_res_adjective(int mr)
         return "immune";
 
     string prefix =
-            (mr <  10) ? "not" :
-            (mr <  30) ? "slightly" :
-            (mr <  60) ? "somewhat" :
-            (mr <  90) ? "quite" :
+            (mr <  40) ? "not" :
+            (mr <  80) ? "somewhat" :
             (mr < 120) ? "very" :
-            (mr < 150) ? "extremely" :
-            (mr < 190) ? "extraordinarily" :
-            (mr < 240) ? "incredibly" :
-            (mr < 300) ? "uncannily"
+            (mr < 160) ? "extremely" :
+            (mr < 200) ? "incredibly"
                        : "almost entirely";
     return prefix + " resistant";
 }
@@ -2401,7 +2417,7 @@ string magic_res_adjective(int mr)
 static string _annotate_form_based(string desc, bool suppressed)
 {
     if (suppressed)
-        return ("<darkgrey>(" + desc + ")</darkgrey>");
+        return "<darkgrey>(" + desc + ")</darkgrey>";
     else
         return desc;
 }
@@ -2422,7 +2438,8 @@ static string _status_mut_abilities(int sw)
     string text = "<w>@:</w> ";
     vector<string> status;
 
-    const int statuses[] = {
+    const int statuses[] =
+    {
         DUR_TRANSFORMATION,
         DUR_PARALYSIS,
         DUR_PETRIFIED,
@@ -2445,7 +2462,7 @@ static string _status_mut_abilities(int sw)
         DUR_DEATH_CHANNEL,
         DUR_PHASE_SHIFT,
         DUR_SILENCE,
-        DUR_INVIS,
+        STATUS_INVISIBLE,
         DUR_CONF,
         DUR_EXHAUSTED,
         DUR_MIGHT,
@@ -2485,20 +2502,23 @@ static string _status_mut_abilities(int sw)
         STATUS_UMBRA,
         STATUS_CONSTRICTED,
         STATUS_AUGMENTED,
-        STATUS_SUPPRESSED,
         STATUS_RECALL,
         STATUS_LIQUEFIED,
         DUR_FLAYED,
         DUR_RETCHING,
         DUR_WEAK,
         DUR_DIMENSION_ANCHOR,
+        STATUS_DRAINED,
+        DUR_TOXIC_RADIANCE,
+        DUR_RECITE,
+        DUR_GRASPING_ROOTS,
+        DUR_FIRE_VULN,
     };
 
     status_info inf;
     for (unsigned i = 0; i < ARRAYSZ(statuses); ++i)
     {
-        fill_status_info(statuses[i], &inf);
-        if (!inf.short_text.empty())
+        if (fill_status_info(statuses[i], &inf) && !inf.short_text.empty())
             status.push_back(inf.short_text);
     }
 
@@ -2528,11 +2548,6 @@ static string _status_mut_abilities(int sw)
     text += "<w>A:</w> ";
 
     int AC_change  = 0;
-    int EV_change  = 0;
-    int SH_change  = 0;
-    int Str_change = 0;
-    int Int_change = 0;
-    int Dex_change = 0;
 
     vector<string> mutations;
 
@@ -2652,6 +2667,23 @@ static string _status_mut_abilities(int sw)
         mutations.push_back(_dragon_abil("breathe steam"));
         break;
 
+    case SP_FORMICID:
+        mutations.push_back("permanent stasis");
+        mutations.push_back("dig shafts and tunnels");
+        mutations.push_back("four strong arms");
+        mutations.push_back("poison weakness");
+        break;
+
+    case SP_GARGOYLE:
+        AC_change += 2 + you.experience_level * 2 / 5
+                       + max(0, you.experience_level - 7) * 2 / 5;
+        break;
+
+    case SP_DJINNI:
+        mutations.push_back("fire immunity");
+        mutations.push_back("cold vulnerability");
+        break;
+
     default:
         break;
     }                           //end switch - innate abilities
@@ -2703,126 +2735,14 @@ static string _status_mut_abilities(int sw)
 
         current = "";
 
-        if (mdef.short_desc)
+        current += mdef.short_desc;
+
+        if (mdef.levels > 1)
         {
-            current += mdef.short_desc;
+            ostringstream ostr;
+            ostr << ' ' << level;
 
-            if (mdef.levels > 1)
-            {
-                ostringstream ostr;
-                ostr << ' ' << level;
-
-                current += ostr.str();
-            }
-        }
-        else if (level)
-        {
-            switch (i)
-            {
-            case MUT_TOUGH_SKIN:
-                AC_change += level;
-                break;
-            case MUT_SHAGGY_FUR:
-                AC_change += level;
-                break;
-            case MUT_STRONG:
-                Str_change += level;
-                break;
-            case MUT_CLEVER:
-                Int_change += level;
-                break;
-            case MUT_AGILE:
-                Dex_change += level;
-                break;
-            case MUT_WEAK:
-                Str_change -= level;
-                break;
-            case MUT_DOPEY:
-                Int_change -= level;
-                break;
-            case MUT_CLUMSY:
-                Dex_change -= level;
-                break;
-            case MUT_STRONG_STIFF:
-                Str_change += level;
-                Dex_change -= level;
-                break;
-            case MUT_FLEXIBLE_WEAK:
-                Str_change -= level;
-                Dex_change += level;
-                break;
-            case MUT_FRAIL:
-                snprintf(info, INFO_SIZE, "-%d%% hp", level*10);
-                current = info;
-                break;
-            case MUT_ROBUST:
-                snprintf(info, INFO_SIZE, "+%d%% hp", level*10);
-                current = info;
-                break;
-            case MUT_LOW_MAGIC:
-                snprintf(info, INFO_SIZE, "-%d%% mp", level*10);
-                current = info;
-                break;
-            case MUT_HIGH_MAGIC:
-                snprintf(info, INFO_SIZE, "+%d%% mp", level*10);
-                current = info;
-                break;
-            case MUT_ICEMAIL:
-                AC_change += player_icemail_armour_class();
-                break;
-            case MUT_EYEBALLS:
-                 snprintf(info, INFO_SIZE, "+%d accuracy", level*2+1);
-                 current = info;
-                 break;
-
-            // scales -> calculate sum of AC bonus
-            case MUT_DISTORTION_FIELD:
-                EV_change += level + 1;
-                if (level == 3)
-                    current = "repel missiles";
-                break;
-            case MUT_ICY_BLUE_SCALES:
-                AC_change += level + (level > 1 ? 1 : 0);
-                EV_change -= level > 1 ? 1 : 0;
-                break;
-            case MUT_IRIDESCENT_SCALES:
-                AC_change += 2*level+2;
-                break;
-            case MUT_LARGE_BONE_PLATES:
-                AC_change += level + 1;
-                SH_change += level * 2;
-                break;
-            case MUT_MOLTEN_SCALES:
-                AC_change += level + (level > 1 ? 1 : 0);
-                EV_change -= level > 1 ? 1 : 0;
-                break;
-            case MUT_ROUGH_BLACK_SCALES:
-                AC_change  += 3*level+1;
-                Dex_change -= level;
-                break;
-            case MUT_RUGGED_BROWN_SCALES:
-                AC_change += level;
-                break;
-            case MUT_SLIMY_GREEN_SCALES:
-                AC_change += level + 1;
-                break;
-            case MUT_THIN_METALLIC_SCALES:
-                AC_change += level + 1;
-                break;
-            case MUT_THIN_SKELETAL_STRUCTURE:
-                Dex_change += 2 * level;
-                Str_change -= (level - 1);
-                break;
-            case MUT_YELLOW_SCALES:
-                AC_change += level + 1;
-                break;
-            case MUT_GELATINOUS_BODY:
-                AC_change += (level == 3) ? 2 : 1;
-                EV_change += level - 1;
-                break;
-            default:
-                die("mutation without a short desc: %d", i);
-            }
+            current += ostr.str();
         }
 
         if (!current.empty())
@@ -2842,31 +2762,6 @@ static string _status_mut_abilities(int sw)
         snprintf(info, INFO_SIZE, "AC %s%d", (AC_change > 0 ? "+" : ""), AC_change);
         mutations.push_back(info);
     }
-    if (EV_change)
-    {
-        snprintf(info, INFO_SIZE, "EV %s%d", (EV_change > 0 ? "+" : ""), EV_change);
-        mutations.push_back(info);
-    }
-    if (SH_change)
-    {
-        snprintf(info, INFO_SIZE, "SH %s%d", (SH_change > 0 ? "+" : ""), SH_change);
-        mutations.push_back(info);
-    }
-    if (Str_change)
-    {
-        snprintf(info, INFO_SIZE, "Str %s%d", (Str_change > 0 ? "+" : ""), Str_change);
-        mutations.push_back(info);
-    }
-    if (Int_change)
-    {
-        snprintf(info, INFO_SIZE, "Int %s%d", (Int_change > 0 ? "+" : ""), Int_change);
-        mutations.push_back(info);
-    }
-    if (Dex_change)
-    {
-        snprintf(info, INFO_SIZE, "Dex %s%d", (Dex_change > 0 ? "+" : ""), Dex_change);
-        mutations.push_back(info);
-    }
 
     if (mutations.empty())
         text +=  "no striking features";
@@ -2881,6 +2776,12 @@ static string _status_mut_abilities(int sw)
     //----------------------------
 
     text += print_abilities();
+
+    //--------------
+    // print the Orb
+    //--------------
+    if (player_has_orb())
+        text += "\n<w>0:</w> Orb of Zot";
 
     //--------------
     // print runes

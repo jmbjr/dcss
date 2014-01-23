@@ -1,16 +1,7 @@
-###############################################################################
-# sprint.des - vaults for the Dungeon Sprint variant
-#
-# These vaults should always have "TAGS: sprint".  No other dungeon levels will
-# be generated in Dungeon Sprint.
-#
-# Note that at the start of the game, the dungeon builder removes all monsters
-# in view of the player. Zero experience monsters like plants are exempt.
-###############################################################################
-
 NAME:   dungeon_sprint_1
-TAGS:   sprint no_item_gen no_trap_gen no_monster_gen no_pool_fixup no_rotate no_hmirror no_vmirror
+TAGS:   sprint no_item_gen no_trap_gen no_pool_fixup no_rotate no_hmirror no_vmirror
 DESC:   Sprint I: "Red Sonja"
+ORDER:  1
 ORIENT: encompass
 MARKER: L = lua:fog_machine { \
              pow_min = 2, pow_max = 4, delay = 5, \
@@ -76,8 +67,8 @@ KITEM:  Z = Orb of Zot
 MAP
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 xxxccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccxxx
-xxxc{[x.1+..x.3+$$xCCx$$+..Dx**xL$$f+gggggg+i$c~~+$$$$c|||$$$$$$cxxx
-xxxc(.+..x.2+..x$$+r#+$$x.E.xx+x$xxxxggLggcc$E+~~x$$$$cc||$$$$$$cxxx
+xxxc{.x.1+..x.3+$$xCCx$$+..Dx**xL$$f+gggggg+i$c~~+$$$$c|||$$$$$$cxxx
+xxxc..+..x.2+..x$$+r#+$$x.E.xx+x$xxxxggLggcc$E+~~x$$$$cc||$$$$$$cxxx
 xxxc..xxxxx+xxxxx+xCCccccD..+RRx$x*xxxgggccccccc+x$$j$$ccccc$$$$cxxx
 xxxc..xxxx$$c$$$c*cccc**ccccxRR+$x=x$xxx+c|**cc..x$$$$$c$$$c$$$$cxxx
 xxxc..xC.xxxc$$cc*cWWW.5c$$cc+cccc~.$mbc.cc$$$c..xx$$$$c*Y*c$$$$cxxx

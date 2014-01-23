@@ -8,6 +8,7 @@
 #include "cluautil.h"
 #include "l_libs.h"
 
+#include "act-iter.h"
 #include "beam.h"
 #include "branch.h"
 #include "chardump.h"
@@ -20,7 +21,6 @@
 #include "los.h"
 #include "message.h"
 #include "mon-act.h"
-#include "mon-iter.h"
 #include "mon-stuff.h"
 #include "mon-util.h"
 #include "place.h"
@@ -51,7 +51,7 @@ LUAFN(debug_goto_place)
             lua_isnumber(ls, 2)? luaL_checkint(ls, 2) : -1;
         you.goto_place(id);
         if (bind_entrance != -1)
-            startdepth[you.where_are_you] = bind_entrance;
+            brentry[you.where_are_you].depth = bind_entrance;
     }
     catch (const string &err)
     {
@@ -64,7 +64,7 @@ LUAFN(debug_enter_dungeon)
 {
     init_level_connectivity();
 
-    you.where_are_you = BRANCH_MAIN_DUNGEON;
+    you.where_are_you = BRANCH_DUNGEON;
     you.depth = 1;
 
     load_level(DNGN_STONE_STAIRS_DOWN_I, LOAD_START_GAME, level_id());
@@ -170,8 +170,7 @@ LUAFN(debug_cull_monsters)
             return 0;
     }
 
-    mpr("menv[] is full, dismissing non-near monsters",
-        MSGCH_DIAGNOSTICS);
+    mprf(MSGCH_DIAGNOSTICS, "menv[] is full, dismissing non-near monsters");
 
     // menv[] is full
     for (monster_iterator mi; mi; ++mi)
@@ -336,6 +335,8 @@ static const char* disablements[] =
     "delay",
     "confirmations",
     "afflictions",
+    "mon_sight",
+    "save_checkpoints",
 };
 
 LUAFN(debug_disable)

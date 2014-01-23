@@ -9,6 +9,12 @@ dgl_mode = True
 bind_nonsecure = True # Set to false to only use SSL
 bind_address = ""
 bind_port = 8080
+# Or listen on multiple address/port pairs (overriding the above) with:
+# bind_pairs = (
+#     ("127.0.0.1", 8080),
+#     ("localhost", 8082),
+#     ("", 8180), # All addresses
+# )
 
 logging_config = {
 #    "filename": "webtiles.log",
@@ -45,7 +51,8 @@ games = OrderedDict([
         inprogress_path = "./rcs/running",
         ttyrec_path = "./rcs/ttyrecs/%n",
         socket_path = "./rcs",
-        client_path = "./webserver/game_data/")),
+        client_path = "./webserver/game_data/",
+        send_json_options = True)),
     ("sprint-web-trunk", dict(
         name = "Sprint trunk",
         crawl_binary = "./crawl",
@@ -56,6 +63,7 @@ games = OrderedDict([
         ttyrec_path = "./rcs/ttyrecs/%n",
         socket_path = "./rcs",
         client_path = "./webserver/game_data/",
+        send_json_options = True,
         options = ["-sprint"])),
     ("zd-web-trunk", dict(
         name = "Zot Defense trunk",
@@ -67,6 +75,7 @@ games = OrderedDict([
         ttyrec_path = "./rcs/ttyrecs/%n",
         socket_path = "./rcs",
         client_path = "./webserver/game_data/",
+        send_json_options = True,
         options = ["-zotdef"])),
     ("tut-web-trunk", dict(
         name = "Tutorial trunk",
@@ -78,6 +87,7 @@ games = OrderedDict([
         ttyrec_path = "./rcs/ttyrecs/%n",
         socket_path = "./rcs",
         client_path = "./webserver/game_data/",
+        send_json_options = True,
         options = ["-tutorial"])),
 ])
 
@@ -104,6 +114,11 @@ ssl_options = None # No SSL
 #}
 ssl_address = ""
 ssl_port = 8081
+# Or listen on multiple address/port pairs (overriding the above) with:
+# ssl_bind_pairs = (
+#     ("127.0.0.1", 8081),
+#     ("localhost", 8083),
+# )
 
 connection_timeout = 600
 max_idle_time = 5 * 60 * 60
@@ -140,3 +155,9 @@ chroot = None
 
 pidfile = None
 daemon = False # If true, the server will detach from the session after startup
+
+# Set to a URL with %s where lowercased player name should go in order to
+# hyperlink WebTiles spectator names to their player pages.
+# For example: "http://crawl.akrasiac.org/scoring/players/%s.html"
+# Set to None to disable player page hyperlinks
+player_url = None

@@ -30,7 +30,7 @@
 // db, loading, and destroying the DB.
 class TextDB
 {
- public:
+public:
     // db_name is the savedir-relative name of the db file,
     // minus the "db" extension.
     TextDB(const char* db_name, const char* dir, ...);
@@ -120,6 +120,10 @@ static TextDB AllDBs[] =
             "godname.txt",  // god-related names (mostly His Xomminess)
             NULL),
 
+    TextDB("quotes", "descript/",
+            "quotes.txt",   // quotes for items and monsters
+            NULL),
+
     TextDB("help", "database/",
             "help.txt",     // database for outsourced help texts
             NULL),
@@ -140,9 +144,10 @@ static TextDB& RandartDB     = AllDBs[2];
 static TextDB& SpeakDB       = AllDBs[3];
 static TextDB& ShoutDB       = AllDBs[4];
 static TextDB& MiscDB        = AllDBs[5];
-static TextDB& HelpDB        = AllDBs[6];
-static TextDB& FAQDB         = AllDBs[7];
-static TextDB& HintsDB       = AllDBs[8];
+static TextDB& QuotesDB      = AllDBs[6];
+static TextDB& HelpDB        = AllDBs[7];
+static TextDB& FAQDB         = AllDBs[8];
+static TextDB& HintsDB       = AllDBs[9];
 
 static string _db_cache_path(string db, const char *lang)
 {
@@ -260,7 +265,7 @@ bool TextDB::_needs_update() const
         return false;
     }
 
-    return (ts != timestamp);
+    return ts != timestamp;
 }
 
 void TextDB::_regenerate_db()
@@ -352,7 +357,6 @@ void databaseSystemShutdown()
 ////////////////////////////////////////////////////////////////////////////
 // Main DB functions
 
-
 static datum _database_fetch(DBM *database, const string &key)
 {
     datum result;
@@ -440,7 +444,7 @@ static void _execute_embedded_lua(string &str)
         string::size_type end = str.find("}}", pos + 2);
         if (end == string::npos)
         {
-            mpr("Unbalanced {{, bailing.", MSGCH_DIAGNOSTICS);
+            mprf(MSGCH_DIAGNOSTICS, "Unbalanced {{, bailing.");
             break;
         }
 
@@ -647,7 +651,7 @@ static string _getRandomisedStr(TextDB &db, const string &key,
     recursion_depth++;
     if (recursion_depth > MAX_RECURSION_DEPTH)
     {
-        mpr("Too many nested replacements, bailing.", MSGCH_DIAGNOSTICS);
+        mprf(MSGCH_DIAGNOSTICS, "Too many nested replacements, bailing.");
 
         return "TOO MUCH RECURSION";
     }
@@ -673,14 +677,14 @@ static void _call_recursive_replacement(string &str, TextDB &db,
         num_replacements++;
         if (num_replacements > MAX_REPLACEMENTS)
         {
-            mpr("Too many string replacements, bailing.", MSGCH_DIAGNOSTICS);
+            mprf(MSGCH_DIAGNOSTICS, "Too many string replacements, bailing.");
             return;
         }
 
         string::size_type end = str.find("@", pos + 1);
         if (end == string::npos)
         {
-            mpr("Unbalanced @, bailing.", MSGCH_DIAGNOSTICS);
+            mprf(MSGCH_DIAGNOSTICS, "Unbalanced @, bailing.");
             break;
         }
 
@@ -751,7 +755,7 @@ static string _query_database(TextDB &db, string key, bool canonicalise_key,
 
 string getQuoteString(const string &key)
 {
-    return unwrap_desc(_query_database(DescriptionDB, key + ":quote", true, true));
+    return unwrap_desc(_query_database(QuotesDB, key, true, true));
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -800,7 +804,6 @@ string getGameStartDescription(const string &key)
 {
     return _query_database(GameStartDB, key, true, true);
 }
-
 
 /////////////////////////////////////////////////////////////////////////////
 // Shout DB specific functions.

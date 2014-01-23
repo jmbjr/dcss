@@ -12,7 +12,9 @@
 -- { <class> } - item class: gold, weapon, missile, wand, carrion, food,
 --               scroll, jewellery, potion, book, magical staff, orb, misc,
 --               <armourtype> armour
+-- { <ego> } - short item ego description: rC+, rPois, SInv, freeze etc.
 -- {stick} for items suitable for "sticks to snakes"
+-- {god gift} for god gifts
 -- {fruit} for fruit
 --
 -- Item annotations are always prefixed to the item name. For instance:
@@ -54,8 +56,18 @@ function ch_stash_search_annotate_item(it)
     annot = annot .. "{" .. skill .. "} "
   end
 
+  if it.ego_type_terse ~= "" and it.ego_type_terse ~= "unknown" then
+      annot = annot .. "{" .. it.ego_type_terse .. "} "
+  end
+
   if it.class(true) == "armour" then
       annot = annot .. "{" .. it.subtype() .. " "
+  elseif it.class(true) == "weapon" then
+      if it.is_ranged then
+        annot = annot .. "{ranged "
+      else
+        annot = annot .. "{melee "
+      end
   else
       annot = annot .. "{"
   end

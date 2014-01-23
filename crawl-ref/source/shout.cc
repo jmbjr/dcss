@@ -7,6 +7,7 @@
 
 #include "shout.h"
 
+#include "act-iter.h"
 #include "art-enum.h"
 #include "artefact.h"
 #include "branch.h"
@@ -19,10 +20,11 @@
 #include "ghost.h"
 #include "jobs.h"
 #include "libutil.h"
+#include "los.h"
 #include "message.h"
 #include "misc.h"
 #include "mon-behv.h"
-#include "mon-iter.h"
+#include "mon-chimera.h"
 #include "mon-place.h"
 #include "mon-pathfind.h"
 #include "mon-stuff.h"
@@ -65,6 +67,14 @@ void handle_monster_shouts(monster* mons, bool force)
     // choose a random verb and loudness for them.
     shout_type  s_type = mons_shouts(mons->type, false);
 
+    // Chimera can take a random shout type from any of their
+    // three components
+    if (mons->type == MONS_CHIMERA)
+    {
+        monster_type acting = mons->ghost->acting_part != MONS_0
+            ? mons->ghost->acting_part : random_chimera_part(mons);
+        s_type = mons_shouts(acting, false);
+    }
     // Silent monsters can give noiseless "visual shouts" if the
     // player can see them, in which case silence isn't checked for.
     // Muted monsters can't shout at all.
@@ -284,11 +294,15 @@ bool check_awaken(monster* mons)
 
     // Monsters put to sleep by ensorcelled hibernation will sleep
     // at least one turn.
-    if (mons->has_ench(ENCH_SLEEPY))
+    if (mons_just_slept(mons))
         return false;
 
     // Berserkers aren't really concerned about stealth.
     if (you.berserk())
+        return true;
+
+    // Vigilant monsters are always alerted
+    if (mons_class_flag(mons->type, M_VIGILANT))
         return true;
 
     // I assume that creatures who can sense invisible are very perceptive.
@@ -406,10 +420,12 @@ void item_noise(const item_def &item, string msg, int loudness)
     // replace references to player name and god
     msg = replace_all(msg, "@player_name@", you.your_name);
     msg = replace_all(msg, "@player_god@",
-                      you.religion == GOD_NO_GOD ? "atheism"
+                      you_worship(GOD_NO_GOD) ? "atheism"
                       : god_name(you.religion, coinflip()));
+    msg = replace_all(msg, "@a_player_genus@",
+                          article_a(species_name(you.species, true)));
 
-    mpr(msg.c_str(), channel);
+    mprf(channel, "%s", msg.c_str());
 
     if (channel != MSGCH_TALK_VISUAL)
         noisy(loudness, you.pos());
@@ -442,7 +458,7 @@ void noisy_equipment()
     msg = maybe_pick_random_substring(msg);
     msg = maybe_capitalise_substring(msg);
 
-    item_noise(*weapon, msg);
+    item_noise(*weapon, msg, 20);
 }
 
 void apply_noises()
@@ -501,8 +517,8 @@ bool noisy(int original_loudness, const coord_def& where,
                 noise_msg,
                 (scaled_loudness + 1) * 1000,
                 who,
-                0 | (mermaid? NF_MERMAID : 0)
-                | (message_if_unseen? NF_MESSAGE_IF_UNSEEN : 0)));
+                0 | (mermaid ? NF_MERMAID : 0)
+                | (message_if_unseen ? NF_MESSAGE_IF_UNSEEN : 0)));
 
     // Some users of noisy() want an immediate answer to whether the
     // player heard the noise. The deferred noise system also means
@@ -516,7 +532,7 @@ bool noisy(int original_loudness, const coord_def& where,
     if (player_distance <= dist && player_can_hear(where))
     {
         if (msg && !fake_noise)
-            mpr(msg, MSGCH_SOUND);
+            mprf(MSGCH_SOUND, "%s", msg);
         return true;
     }
     return false;
@@ -544,7 +560,7 @@ static const char* _player_vampire_smells_blood(int dist)
     if (dist < 16) // 4*4
         return " near-by";
 
-    if (you.hunger_state <= HS_NEAR_STARVING && dist > get_los_radius_sq())
+    if (you.hunger_state <= HS_NEAR_STARVING && dist > los_radius2)
         return " in the distance";
 
     return "";
@@ -600,9 +616,11 @@ void check_player_sense(sense_type sense, int range, const coord_def& where)
 
 void check_monsters_sense(sense_type sense, int range, const coord_def& where)
 {
-    circle_def c(where, range, C_CIRCLE);
-    for (monster_iterator mi(&c); mi; ++mi)
+    for (monster_iterator mi; mi; ++mi)
     {
+        if (distance2(mi->pos(), where))
+            continue;
+
         switch (sense)
         {
         case SENSE_SMELL_BLOOD:
@@ -664,7 +682,8 @@ void check_monsters_sense(sense_type sense, int range, const coord_def& where)
             break;
 
         case SENSE_WEB_VIBRATION:
-            if (!mons_class_flag(mi->type, M_WEB_SENSE))
+            if (!mons_class_flag(mi->type, M_WEB_SENSE)
+                && !mons_class_flag(get_chimera_legs(*mi), M_WEB_SENSE))
                 break;
             if (!one_chance_in(4))
             {
@@ -746,7 +765,7 @@ noise_cell::noise_cell()
 
 bool noise_cell::can_apply_noise(int _noise_intensity_millis) const
 {
-    return (noise_intensity_millis < _noise_intensity_millis);
+    return noise_intensity_millis < _noise_intensity_millis;
 }
 
 bool noise_cell::apply_noise(int _noise_intensity_millis,
@@ -921,11 +940,10 @@ bool noise_grid::propagate_noise_to_neighbour(int base_attenuation,
                                   next_pos - current_pos))
             // Return true only if we hadn't already registered this
             // cell as a neighbour (presumably with a lower volume).
-            return (neighbour_old_distance != travel_distance);
+            return neighbour_old_distance != travel_distance;
     }
     return false;
 }
-
 
 void noise_grid::apply_noise_effects(const coord_def &pos,
                                      int noise_intensity_millis,
@@ -943,7 +961,7 @@ void noise_grid::apply_noise_effects(const coord_def &pos,
     if (monster *mons = monster_at(pos))
     {
         if (mons->alive()
-            && !mons->has_ench(ENCH_SLEEPY)
+            && !mons_just_slept(mons)
             && mons->mindex() != noise.noise_producer_id)
         {
             const coord_def perceived_position =
@@ -1168,8 +1186,8 @@ static void _actor_apply_noise(actor *act,
         act->check_awaken(loudness);
         if (!(noise.noise_flags & NF_MERMAID))
         {
-            you.beholders_check_noise(loudness, player_equip_unrand_effect(UNRAND_DEMON_AXE));
-            you.fearmongers_check_noise(loudness, player_equip_unrand_effect(UNRAND_DEMON_AXE));
+            you.beholders_check_noise(loudness, player_equip_unrand(UNRAND_DEMON_AXE));
+            you.fearmongers_check_noise(loudness, player_equip_unrand(UNRAND_DEMON_AXE));
         }
     }
     else

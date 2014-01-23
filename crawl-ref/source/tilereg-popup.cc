@@ -7,11 +7,9 @@
 
 #include "menu.h"
 #include "macro.h"
-#include "options.h"
 #include "tilebuf.h"
 #include "tilefont.h"
 #include "cio.h"
-#include "process_desc.h"
 
 PopupRegion::PopupRegion(ImageManager *im, FontWrapper *entry) :
     MenuRegion(im, entry),
@@ -55,7 +53,6 @@ void PopupRegion::place_entries()
     m_shape_buf.add(ex / 4, ey / 4, ex * 3 / 4, ey * 3 / 4, panel);
     _place_entries(ex / 4, ey / 4, ex / 2);
 }
-
 
 void PopupRegion::run()
 {

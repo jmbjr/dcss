@@ -41,7 +41,7 @@ static int _incomplete(lua_State *ls, int status)
 
 static int _pushline(lua_State *ls, int firstline)
 {
-    char buffer[80];
+    char buffer[16384];
     char *b = buffer;
     size_t l;
     string prompt = firstline ? "> " : ". ";
@@ -100,7 +100,7 @@ static int _report(lua_State *ls, int status)
         const char *msg = lua_tostring(ls, -1);
         if (msg == NULL)
             msg = "(error object is not a string)";
-        mpr(msg, MSGCH_ERROR);
+        mprf(MSGCH_ERROR, "%s", msg);
         lua_pop(ls, 1);
     }
     return status;
@@ -142,20 +142,20 @@ bool luaterp_running()
 
 static bool _loaded_terp_files = false;
 
-void debug_terp_dlua()
+void debug_terp_dlua(CLua &vm)
 {
     if (!_loaded_terp_files)
     {
-        dlua.execfile("dlua/debug.lua", false, false);
+        vm.execfile("dlua/debug.lua", false, false);
         for (unsigned int i = 0; i < Options.terp_files.size(); i++)
         {
-            dlua.execfile(Options.terp_files[i].c_str(), false, false);
-            if (!dlua.error.empty())
-                mprf(MSGCH_ERROR, "Lua error: %s", dlua.error.c_str());
+            vm.execfile(Options.terp_files[i].c_str(), false, false);
+            if (!vm.error.empty())
+                mprf(MSGCH_ERROR, "Lua error: %s", vm.error.c_str());
         }
         _loaded_terp_files = true;
     }
-    _run_dlua_interpreter(dlua);
+    _run_dlua_interpreter(vm);
 }
 
 #endif

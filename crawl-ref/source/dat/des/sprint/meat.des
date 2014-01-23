@@ -94,7 +94,7 @@
   local vile =
     "molten gargoyle hp:7000 hd:80 name:vile n_rpl n_des n_spe never_corpse \
     col:lightred generate_awake perm_ench:haste \
-    spells:dig;confuse;confuse;miasma;hellfire_burst"
+    spells:dig;confuse;confuse;miasma_breath;hellfire_burst"
 
   -- Uniques --
   local servant =
@@ -109,7 +109,7 @@
     generate_awake never_corpse \
     spells:sentinel's_mark;haste;ensnare \
     ; ring of slaying plus:27000 plus2:200 not_cursed ident:all \
-    no_pickup . triple sword plus:9 plus2:9 not_cursed ego:vorpal race:no_race \
+    no_pickup . claymore plus:9 plus2:9 not_cursed ego:vorpal race:no_race \
     ident:all no_pickup"
 
   local defiler =
@@ -315,9 +315,10 @@ end
 }}
 NAME:      meatsprint
 TAGS:      sprint no_rotate no_hmirror no_vmirror
-TAGS:      no_monster_gen no_item_gen no_trap_gen no_pool_fixup
+TAGS:      no_item_gen no_trap_gen no_pool_fixup
 ORIENT:    encompass
 DESC:      Sprint VIII: "Arena of Blood"
+ORDER:     8
 KFEAT:     { = {
 LROCKCOL:  red
 LFLOORCOL: red

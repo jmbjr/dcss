@@ -19,12 +19,6 @@ Artificer
 Los Artificieros comienzan con unos pocos instrumentos mágicos y son
 competentes usando dichas herramientas.
 %%%%
-Assassin
-
-Los Asesinos conocen todo acerca del sigilo, listos para apuñalar a oponentes
-distraídos. No son solamente daga y capa, también poseen agujas de curare para
-su cerbatana.
-%%%%
 Berserker
 
 Los Berserkers creen en Trog, el dios del delirio y enemigo de la magia. No hay
@@ -99,11 +93,6 @@ Necromancer
 Los Nigromantes son magos especializados en la práctica de la magia de la
 muerte. Empiezan con el hechizo del Dolor.
 %%%%
-Skald
-
-Los Escaldos son guerreros que pueden potenciarse en batalla con hechizos de su
-Libro de Cánticos de Guerra.
-%%%%
 Summoner
 
 Los Convocadores comienzan con el Libro de las Llamadas y son capaces de
@@ -126,7 +115,7 @@ Los Viajeros comienzan con capacidades y una equipación al azar.
 Warper
 
 Los urdidores comienzan con un arma de que hayan elegido y un pergamino de
-"Blinking". Pueden aprender los hechizos contenidos en el libro de
+«Blinking». Pueden aprender los hechizos contenidos en el libro de
 Translocaciones Espaciales.
 %%%%
 Wizard

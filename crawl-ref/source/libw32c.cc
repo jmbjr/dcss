@@ -103,22 +103,22 @@ static void _setcursortype_internal(bool curstype);
 static DWORD crawlColorData[16] =
 // BGR data, easier to put in registry
 {
-   0x00000000,  // BLACK
-   0x00ff00cd,  // BLUE
-   0x0046b964,  // GREEN
-   0x00b4b400,  // CYAN
-   0x000085ff,  // RED
-   0x00ee82ee,  // MAGENTA
-   0x005a6fcd,  // BROWN
-   0x00c0c0c0,  // LT GREY
-   0x00808080,  // DK GREY
-   0x00ff8600,  // LT BLUE
-   0x0000ff85,  // LT GREEN
-   0x00ffff00,  // LT CYAN
-   0x000000ff,  // LT RED
-   0x00bf7091,  // LT MAGENTA
-   0x0000ffff,  // YELLOW
-   0x00ffffff   // WHITE
+    0x00000000,  // BLACK
+    0x00ff00cd,  // BLUE
+    0x0046b964,  // GREEN
+    0x00b4b400,  // CYAN
+    0x000085ff,  // RED
+    0x00ee82ee,  // MAGENTA
+    0x005a6fcd,  // BROWN
+    0x00c0c0c0,  // LT GREY
+    0x00808080,  // DK GREY
+    0x00ff8600,  // LT BLUE
+    0x0000ff85,  // LT GREEN
+    0x00ffff00,  // LT CYAN
+    0x000000ff,  // LT RED
+    0x00bf7091,  // LT MAGENTA
+    0x0000ffff,  // YELLOW
+    0x00ffffff   // WHITE
 };
  */
 
@@ -270,6 +270,22 @@ static void _set_string_input(bool value)
     FlushConsoleInputBuffer(inbuf);
 }
 
+// Fake the user pressing Esc to break out of wait-for-input loops.
+// Just one should be enough as we check the seen_hups flag, we just
+// need to interrupt the syscall.
+void w32_insert_escape()
+{
+    INPUT_RECORD esc;
+    esc.EventType = KEY_EVENT;
+    esc.Event.KeyEvent.bKeyDown = TRUE;
+    esc.Event.KeyEvent.wRepeatCount = 1;
+    esc.Event.KeyEvent.wVirtualKeyCode = VK_ESCAPE;
+    // .wVirtualScanCode ?
+    esc.Event.KeyEvent.uChar.UnicodeChar = ESCAPE;
+    esc.Event.KeyEvent.dwControlKeyState = 0;
+    WriteConsoleInputW(inbuf, &esc, 1, nullptr);
+}
+
 #ifdef TARGET_COMPILER_MINGW
 static void install_sighandlers()
 {
@@ -396,7 +412,6 @@ void console_startup()
 
     if (OutputCP != PREFERRED_CODEPAGE)
         SetConsoleOutputCP(PREFERRED_CODEPAGE);
-
 }
 
 void console_shutdown()
@@ -460,7 +475,7 @@ static void _setcursortype_internal(bool curstype)
     cci.dwSize = have_initial_cci && initial_cci.dwSize ? initial_cci.dwSize
                                                         : 5;
 
-    cci.bVisible = curstype? TRUE : FALSE;
+    cci.bVisible = curstype ? TRUE : FALSE;
     cursor_is_enabled = curstype;
     SetConsoleCursorInfo(outbuf, &cci);
 
@@ -559,7 +574,6 @@ void textbackground(int c)
     current_color = current_color | (macro_bg << 4);
 }
 
-
 static void cprintf_aux(const char *s)
 {
     // early out -- not initted yet
@@ -616,15 +630,15 @@ void putwch(ucs_t c)
 #define VKEY_MAPPINGS 11
 static int vk_tr[4][VKEY_MAPPINGS] = // virtual key, unmodified, shifted, control
 {
-   { VK_END, VK_DOWN, VK_NEXT, VK_LEFT, VK_CLEAR, VK_RIGHT,
-     VK_HOME, VK_UP, VK_PRIOR, VK_INSERT, VK_TAB },
-   { CK_END, CK_DOWN, CK_PGDN, CK_LEFT, CK_CLEAR, CK_RIGHT,
-     CK_HOME, CK_UP, CK_PGUP , CK_INSERT, CONTROL('I') },
-   { CK_SHIFT_END, CK_SHIFT_DOWN, CK_SHIFT_PGDN, CK_SHIFT_LEFT, CK_SHIFT_CLEAR, CK_SHIFT_RIGHT,
-     CK_SHIFT_HOME, CK_SHIFT_UP, CK_SHIFT_PGUP, CK_SHIFT_INSERT, CK_SHIFT_TAB },
-   { CK_CTRL_END, CK_CTRL_DOWN, CK_CTRL_PGDN, CK_CTRL_LEFT, CK_CTRL_CLEAR, CK_CTRL_RIGHT,
-     CK_CTRL_HOME, CK_CTRL_UP, CK_CTRL_PGUP, CK_CTRL_INSERT, CK_CTRL_TAB },
-   };
+    { VK_END, VK_DOWN, VK_NEXT, VK_LEFT, VK_CLEAR, VK_RIGHT,
+      VK_HOME, VK_UP, VK_PRIOR, VK_INSERT, VK_TAB },
+    { CK_END, CK_DOWN, CK_PGDN, CK_LEFT, CK_CLEAR, CK_RIGHT,
+      CK_HOME, CK_UP, CK_PGUP , CK_INSERT, CONTROL('I') },
+    { CK_SHIFT_END, CK_SHIFT_DOWN, CK_SHIFT_PGDN, CK_SHIFT_LEFT, CK_SHIFT_CLEAR, CK_SHIFT_RIGHT,
+      CK_SHIFT_HOME, CK_SHIFT_UP, CK_SHIFT_PGUP, CK_SHIFT_INSERT, CK_SHIFT_TAB },
+    { CK_CTRL_END, CK_CTRL_DOWN, CK_CTRL_PGDN, CK_CTRL_LEFT, CK_CTRL_CLEAR, CK_CTRL_RIGHT,
+      CK_CTRL_HOME, CK_CTRL_UP, CK_CTRL_PGUP, CK_CTRL_INSERT, CK_CTRL_TAB },
+};
 
 static int ck_tr[] =
 {
@@ -779,6 +793,9 @@ int getch_ck(void)
     bool waiting_for_event = true;
     while (waiting_for_event)
     {
+        if (crawl_state.seen_hups)
+            return ESCAPE;
+
         if (ReadConsoleInputW(inbuf, &ir, 1, &nread) == 0)
             fputs("Error in ReadConsoleInputW()!", stderr);
         if (nread > 0)
@@ -830,6 +847,9 @@ int getchk(void)
 
 bool kbhit()
 {
+    if (crawl_state.seen_hups)
+        return 1;
+
     INPUT_RECORD ir[10];
     DWORD read_count = 0;
     PeekConsoleInputW(inbuf, ir, ARRAYSZ(ir), &read_count);

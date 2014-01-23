@@ -45,7 +45,7 @@ protected:
 
 int element_colour_calc::rand(bool non_random)
 {
-    return non_random ? 0 : random2(120);
+    return non_random ? 0 : ui_random(120);
 }
 
 int element_colour_calc::get(const coord_def& loc, bool non_random)
@@ -68,7 +68,7 @@ int random_element_colour_calc::get(const coord_def& loc, bool non_random)
 
 colour_t random_colour(void)
 {
-    return (1 + random2(15));
+    return 1 + random2(15);
 }
 
 colour_t random_uncommon_colour()
@@ -84,18 +84,18 @@ colour_t random_uncommon_colour()
 
 bool is_low_colour(colour_t colour)
 {
-    return (colour <= 7);
+    return colour <= 7;
 }
 
 bool is_high_colour(colour_t colour)
 {
-    return (colour >= 8 && colour <= 15);
+    return colour >= 8 && colour <= 15;
 }
 
 colour_t make_low_colour(colour_t colour)
 {
     if (is_high_colour(colour))
-        return (colour - 8);
+        return colour - 8;
 
     return colour;
 }
@@ -103,7 +103,7 @@ colour_t make_low_colour(colour_t colour)
 colour_t make_high_colour(colour_t colour)
 {
     if (is_low_colour(colour))
-        return (colour + 8);
+        return colour + 8;
 
     return colour;
 }
@@ -114,7 +114,7 @@ static bool _is_element_colour(int col)
     // stripping any COLFLAGS (just in case)
     col = col & 0x007f;
     ASSERT(col < NUM_COLOURS);
-    return (col >= ETC_FIRE);
+    return col >= ETC_FIRE;
 }
 
 static int _randomized_element_colour(int rand, const coord_def&,
@@ -157,6 +157,10 @@ static int _etc_elven_brick(int, const coord_def& loc)
 
 static int _etc_waves(int, const coord_def& loc)
 {
+    // Shouldn't have this outside of Shoals, but it can happen.
+    // See !lg lakren crash 8 .
+    if (!env.heightmap.get())
+        return CYAN;
     short height = dgn_height_at(loc);
     int cycle_point = you.num_turns % 20;
     int min_height = -90 + 5 * cycle_point,
@@ -229,7 +233,6 @@ static int _etc_liquefied(int, const coord_def& loc)
     else
         return phase ? YELLOW : BROWN;
 }
-
 
 static int _etc_tree(int, const coord_def& loc)
 {
@@ -353,7 +356,7 @@ void add_element_colour(element_colour_calc *colour)
     else
     {
         ASSERT(!element_colours[colour->type]);
-        ASSERT(element_colours_str.find(colour->name) == element_colours_str.end());
+        ASSERT(!element_colours_str.count(colour->name));
     }
     element_colours[colour->type] = colour;
     element_colours_str[colour->name] = colour;
@@ -604,6 +607,12 @@ void init_element_colours()
     add_element_colour(new element_colour_calc(
                             ETC_RANDOM, "random", _etc_random
                        ));
+    add_element_colour(_create_random_element_colour_calc(
+                            ETC_DITHMENGOS, "dithmengos",
+                            40,  DARKGREY,
+                            40,  MAGENTA,
+                            40,  BLUE,
+                        0));
     // redefined by Lua later
     add_element_colour(new element_colour_calc(
                             ETC_DISCO, "disco", _etc_random
@@ -635,7 +644,7 @@ int element_colour(int element, bool no_random, const coord_def& loc)
 
     ASSERT(!_is_element_colour(ret));
 
-    return ((ret == BLACK) ? GREEN : ret);
+    return (ret == BLACK) ? GREEN : ret;
 }
 
 #ifdef USE_TILE

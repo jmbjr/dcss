@@ -11,7 +11,7 @@ gengæld er de hårdføre og har helbredende værktøjer.
 %%%%
 Deep Elf
 
-Den mest magisk talentfulde elver, men også den skrøbeligste.
+Denne elver har det største talent for magi, men er også den skrøbeligste.
 %%%%
 Demigod
 
@@ -23,19 +23,33 @@ Demonspawn
 Dæmonyngel er halvt menneske, halvt dæmon. De pådrager sig stærke, dæmoniske
 mutationer, når de vokser.
 %%%%
+Djinni
+
+Djinn er ildånder, og for dem er magi selve livets essens.
+%%%%
 Draconian
 
 Drakonere er alsidige hybrider. De modnes og får en farve, når de når niveau 7.
 %%%%
+Formicid
+
+Formicider er humanoide myrer, som er dygtige til at grave. Deres lemmer er
+exceptionelt stærke og de lever i naturlig stase.
+%%%%
 Felid
 
-Disse katte besidder en bevidsthed, men de er ude af stand til at håndtere
-komplicerede genstande eller at bruge rustning eller våben.
+Disse katte besidder ikke bare flere liv, men også en bevidsthed. Til gengæld
+er de ude af stand til at håndtere komplicerede genstande eller at bruge
+rustning eller våben.
 %%%%
 Ghoul
 
 En udød, som er fordømt til evigt at rådne. De leder altid efter rådden mad, de
 kan spise, og ofre, de kan hakke i med deres kløer.
+%%%%
+Gargoyle
+
+Gargoiler er skabt af levende sten, og har et overnaturligt talent for jorden.
 %%%%
 Halfling
 
@@ -67,6 +81,11 @@ Kobold
 Små, drilske og lidt skrøbelige, men med mange talenter. De kan og vil spise
 enhver form for kød.
 %%%%
+Lava Orc
+
+Disse mestre over jord- og ildmagi kommer fra jorden dybt under de
+underjordiske gange. Deres evner ændrer sig med deres temperatur.
+%%%%
 Merfolk
 
 Nøkker er halvt fisk, halvt menneske og kan leve på både vand og land.
@@ -95,11 +114,6 @@ Ogre
 
 De er store og stærke og ses mest som bøller. Ogrer har det dog udmærket med
 grundlæggende magi.
-%%%%
-Sludge Elf
-
-En depraveret slags elver, som foretrækker list frem for ærlig kamp, og sort
-magi frem for andre besværgelser.
 %%%%
 Spriggan
 

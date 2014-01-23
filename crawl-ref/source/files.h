@@ -3,7 +3,6 @@
  * @brief Functions used to save and load levels/games.
 **/
 
-
 #ifndef FILES_H
 #define FILES_H
 
@@ -63,7 +62,6 @@ time_t file_modtime(const string &file);
 time_t file_modtime(FILE *f);
 vector<string> get_title_files();
 
-
 class level_id;
 
 bool load_level(dungeon_feature_type stair_taken, load_mode_type load_mode,
@@ -79,8 +77,6 @@ bool get_save_version(reader &file, int &major, int &minor);
 
 bool save_exists(const string& filename);
 bool restore_game(const string& filename);
-
-void sighup_save_and_exit();
 
 bool is_existing_level(const level_id &level);
 

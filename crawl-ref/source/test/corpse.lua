@@ -4,7 +4,7 @@
 
 local p = dgn.point(20, 20)
 
-debug.goto_place("D:20")
+debug.goto_place("Depths:2")
 
 local function ok(corpse, pattern)
   dgn.reset_level()
@@ -38,3 +38,5 @@ for i = 1,100 do
 end
 ok("rat chunk", "chunk of rat")
 fail("zombie chunk")
+fail("giant eyeball corpse")
+ok("orc warrior corpse", "orc corpse")

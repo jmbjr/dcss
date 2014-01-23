@@ -1,6 +1,6 @@
 #include "AppHdr.h"
 
-#include "branch.h"
+#include "act-iter.h"
 #include "cio.h"
 #include "colour.h"
 #include "coordit.h"
@@ -17,10 +17,10 @@
 #include "maps.h"
 #include "message.h"
 #include "mgen_data.h"
-#include "mon-iter.h"
 #include "mon-place.h"
 #include "mon-util.h"
 #include "random.h"
+#include "state.h"
 #include "terrain.h"
 #include "traps.h"
 #include "view.h"
@@ -83,9 +83,9 @@ static int shoals_plant_quota = 0;
 static dungeon_feature_type _shoals_feature_by_height(int height)
 {
     return height >= SHT_STONE ? DNGN_STONE_WALL :
-        height >= SHT_ROCK? DNGN_ROCK_WALL :
-        height >= SHT_FLOOR? DNGN_FLOOR :
-        height >= SHT_SHALLOW_WATER? DNGN_SHALLOW_WATER
+        height >= SHT_ROCK ? DNGN_ROCK_WALL :
+        height >= SHT_FLOOR ? DNGN_FLOOR :
+        height >= SHT_SHALLOW_WATER ? DNGN_SHALLOW_WATER
         : DNGN_DEEP_WATER;
 }
 
@@ -108,7 +108,7 @@ static int _shoals_feature_height(dungeon_feature_type feat)
     case DNGN_DEEP_WATER:
         return SHT_SHALLOW_WATER - 1;
     default:
-        return feat_is_solid(feat)? SHT_ROCK : SHT_FLOOR;
+        return feat_is_solid(feat) ? SHT_ROCK : SHT_FLOOR;
     }
 }
 
@@ -129,20 +129,20 @@ static int _shoals_feature_sequence_number(dungeon_feature_type feat)
 // Returns true if the given feature can be affected by Shoals tides.
 static inline bool _shoals_tide_susceptible_feat(dungeon_feature_type feat)
 {
-    return (feat_is_water(feat) || feat == DNGN_FLOOR);
+    return feat_is_water(feat) || feat == DNGN_FLOOR;
 }
 
 // Return true if tide effects can propagate through this square.
 // NOTE: uses RNG!
 static inline bool _shoals_tide_passable_feat(dungeon_feature_type feat)
 {
-    return (feat_is_watery(feat)
-            // The Shoals tide can sometimes lap past the doorways of rooms
-            // near the water. Note that the actual probability of the tide
-            // getting through a doorway is this probability * 0.5 --
-            // see _shoals_apply_tide.
-            || feat == DNGN_OPEN_DOOR
-            || (feat == DNGN_CLOSED_DOOR && one_chance_in(3)));
+    return feat_is_watery(feat)
+           // The Shoals tide can sometimes lap past the doorways of rooms
+           // near the water. Note that the actual probability of the tide
+           // getting through a doorway is this probability * 0.5 --
+           // see _shoals_apply_tide.
+           || feat == DNGN_OPEN_DOOR
+           || feat_is_closed_door(feat) && one_chance_in(3);
 }
 
 static void _shoals_init_heights()
@@ -473,7 +473,7 @@ static void _shoals_make_plant_at(coord_def p)
 
 static bool _shoals_plantworthy_feat(dungeon_feature_type feat)
 {
-    return (feat == DNGN_SHALLOW_WATER || feat == DNGN_FLOOR);
+    return feat == DNGN_SHALLOW_WATER || feat == DNGN_FLOOR;
 }
 
 static void _shoals_make_plant_near(coord_def c, int radius,
@@ -590,7 +590,7 @@ static vector<coord_def> _shoals_windshadows(grid_bool &windy)
             next += wi;
 
         const coord_def nextp(_int_coord(next));
-        if (in_bounds(nextp) && !windy(nextp) && !feat_is_solid(grd(nextp)))
+        if (in_bounds(nextp) && !windy(nextp) && !cell_is_solid(nextp))
         {
             windy(nextp) = true;
             wind_points.push_back(next);
@@ -897,8 +897,7 @@ static void _clear_net_trapping_status(coord_def c)
 
 static bool _shoals_tide_sweep_items_clear(coord_def c)
 {
-    int link = igrd(c);
-    if (link == NON_ITEM)
+    if (igrd(c) == NON_ITEM)
         return true;
 
     for (stack_iterator si(c); si; ++si)
@@ -932,8 +931,13 @@ static bool _shoals_tide_sweep_items_clear(coord_def c)
 static bool _shoals_tide_sweep_actors_clear(coord_def c)
 {
     actor *victim = actor_at(c);
-    if (!victim || !victim->ground_level() || victim->swimming())
+    if (!victim
+        || (victim->swimming() || !victim->ground_level())
+            && (!victim->is_player()
+                || !need_expiration_warning(DNGN_DEEP_WATER)))
+    {
         return true;
+    }
 
     if (victim->is_monster())
     {
@@ -990,7 +994,7 @@ static dungeon_feature_type _shoals_apply_tide_feature_at(
     if (feat == current_feat)
         return DNGN_UNSEEN;
 
-    if (Generating_Level)
+    if (crawl_state.generating_level)
         grd(c) = feat;
     else
         dungeon_terrain_changed(c, feat, true, false, true);
@@ -1008,7 +1012,7 @@ static tide_direction _shoals_feature_tide_height_change(
         _shoals_feature_height(newfeat) - _shoals_feature_height(oldfeat);
     // If the apparent height of the new feature is greater (floor vs water),
     // the tide is receding.
-    return height_delta < 0? TIDE_RISING : TIDE_FALLING;
+    return height_delta < 0 ? TIDE_RISING : TIDE_FALLING;
 }
 
 static void _shoals_apply_tide_at(coord_def c, int tide, bool incremental_tide)
@@ -1064,7 +1068,7 @@ static int _shoals_tide_at(coord_def pos, int base_tide)
     if (pos.abs() > sqr(TIDE_CALL_RADIUS) + 1)
         return base_tide;
 
-    return (base_tide + max(0, tide_called_peak - pos.range() * 3));
+    return base_tide + max(0, tide_called_peak - pos.range() * 3);
 }
 
 static vector<coord_def> _shoals_extra_tide_seeds()
@@ -1254,7 +1258,7 @@ static void _shoals_change_tide_granularity(int newval)
 
 static int _tidemod_keyfilter(int &c)
 {
-    return (c == '+' || c == '-'? -1 : 1);
+    return c == '+' || c == '-'? -1 : 1;
 }
 
 static void _shoals_force_tide(CrawlHashTable &props, int increment)
@@ -1284,7 +1288,7 @@ void wizard_mod_tide()
              TIDE_MULTIPLIER);
         mpr("");
         const int res =
-            cancelable_get_line(buf, sizeof buf, NULL, _tidemod_keyfilter);
+            cancellable_get_line(buf, sizeof buf, NULL, _tidemod_keyfilter);
         mesclr(true);
         if (key_is_escape(res))
             break;

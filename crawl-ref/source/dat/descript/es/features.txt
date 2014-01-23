@@ -46,16 +46,16 @@ Una fuente reseca que ha visto días mejores.
 %%%%
 A fountain of clear blue water
 
-Pulsa 'q' para beber de esta fuente. Sin embargo, no esperes que vaya a tener
+Pulsa “q” para beber de esta fuente. Sin embargo, no esperes que vaya a tener
 efecto alguno...
 %%%%
 A fountain of blood
 
-Usa 'q' para beber de esta fuente, si deseas tal cosa realmente.
+Usa “q” para beber de esta fuente, si deseas tal cosa realmente.
 %%%%
 A fountain of sparkling water
 
-Usa 'q' para beber de esta fuente mágica. Espera efectos mágicos mientras
+Usa “q” para beber de esta fuente mágica. Espera efectos mágicos mientras
 todavía sea mágica.
 %%%%
 A gate leading back out of here
@@ -74,33 +74,18 @@ A gate leading to another region of Pandemonium
 
 Esta puerta te lleva a otra región más del Pandemonio. Siempre habrán más.
 %%%%
-A gas trap
-
-Eres afortunado por haber detectado esta trampa, porque podría haber soltado
-una nube de gas mortal hacia ti. No puedes decir exactamente qué gas contiene -
-quizás es simplemente veneno, quizás humos mutagénicos, quizás vapor
-inflamable, o quizás algo aún peor.
-%%%%
 A gate to the Realm of Zot
 
 Esta puerta lleva al Reino de Zot, la etapa final de tu aventura ya que en su
 nivel más profundo se halla el infame Orbe de Zot. Tanto el Orbe como este
 Reino tienen una temible y cuestionable reputación, pero algo parece ser
 cierto: los monstruos que habitan este área y protegen al Orbe son poderosos y
-extraños - algunos de ellos no se encuentran más que aquí.
+extraños — algunos de ellos no se encuentran más que aquí.
 %%%%
 A gateway leading out of the Abyss
 
 Un portal para salir de este maldito sitio, que palpita y se desliza en un
 escenario siempre cambiante.
-%%%%
-A gateway to a ziggurat
-
-Este portal conduce a un antiguo zigurat, un lugar de retos y riquezas por
-contar.
-
-Este portal solamente se puede usar una vez, y se cobra una enorme factura para
-entrar.
 %%%%
 A gateway to the ashen valley of Gehenna
 
@@ -150,11 +135,6 @@ cuya salida esta guardada por un temible monstruo. Muchos desafortunados
 aventureros se han extraviado en los retorcidos y cambiantes corredores y
 muerto de inanición.
 %%%%
-A magical trap
-
-Un mecanismo mágico diseñado para causar daño a los saqueadores, que no puede
-ser desactivado.
-%%%%
 A mechanical trap
 
 Un dispositivo mecánico diseñado para causar daño a los invasores. No obstante,
@@ -164,10 +144,6 @@ A metal wall
 
 Un muro de un metal azul grisáceo. Como cualquier electricista del calabozo
 bien sabe, esta pared actúa como un punto de tierra.
-%%%%
-A floor
-
-Suelo de calabozo.
 %%%%
 A crumbled stone wall
 
@@ -203,7 +179,7 @@ Está recubierto con imágenes horribles y perturbadoras.
 A gravestone
 
 Una lápida anónima. La cuestión es, ¿es la lápida la que no tiene nombre o lo
-es la persona que yace en la tumba ?
+es la persona que yace en la tumba ?
 %%%%
 A damp floor
 
@@ -257,11 +233,6 @@ observar el flujo del agua en su interior.
 A glass window
 
 Un ventana picada y con cristales extremadamente duros.
-%%%%
-A granite statue of a fallen hero
-
-Un estatua a tamaño real de un enano presidiendo esta sala. No puedes evitar
-tener la sensación de que te está observando.
 %%%%
 A flagged portal
 

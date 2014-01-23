@@ -19,7 +19,8 @@
 
 static dungeon_feature_type _pick_pseudorandom_wall(uint64_t val)
 {
-    static dungeon_feature_type features[] = {
+    static dungeon_feature_type features[] =
+    {
         DNGN_STONE_WALL,
         DNGN_STONE_WALL,
         DNGN_STONE_WALL,
@@ -50,7 +51,6 @@ ColumnLayout::operator()(const coord_def &p, const uint32_t offset) const
 ProceduralSample
 DiamondLayout::operator()(const coord_def &p, const uint32_t offset) const
 {
-
     uint8_t halfCell = w + s;
     uint8_t cellSize = halfCell * 2;
     uint8_t x = abs(abs(p.x) % cellSize - halfCell);
@@ -62,7 +62,6 @@ DiamondLayout::operator()(const coord_def &p, const uint32_t offset) const
     }
     return ProceduralSample(p, DNGN_FLOOR, offset + 4096);
 }
-
 
 static uint32_t _get_changepoint(const worley::noise_datum &n, const double scale)
 {
@@ -95,8 +94,8 @@ WorleyLayout::operator()(const coord_def &p, const uint32_t offset) const
 ProceduralSample
 ChaosLayout::operator()(const coord_def &p, const uint32_t offset) const
 {
-   uint64_t base = hash3(p.x, p.y, seed);
-   uint32_t density = baseDensity + seed % 50 + (seed >> 16) % 60;
+    uint64_t base = hash3(p.x, p.y, seed);
+    uint32_t density = baseDensity + seed % 50 + (seed >> 16) % 60;
     if ((base % 1000) < density)
         return ProceduralSample(p, _pick_pseudorandom_wall(base/3), offset + 4096);
     return ProceduralSample(p, DNGN_FLOOR, offset + 4096);
@@ -239,7 +238,7 @@ LevelLayout::LevelLayout(level_id id, uint32_t _seed, const ProceduralLayout &_l
 
         uint32_t solid_count = 0;
         for (adjacent_iterator ai(*ri); ai; ++ai)
-            solid_count += feat_is_solid(grd(*ai));
+            solid_count += cell_is_solid(*ai);
         coord_def p = *ri;
         uint64_t base = hash3(p.x, p.y, seed);
         int div = base % 2 ? 12 : 11;
@@ -352,7 +351,6 @@ CityLayout::operator()(const coord_def &p, const uint32_t offset) const
     if (dist == size)
         return ProceduralSample(p, DNGN_ROCK_WALL, offset + 4096);
     return ProceduralSample(p, DNGN_FLOOR, offset + 4096);
-
 }
 
 ProceduralSample

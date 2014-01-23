@@ -30,7 +30,6 @@
 #include "menu.h"
 #include "misc.h"
 #include "notes.h"
-#include "options.h"
 #include "place.h"
 #include "player.h"
 #include "spl-book.h"
@@ -225,7 +224,6 @@ static void _list_shop_keys(const string &purchasable, bool viewing,
     // draw
     fs.display();
     tmp->set_visible(true);
-
 
     // ///////// SELECT ITEM TO BUY/EXAMINE //////////
     // set cursor [32 + 16 chars + 5 whitespace]
@@ -878,7 +876,7 @@ static bool _in_a_shop(int shopidx, int &num_in_list)
             viewing = !viewing;
         }
         else if (key == '?')
-            browse_inventory();
+            get_invent(OSEL_ANY, false);
         else if (key == '$')
         {
             if (viewing || (num_selected == 0 && num_in_list == 0))
@@ -1033,9 +1031,9 @@ static bool _in_a_shop(int shopidx, int &num_in_list)
 
 bool shoptype_identifies_stock(shop_type type)
 {
-    return (type != SHOP_WEAPON_ANTIQUE
-            && type != SHOP_ARMOUR_ANTIQUE
-            && type != SHOP_GENERAL_ANTIQUE);
+    return type != SHOP_WEAPON_ANTIQUE
+           && type != SHOP_ARMOUR_ANTIQUE
+           && type != SHOP_GENERAL_ANTIQUE;
 }
 
 static bool _purchase(int shop, int item_got, int cost, bool id)
@@ -1165,7 +1163,7 @@ int artefact_value(const item_def &item)
     if (prop[ ARTP_METABOLISM ])
         ret -= (2 * prop[ ARTP_METABOLISM ]);
 
-    return ((ret > 0) ? ret : 0);
+    return (ret > 0) ? ret : 0;
 }
 
 unsigned int item_value(item_def item, bool ident)
@@ -1241,7 +1239,7 @@ unsigned int item_value(item_def item, bool ident)
 
         case WPN_WAR_AXE:
         case WPN_MORNINGSTAR:
-        case WPN_SABRE:
+        case WPN_CUTLASS:
         case WPN_QUARTERSTAFF:
             valued += 40;
             break;
@@ -1261,9 +1259,6 @@ unsigned int item_value(item_def item, bool ident)
             valued += 45;
             break;
 
-#if TAG_MAJOR_VERSION == 34
-        case WPN_SPIKED_FLAIL:
-#endif
         case WPN_BLESSED_LONG_SWORD:
         case WPN_BLESSED_SCIMITAR:
             valued += 50;
@@ -1296,7 +1291,7 @@ unsigned int item_value(item_def item, bool ident)
             valued += 100;
             break;
 
-        case WPN_DOUBLE_SWORD:
+        case WPN_BASTARD_SWORD:
             valued += 100;
             break;
 
@@ -1310,11 +1305,11 @@ unsigned int item_value(item_def item, bool ident)
             break;
 
         case WPN_DEMON_BLADE:
-        case WPN_TRIPLE_SWORD:
+        case WPN_CLAYMORE:
         case WPN_EUDEMON_BLADE:
-        case WPN_BLESSED_DOUBLE_SWORD:
+        case WPN_BLESSED_BASTARD_SWORD:
         case WPN_BLESSED_GREAT_SWORD:
-        case WPN_BLESSED_TRIPLE_SWORD:
+        case WPN_BLESSED_CLAYMORE:
         case WPN_SACRED_SCOURGE:
         case WPN_TRISHULA:
         case WPN_LAJATANG:
@@ -1342,8 +1337,6 @@ unsigned int item_value(item_def item, bool ident)
             case SPWPN_FLAME:
             case SPWPN_FROST:
             case SPWPN_HOLY_WRATH:
-            case SPWPN_REACHING:
-            case SPWPN_RETURNING:
                 valued *= 50;
                 break;
 
@@ -1366,10 +1359,6 @@ unsigned int item_value(item_def item, bool ident)
 
             case SPWPN_VENOM:
                 valued *= 23;
-                break;
-
-            case SPWPN_ORC_SLAYING:
-                valued *= 21;
                 break;
 
             case SPWPN_VORPAL:
@@ -1516,7 +1505,7 @@ unsigned int item_value(item_def item, bool ident)
 #if TAG_MAJOR_VERSION == 34
             case SPMSL_SICKNESS:
 #endif
-            case SPMSL_RAGE:
+            case SPMSL_FRENZY:
                 valued *= 23;
                 break;
             }
@@ -1637,8 +1626,10 @@ unsigned int item_value(item_def item, bool ident)
             break;
 
         case ARM_HELMET:
+#if TAG_MAJOR_VERSION == 34
         case ARM_CAP:
-        case ARM_WIZARD_HAT:
+#endif
+        case ARM_HAT:
         case ARM_BUCKLER:
             valued += 25;
             break;
@@ -1704,6 +1695,7 @@ unsigned int item_value(item_def item, bool ident)
             case SPARM_SEE_INVISIBLE:
             case SPARM_INTELLIGENCE:
             case SPARM_FLYING:
+            case SPARM_JUMPING:
             case SPARM_PRESERVATION:
             case SPARM_STEALTH:
             case SPARM_STRENGTH:
@@ -1876,6 +1868,7 @@ unsigned int item_value(item_def item, bool ident)
             case POT_RESTORE_ABILITIES:
             case POT_FLIGHT:
             case POT_MUTATION:
+            case POT_LIGNIFY:
                 valued += 30;
                 break;
 
@@ -1977,7 +1970,7 @@ unsigned int item_value(item_def item, bool ident)
                 break;
 
             case SCR_ENCHANT_WEAPON_III:
-            case SCR_VORPALISE_WEAPON:
+            case SCR_BRAND_WEAPON:
                 valued += 200;
                 break;
 
@@ -2002,6 +1995,7 @@ unsigned int item_value(item_def item, bool ident)
                 break;
 
             case SCR_FEAR:
+            case SCR_IMMOLATION:
             case SCR_MAGIC_MAPPING:
                 valued += 35;
                 break;
@@ -2021,7 +2015,6 @@ unsigned int item_value(item_def item, bool ident)
 
             case SCR_NOISE:
             case SCR_RANDOM_USELESSNESS:
-            case SCR_IMMOLATION:
                 valued += 10;
                 break;
             }
@@ -2167,15 +2160,20 @@ unsigned int item_value(item_def item, bool ident)
             valued += 2000;
             break;
 
-        case MISC_BOTTLED_EFREET:
+        case MISC_SACK_OF_SPIDERS:
             valued += 400;
             break;
 
-#if TAG_MAJOR_VERSION == 34
-        case MISC_EMPTY_EBONY_CASKET:
-            valued += 20;
+        case MISC_FAN_OF_GALES:
+        case MISC_STONE_OF_TREMORS:
+        case MISC_PHIAL_OF_FLOODS:
+        case MISC_LAMP_OF_FIRE:
+            valued += 1000;
             break;
-#endif
+
+        case MISC_BOX_OF_BEASTS:
+            valued += 500;
+            break;
 
         default:
             if (is_deck(item))
@@ -2187,6 +2185,8 @@ unsigned int item_value(item_def item, bool ident)
 
     case OBJ_BOOKS:
         valued = 150;
+        if (item.sub_type == BOOK_DESTRUCTION)
+            break;
 
         if (item_type_known(item))
         {
@@ -2266,7 +2266,7 @@ unsigned int item_value(item_def item, bool ident)
 
     valued = stepdown_value(valued, 1000, 1000, 10000, 10000);
 
-    return (item.quantity * valued);
+    return item.quantity * valued;
 }
 
 bool is_worthless_consumable(const item_def &item)
@@ -2291,7 +2291,7 @@ bool is_worthless_consumable(const item_def &item)
             return false;
         }
     case OBJ_FOOD:
-        return ((item.sub_type == FOOD_CHUNK) && food_is_rotten(item));
+        return item.sub_type == FOOD_CHUNK && food_is_rotten(item);
     case OBJ_SCROLLS:
         switch (item.sub_type)
         {
@@ -2327,7 +2327,7 @@ void shop()
 
     if (i == MAX_SHOPS)
     {
-        mpr("Help! Non-existent shop.", MSGCH_ERROR);
+        mprf(MSGCH_ERROR, "Help! Non-existent shop.");
         return;
     }
 
@@ -2380,7 +2380,7 @@ shop_struct *get_shop(const coord_def& where)
     ASSERT(env.shop[t].pos == where);
     ASSERT(env.shop[t].type != SHOP_UNASSIGNED);
 
-    return (&env.shop[t]);
+    return &env.shop[t];
 }
 
 string shop_name(const coord_def& where, bool add_stop)
@@ -2419,6 +2419,8 @@ static string _shop_type_name(shop_type type)
             return "Distillery";
         case SHOP_GENERAL:
             return "General Store";
+        case SHOP_MISCELLANY:
+            return "Gadget";
         default:
             return "Bug";
     }
@@ -2486,15 +2488,15 @@ string shop_name(const coord_def& where)
 
 bool is_shop_item(const item_def &item)
 {
-    return (item.pos.x == 0 && item.pos.y >= 5 && item.pos.y < (MAX_SHOPS + 5));
+    return item.pos.x == 0 && item.pos.y >= 5 && item.pos.y < (MAX_SHOPS + 5);
 }
 
 bool shop_item_unknown(const item_def &item)
 {
-    return (item_type_has_ids(item.base_type)
-            && item_type_known(item)
-            && get_ident_type(item) != ID_KNOWN_TYPE
-            && !is_artefact(item));
+    return item_type_has_ids(item.base_type)
+           && item_type_known(item)
+           && get_ident_type(item) != ID_KNOWN_TYPE
+           && !is_artefact(item);
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -2583,14 +2585,14 @@ bool ShoppingList::is_on_list(const item_def &item, const level_pos* _pos) const
 {
     SETUP_POS();
 
-    return (find_thing(item, pos) != -1);
+    return find_thing(item, pos) != -1;
 }
 
 bool ShoppingList::is_on_list(string desc, const level_pos* _pos) const
 {
     SETUP_POS();
 
-    return (find_thing(desc, pos) != -1);
+    return find_thing(desc, pos) != -1;
 }
 
 void ShoppingList::del_thing_at_index(int idx)
@@ -2697,16 +2699,16 @@ unsigned int ShoppingList::cull_identical_items(const item_def& item,
             return 0;
     }
 
+    // Manuals are consumable, and interesting enough to keep on list.
+    if (item.base_type == OBJ_BOOKS && item.sub_type == BOOK_MANUAL)
+        return 0;
+
     // Item is already on shopping-list.
     const bool on_list = find_thing(item, level_pos::current()) != -1;
 
-    const bool do_prompt =
-        (item.base_type == OBJ_JEWELLERY && !jewellery_is_amulet(item)
-         && ring_has_stackable_effect(item))
-     // Manuals and tomes of destruction are consumable.
-     || (item.base_type == OBJ_BOOKS
-         && (item.sub_type == BOOK_MANUAL
-             || item.sub_type == BOOK_DESTRUCTION));
+    const bool do_prompt = item.base_type == OBJ_JEWELLERY
+                           && !jewellery_is_amulet(item)
+                           && ring_has_stackable_effect(item);
 
     bool add_item = false;
 
@@ -2830,6 +2832,41 @@ unsigned int ShoppingList::cull_identical_items(const item_def& item,
     return to_del.size();
 }
 
+void ShoppingList::item_type_identified(object_class_type base_type,
+                                        int sub_type)
+{
+    // Dead men can't update their shopping lists.
+    if (!crawl_state.need_save)
+        return;
+
+    // Only restore the excursion at the very end.
+    level_excursion le;
+
+    for (unsigned int i = 0; i < list->size(); i++)
+    {
+        CrawlHashTable &thing = (*list)[i];
+
+        if (!thing_is_item(thing))
+            continue;
+
+        const item_def& item = get_thing_item(thing);
+
+        if (item.base_type != base_type || item.sub_type != sub_type)
+            continue;
+
+        const level_pos place = thing_pos(thing);
+
+        le.go_to(place.id);
+        const shop_struct *shop = get_shop(place.pos);
+        ASSERT(shop);
+        if (shoptype_identifies_stock(shop->type))
+            continue;
+
+        thing[SHOPPING_THING_COST_KEY] =
+            _shop_get_item_value(item, shop->greed, false, true);
+    }
+}
+
 int ShoppingList::size() const
 {
     ASSERT(list);
@@ -2840,7 +2877,7 @@ int ShoppingList::size() const
 bool ShoppingList::items_are_same(const item_def& item_a,
                                   const item_def& item_b)
 {
-    return (item_name_simple(item_a) == item_name_simple(item_b));
+    return item_name_simple(item_a) == item_name_simple(item_b);
 }
 
 void ShoppingList::move_things(const coord_def &_src, const coord_def &_dst)
@@ -2963,7 +3000,7 @@ void ShoppingListMenu::draw_title()
                            menu_action == ACT_EXAMINE ? "examine" :
                                                         "delete";
         draw_title_suffix(formatted_string::parse_string(make_stringf(
-            "<lightgrey>  [<w>a-z</w>: %s  <w>?</w>/<w>!</w>: change action]",
+            "<lightgrey>  [<w>a-z</w>: %-8s <w>?</w>/<w>!</w>: change action]",
             verb)), false);
     }
 }
@@ -3109,8 +3146,7 @@ void ShoppingList::display()
             const int index = shopmenu.get_entry_index(sel[0]);
             if (index == -1)
             {
-                mpr("ERROR: Unable to delete thing from shopping list!",
-                    MSGCH_ERROR);
+                mprf(MSGCH_ERROR, "ERROR: Unable to delete thing from shopping list!");
                 more();
                 continue;
             }
@@ -3140,7 +3176,7 @@ static bool _compare_shopping_things(const CrawlStoreValue& a,
     const int a_cost = hash_a[SHOPPING_THING_COST_KEY];
     const int b_cost = hash_b[SHOPPING_THING_COST_KEY];
 
-    return (a_cost < b_cost);
+    return a_cost < b_cost;
 }
 
 void ShoppingList::refresh()
@@ -3248,13 +3284,13 @@ string ShoppingList::get_thing_desc(const CrawlHashTable& thing)
 int ShoppingList::thing_cost(const CrawlHashTable& thing)
 {
     ASSERT(thing.exists(SHOPPING_THING_COST_KEY));
-    return (thing[SHOPPING_THING_COST_KEY].get_int());
+    return thing[SHOPPING_THING_COST_KEY].get_int();
 }
 
 level_pos ShoppingList::thing_pos(const CrawlHashTable& thing)
 {
     ASSERT(thing.exists(SHOPPING_THING_POS_KEY));
-    return (thing[SHOPPING_THING_POS_KEY].get_level_pos());
+    return thing[SHOPPING_THING_POS_KEY].get_level_pos();
 }
 
 string ShoppingList::name_thing(const CrawlHashTable& thing,

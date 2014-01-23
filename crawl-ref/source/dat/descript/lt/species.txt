@@ -83,7 +83,7 @@ vaikščioti.
 %%%%
 Naga
 
-Mišrūnas - žmogus su žvynuotu ir raumeningu liemeniu, pereinančiu į gyvatės
+Mišrūnas — žmogus su žvynuotu ir raumeningu liemeniu, pereinančiu į gyvatės
 uodegą.
 %%%%
 Octopode
@@ -95,11 +95,6 @@ Ogre
 
 Dideli ir stiprūs, jie paprastai laikomi gyvuliais. Vis dėlto žmogėdros yra
 gerai apsipratę su magijos pagrindais.
-%%%%
-Sludge Elf
-
-Pagędęs elfo tipas, kuris labiau mėgsta klastą negu teisingą kovą ir tamsiają
-magiją negu kitus burtus.
 %%%%
 Spriggan
 

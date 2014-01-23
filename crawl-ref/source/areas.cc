@@ -17,8 +17,8 @@
 #include "env.h"
 #include "fprop.h"
 #include "libutil.h"
+#include "losglobal.h"
 #include "mon-behv.h"
-#include "mon-iter.h"
 #include "mon-stuff.h"
 #include "mon-util.h"
 #include "monster.h"
@@ -40,11 +40,10 @@ enum areaprop_flag
     APROP_ACTUAL_LIQUID = (1 << 5),
     APROP_ORB           = (1 << 6),
     APROP_UMBRA         = (1 << 7),
-    APROP_SUPPRESSION   = (1 << 8),
-    APROP_QUAD          = (1 << 9),
-    APROP_DISJUNCTION   = (1 << 10),
-    APROP_SOUL_AURA     = (1 << 11),
-    APROP_HOT           = (1 << 12),
+    APROP_QUAD          = (1 << 8),
+    APROP_DISJUNCTION   = (1 << 9),
+    APROP_SOUL_AURA     = (1 << 10),
+    APROP_HOT           = (1 << 11),
 };
 
 struct area_centre
@@ -71,7 +70,7 @@ static void _set_agrid_flag(const coord_def& p, areaprop_flag f)
 
 static bool _check_agrid_flag(const coord_def& p, areaprop_flag f)
 {
-    return (_agrid(p) & f);
+    return _agrid(p) & f;
 }
 
 void invalidate_agrid(bool recheck_new)
@@ -87,11 +86,67 @@ void areas_actor_moved(const actor* act, const coord_def& oldpos)
         (you.entering_level
          || act->halo_radius2() > -1 || act->silence_radius2() > -1
          || act->liquefying_radius2() > -1 || act->umbra_radius2() > -1
-         || act->suppression_radius2() > -1 || act->heat_radius2() > -1)
-         || act->soul_aura_radius2() > -1)
+         || act->heat_radius2() > -1))
     {
         // Not necessarily new, but certainly potentially interesting.
         invalidate_agrid(true);
+    }
+}
+
+static void _actor_areas(actor *a)
+{
+    int r;
+
+    if ((r = a->silence_radius2()) >= 0)
+    {
+        _agrid_centres.push_back(area_centre(AREA_SILENCE, a->pos(), r));
+
+        for (radius_iterator ri(a->pos(), r, C_CIRCLE); ri; ++ri)
+            _set_agrid_flag(*ri, APROP_SILENCE);
+        no_areas = false;
+    }
+
+    if ((r = a->halo_radius2()) >= 0)
+    {
+        _agrid_centres.push_back(area_centre(AREA_HALO, a->pos(), r));
+
+        for (radius_iterator ri(a->pos(), r, C_CIRCLE, LOS_DEFAULT); ri; ++ri)
+            _set_agrid_flag(*ri, APROP_HALO);
+        no_areas = false;
+    }
+
+    if ((r = a->liquefying_radius2()) >= 0)
+    {
+        _agrid_centres.push_back(area_centre(AREA_LIQUID, a->pos(), r));
+
+        for (radius_iterator ri(a->pos(), r, C_CIRCLE, LOS_SOLID); ri; ++ri)
+        {
+            dungeon_feature_type f = grd(*ri);
+
+            _set_agrid_flag(*ri, APROP_LIQUID);
+
+            if (feat_has_solid_floor(f) && !feat_is_water(f))
+                _set_agrid_flag(*ri, APROP_ACTUAL_LIQUID);
+        }
+        no_areas = false;
+    }
+
+    if ((r = a->umbra_radius2()) >= 0)
+    {
+        _agrid_centres.push_back(area_centre(AREA_UMBRA, a->pos(), r));
+
+        for (radius_iterator ri(a->pos(), r, C_CIRCLE, LOS_DEFAULT); ri; ++ri)
+            _set_agrid_flag(*ri, APROP_UMBRA);
+        no_areas = false;
+    }
+
+    if ((r = a->heat_radius2()) >= 0)
+    {
+        _agrid_centres.push_back(area_centre(AREA_HOT, a->pos(), r));
+
+        for (radius_iterator ri(a->pos(), r, C_CIRCLE, LOS_NO_TRANS); ri; ++ri)
+            _set_agrid_flag(*ri, APROP_HOT);
+        no_areas = false;
     }
 }
 
@@ -108,108 +163,16 @@ static void _update_agrid()
 
     no_areas = true;
 
-    for (actor_iterator ai; ai; ++ai)
-    {
-        int r;
-
-        if ((r = ai->silence_radius2()) >= 0)
-        {
-            _agrid_centres.push_back(area_centre(AREA_SILENCE, ai->pos(), r));
-
-            for (radius_iterator ri(ai->pos(), r, C_CIRCLE); ri; ++ri)
-                _set_agrid_flag(*ri, APROP_SILENCE);
-            no_areas = false;
-        }
-
-        // Just like silence, suppression goes through walls
-        if ((r = ai->suppression_radius2()) >= 0)
-        {
-            _agrid_centres.push_back(area_centre(AREA_SUPPRESSION, ai->pos(), r));
-
-            for (radius_iterator ri(ai->pos(), r, C_CIRCLE); ri; ++ri)
-                _set_agrid_flag(*ri, APROP_SUPPRESSION);
-            no_areas = false;
-        }
-
-        if ((r = ai->halo_radius2()) >= 0)
-        {
-            _agrid_centres.push_back(area_centre(AREA_HALO, ai->pos(), r));
-
-            for (radius_iterator ri(ai->pos(), r, C_CIRCLE, ai->get_los());
-                 ri; ++ri)
-            {
-                _set_agrid_flag(*ri, APROP_HALO);
-            }
-            no_areas = false;
-        }
-
-        if ((r = ai->liquefying_radius2()) >= 0)
-        {
-            _agrid_centres.push_back(area_centre(AREA_LIQUID, ai->pos(), r));
-
-            for (radius_iterator ri(ai->pos(), r, C_CIRCLE, ai->get_los());
-                 ri; ++ri)
-            {
-                dungeon_feature_type f = grd(*ri);
-
-                _set_agrid_flag(*ri, APROP_LIQUID);
-
-                if (feat_has_solid_floor(f) && !feat_is_water(f))
-                    _set_agrid_flag(*ri, APROP_ACTUAL_LIQUID);
-            }
-            no_areas = false;
-        }
-
-        if ((r = ai->umbra_radius2()) >= 0)
-        {
-            _agrid_centres.push_back(area_centre(AREA_UMBRA, ai->pos(), r));
-
-            for (radius_iterator ri(ai->pos(), r, C_CIRCLE, ai->get_los());
-                 ri; ++ri)
-            {
-                _set_agrid_flag(*ri, APROP_UMBRA);
-            }
-            no_areas = false;
-        }
-
-
-        if ((r = ai->soul_aura_radius2()) >= 0)
-        {
-            _agrid_centres.push_back(area_centre(AREA_SOUL_AURA, ai->pos(), r));
-
-            for (radius_iterator ri(ai->pos(), r, C_CIRCLE, ai->get_los());
-                 ri; ++ri)
-            {
-                _set_agrid_flag(*ri, APROP_SOUL_AURA);
-            }
-            no_areas = false;
-        }
-
-        if ((r = ai->heat_radius2()) >= 0)
-        {
-            _agrid_centres.push_back(area_centre(AREA_HOT, ai->pos(), r));
-
-            for (radius_iterator ri(ai->pos(),r, C_CIRCLE, ai->get_los());
-                ri; ++ri)
-            {
-                _set_agrid_flag(*ri, APROP_HOT);
-            }
-            no_areas = false;
-        }
-    }
+    _actor_areas(&you);
+    for (monster_iterator mi; mi; ++mi)
+        _actor_areas(*mi);
 
     if (you.char_direction == GDT_ASCENDING && !you.pos().origin())
     {
-        ASSERT(env.orb_pos == you.pos());
-
         const int r = 5;
-        _agrid_centres.push_back(area_centre(AREA_ORB, env.orb_pos, r));
-        los_glob los(env.orb_pos, LOS_DEFAULT);
-        for (radius_iterator ri(env.orb_pos, r, C_CIRCLE, &los);
-             ri; ++ri)
-        {
+        _agrid_centres.push_back(area_centre(AREA_ORB, you.pos(), r));
+        for (radius_iterator ri(you.pos(), r, C_CIRCLE, LOS_DEFAULT); ri; ++ri)
             _set_agrid_flag(*ri, APROP_ORB);
-        }
         no_areas = false;
     }
 
@@ -217,10 +180,11 @@ static void _update_agrid()
     {
         const int r = 5;
         _agrid_centres.push_back(area_centre(AREA_QUAD, you.pos(), r));
-        for (radius_iterator ri(you.pos(), r, C_CIRCLE, you.get_los());
+        for (radius_iterator ri(you.pos(), r, C_CIRCLE);
              ri; ++ri)
         {
-            _set_agrid_flag(*ri, APROP_QUAD);
+            if (cell_see_cell(you.pos(), *ri, LOS_DEFAULT))
+                _set_agrid_flag(*ri, APROP_QUAD);
         }
         no_areas = false;
     }
@@ -229,10 +193,11 @@ static void _update_agrid()
     {
         const int r = 27;
         _agrid_centres.push_back(area_centre(AREA_DISJUNCTION, you.pos(), r));
-        for (radius_iterator ri(you.pos(), r, C_CIRCLE, you.get_los());
+        for (radius_iterator ri(you.pos(), r, C_CIRCLE);
              ri; ++ri)
         {
-            _set_agrid_flag(*ri, APROP_DISJUNCTION);
+            if (cell_see_cell(you.pos(), *ri, LOS_DEFAULT))
+                _set_agrid_flag(*ri, APROP_DISJUNCTION);
         }
         no_areas = false;
     }
@@ -264,8 +229,6 @@ static area_centre_type _get_first_area(const coord_def& f)
         return AREA_HALO;
     if (a & APROP_UMBRA)
         return AREA_UMBRA;
-    if (a & APROP_SUPPRESSION)
-        return AREA_SUPPRESSION;
     // liquid is always applied; actual_liquid is on top
     // of this. If we find the first, we don't care about
     // the second.
@@ -338,7 +301,7 @@ bool remove_sanctuary(bool did_attack)
 
     const int radius = 5;
     bool seen_change = false;
-    for (radius_iterator ri(env.sanctuary_pos, radius, C_SQUARE); ri; ++ri)
+    for (rectangle_iterator ri(env.sanctuary_pos, radius); ri; ++ri)
         if (is_sanctuary(*ri))
         {
             _remove_sanctuary_property(*ri);
@@ -381,11 +344,11 @@ void decrease_sanctuary_radius()
 
     if (you.running && is_sanctuary(you.pos()))
     {
-        mpr("The sanctuary starts shrinking.", MSGCH_DURATION);
+        mprf(MSGCH_DURATION, "The sanctuary starts shrinking.");
         stop_running();
     }
 
-    for (radius_iterator ri(env.sanctuary_pos, size+1, C_SQUARE); ri; ++ri)
+    for (rectangle_iterator ri(env.sanctuary_pos, size+1); ri; ++ri)
     {
         int dist = distance2(*ri, env.sanctuary_pos);
 
@@ -399,7 +362,7 @@ void decrease_sanctuary_radius()
     {
         _remove_sanctuary_property(env.sanctuary_pos);
         if (you.see_cell(env.sanctuary_pos))
-            mpr("The sanctuary disappears.", MSGCH_DURATION);
+            mprf(MSGCH_DURATION, "The sanctuary disappears.");
     }
 }
 
@@ -503,34 +466,27 @@ void create_sanctuary(const coord_def& center, int time)
 
     // Messaging.
     if (trap_count > 0)
-    {
-        mpr("By Zin's power, hidden traps are revealed to you.",
-            MSGCH_GOD);
-    }
+        mprf(MSGCH_GOD, "By Zin's power, hidden traps are revealed to you.");
 
     if (cloud_count == 1)
     {
-        mpr("By Zin's power, the foul cloud within the sanctuary is "
-            "swept away.", MSGCH_GOD);
+        mprf(MSGCH_GOD, "By Zin's power, the foul cloud within the sanctuary "
+                        "is swept away.");
     }
     else if (cloud_count > 1)
     {
-        mpr("By Zin's power, all foul fumes within the sanctuary are "
-            "swept away.", MSGCH_GOD);
+        mprf(MSGCH_GOD, "By Zin's power, all foul fumes within the sanctuary "
+                        "are swept away.");
     }
 
     if (blood_count > 0)
-    {
-        mpr("By Zin's power, all blood is cleared from the sanctuary.",
-            MSGCH_GOD);
-    }
+        mprf(MSGCH_GOD, "By Zin's power, all blood is cleared from the sanctuary.");
 
     if (scare_count == 1 && seen_mon != NULL)
         simple_monster_message(seen_mon, " turns to flee the light!");
     else if (scare_count > 0)
         mpr("The monsters scatter in all directions!");
 }
-
 
 /////////////
 // Silence
@@ -549,7 +505,7 @@ static int _silence_range(int dur)
 
 int player::silence_radius2() const
 {
-    return _silence_range(you.duration[DUR_SILENCE]);
+    return _silence_range(duration[DUR_SILENCE]);
 }
 
 int monster::silence_radius2() const
@@ -597,17 +553,15 @@ int player::halo_radius2() const
 {
     int size = -1;
 
-    if (you.religion == GOD_SHINING_ONE && you.piety >= piety_breakpoint(0)
-        && !you.penance[GOD_SHINING_ONE])
+    if (religion == GOD_SHINING_ONE && piety >= piety_breakpoint(0)
+        && !penance[GOD_SHINING_ONE])
     {
         // Preserve the middle of old radii.
-        const int r = you.piety - 10;
+        const int r = piety - 10;
         // The cap is 64, just less than the LOS of 65.
         size = min(LOS_RADIUS*LOS_RADIUS, r * r / 400);
     }
 
-    // Can't check suppression because this function is called from
-    // _update_agrid()---we'd get an infinite recursion.
     if (player_equip_unrand(UNRAND_BRILLIANCE))
         size = max(size, 9);
 
@@ -629,8 +583,6 @@ int monster::halo_radius2() const
     // small ones.
     switch (type)
     {
-    case MONS_SPIRIT:
-        return 5;
     case MONS_ANGEL:
         return 26;
     case MONS_CHERUB:
@@ -639,25 +591,18 @@ int monster::halo_radius2() const
         return 32;
     case MONS_SERAPH:
         return 50;
-    case MONS_PEARL_DRAGON:
-        return 5;
     case MONS_OPHAN:
         return 64; // highest rank among sentient ones
-    case MONS_PHOENIX:
-        return 10;
     case MONS_SHEDU:
         return 10;
-    case MONS_APIS:
-        return 4;
-    case MONS_PALADIN: // If a paladin finds the mace of brilliance
-                       // it needs a larger halo
-        return max(4, size);  // mere humans
     case MONS_SILVER_STAR:
         return 40; // dumb but with an immense power
     case MONS_HOLY_SWINE:
         return 1;  // only notionally holy
+    case MONS_MENNAS:
+        return 4;  // ???  Low on grace or what?
     default:
-        return 4;
+        return -1;
     }
 }
 
@@ -667,7 +612,7 @@ int monster::halo_radius2() const
 
 int player::liquefying_radius2() const
 {
-    return _silence_range(you.duration[DUR_LIQUEFYING]);
+    return _silence_range(duration[DUR_LIQUEFYING]);
 }
 
 int monster::liquefying_radius2() const
@@ -692,14 +637,13 @@ bool liquefied(const coord_def& p, bool check_actual)
     if (feat_is_water(grd(p)))
         return false;
 
-    // "actually" liquified (ie, check for movement)
+    // "actually" liquefied (ie, check for movement)
     if (check_actual)
         return _check_agrid_flag(p, APROP_ACTUAL_LIQUID);
     // just recoloured for consistency
     else
         return _check_agrid_flag(p, APROP_LIQUID);
 }
-
 
 /////////////
 // Orb's glow
@@ -763,10 +707,20 @@ bool actor::umbraed() const
     return ::umbraed(pos());
 }
 
-// Stub for player umbra.
 int player::umbra_radius2() const
 {
-    return -1;
+    int size = -1;
+
+    if (religion == GOD_DITHMENGOS && piety >= piety_breakpoint(0)
+        && !penance[GOD_DITHMENGOS])
+    {
+        // Preserve the middle of old radii.
+        const int r = piety - 10;
+        // The cap is 64, just less than the LOS of 65.
+        size = min(LOS_RADIUS*LOS_RADIUS, r * r / 400);
+    }
+
+    return size;
 }
 
 int monster::umbra_radius2() const
@@ -784,69 +738,12 @@ int monster::umbra_radius2() const
 }
 
 /////////////
-// Suppression
-
-bool suppressed(const coord_def& p)
-{
-    if (!map_bounds(p))
-        return false;
-    if (!_agrid_valid)
-        _update_agrid();
-
-    return _check_agrid_flag(p, APROP_SUPPRESSION);
-}
-
-int monster::suppression_radius2() const
-{
-    if (type == MONS_MOTH_OF_SUPPRESSION)
-        return 150;
-    else
-        return -1;
-}
-
-bool actor::suppressed() const
-{
-    return ::suppressed(pos());
-}
-
-int player::suppression_radius2() const
-{
-    return -1;
-}
-
-/////////////
-// Soul aura (currently just a marker for reference)
-
-bool soul_aura(const coord_def& p)
-{
-    if (!map_bounds(p))
-        return false;
-    if (!_agrid_valid)
-        _update_agrid();
-
-    return _check_agrid_flag(p, APROP_SOUL_AURA);
-}
-
-int monster::soul_aura_radius2() const
-{
-    if (type == MONS_LOST_SOUL)
-        return LOS_RADIUS_SQ;
-    else
-        return -1;
-}
-
-int player::soul_aura_radius2() const
-{
-    return -1;
-}
-
-/////////////
 // Heat aura (lava orcs).
 
 // Player radius
 int player::heat_radius2() const
 {
-    if (you.species != SP_LAVA_ORC)
+    if (species != SP_LAVA_ORC)
         return -1;
 
     if (!temperature_effect(LORC_HEAT_AURA))

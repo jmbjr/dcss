@@ -5,7 +5,6 @@
 #include "colour.h"
 #include "format.h"
 #include "libutil.h"
-#include "showsymb.h"
 #include "lang-fake.h"
 #include "unicode.h"
 #include "viewchar.h"
@@ -34,7 +33,7 @@ int formatted_string::get_colour(const string &tag)
         return WHITE;
 
     const int colour = str_to_colour(tag);
-    return (colour != -1? colour : LIGHTGREY);
+    return colour != -1? colour : LIGHTGREY;
 }
 
 // Display a formatted string without printing literal \n.
@@ -137,7 +136,7 @@ void formatted_string::parse_string1(const string &s, formatted_string &fs,
             continue;
         }
 
-        if (s[tag] != '<' || tag >= length - 2)
+        if (s[tag] != '<' || tag >= length - 1)
         {
             if (!masked)
                 currs += s[tag];
@@ -311,7 +310,6 @@ char &formatted_string::operator [] (size_t idx)
     }
     die("Invalid index");
 }
-
 
 string formatted_string::tostring(int s, int e) const
 {
@@ -558,7 +556,6 @@ static int _tagged_string_printable_length(const string& s)
     }
     return len;
 }
-
 
 // Count the length of the tags in the string.
 int tagged_string_tag_length(const string& s)

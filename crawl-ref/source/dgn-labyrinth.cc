@@ -123,7 +123,7 @@ static void _labyrinth_place_exit(const coord_def &end)
 {
     _labyrinth_place_items(end);
     mons_place(mgen_data::sleeper_at(MONS_MINOTAUR, end, MG_PATROLLING));
-    grd(end) = DNGN_ESCAPE_HATCH_UP;
+    grd(end) = DNGN_EXIT_LABYRINTH;
 }
 
 // Checks whether a given grid has at least one neighbour surrounded
@@ -243,8 +243,8 @@ static void _place_extra_lab_minivaults()
     set<const map_def*> vaults_used;
     while (true)
     {
-        const map_def *vault = random_map_for_tag("lab", false);
-        if (!vault || vaults_used.find(vault) != vaults_used.end())
+        const map_def *vault = random_map_in_depth(level_id::current(), true);
+        if (!vault || vaults_used.count(vault))
             break;
 
         vaults_used.insert(vault);
@@ -316,7 +316,7 @@ static bool _is_deadend(const coord_def& pos)
             count_neighbours++;
     }
 
-    return (count_neighbours <= 1);
+    return count_neighbours <= 1;
 }
 
 static coord_def _find_random_deadend(const dgn_region &region)
@@ -508,7 +508,8 @@ void dgn_build_labyrinth_level()
                                            GYM - LABYRINTH_BORDER - 1);
 
     // First decide if we're going to use a Lab minivault.
-    const map_def *vault = random_map_for_tag("minotaur", false);
+    const map_def *vault = random_map_in_depth(level_id::current(), false,
+                                               MB_FALSE);
     vault_placement place;
 
     coord_def end;
@@ -525,7 +526,7 @@ void dgn_build_labyrinth_level()
         if (rplace.map.has_tag("generate_loot"))
         {
             for (vault_place_iterator vi(rplace); vi; ++vi)
-                if (grd(*vi) == DNGN_ESCAPE_HATCH_UP)
+                if (grd(*vi) == DNGN_EXIT_LABYRINTH || feat_is_stone_stair(grd(*vi)))
                 {
                     _labyrinth_place_items(*vi);
                     break;

@@ -1053,7 +1053,6 @@ bool tile_list_processor::write_data(bool image, bool code)
             fprintf(fp, "    %s_%s_MAX = %s\n};\n\n", m_prefix.c_str(), ucname.c_str(), max_enum.c_str());
         }
 
-
         fprintf(fp, "unsigned int tile_%s_count(tileidx_t idx);\n", lcname.c_str());
         fprintf(fp, "tileidx_t tile_%s_basetile(tileidx_t idx);\n", lcname.c_str());
         fprintf(fp, "int tile_%s_probs(tileidx_t idx);\n",
@@ -1275,7 +1274,7 @@ bool tile_list_processor::write_data(bool image, bool code)
             "bool tile_%s_equal(tileidx_t tile, tileidx_t idx)\n"
             "{\n"
             "    ASSERT(tile >= %s && tile < %s);\n"
-            "    return (idx >= tile && idx < tile + tile_%s_count(tile));\n"
+            "    return idx >= tile && idx < tile + tile_%s_count(tile);\n"
             "}\n\n",
             lcname.c_str(), m_start_value.c_str(), max.c_str(), lcname.c_str());
 
@@ -1440,7 +1439,7 @@ bool tile_list_processor::write_data(bool image, bool code)
                 else
                 {
                     const float prob = m_page.m_probs[i] - m_page.m_probs[i-1];
-                    const float perc = (prob * 100)/(float)total_prob;
+                    const float perc = prob * 100 / (float)total_prob;
                     fprintf(fp, "<td>(%.1f%%)</td><td></td>", perc);
                 }
             }
@@ -1456,7 +1455,7 @@ bool tile_list_processor::write_data(bool image, bool code)
                 {
                     total_prob = m_page.m_probs[i + m_page.m_counts[i] - 1];
                     const float prob = m_page.m_probs[i];
-                    const float perc = (prob * 100)/(float)total_prob;
+                    const float perc = prob * 100 / (float)total_prob;
                     fprintf(fp, "<td>%s (%.1f%%)</td>", lcenum.c_str(), perc);
                 }
 
@@ -1487,7 +1486,6 @@ bool tile_list_processor::write_data(bool image, bool code)
     }
 
     delete[] part_min;
-
 
     // Write "%name.d"
     if (m_abstract.empty())

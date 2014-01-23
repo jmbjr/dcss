@@ -1,6 +1,6 @@
 /**
  * @file
- * @brief Auxilary functions to make savefile versioning simpler.
+ * @brief Auxiliary functions to make savefile versioning simpler.
 **/
 
 #ifndef TAGS_H
@@ -80,13 +80,11 @@ void marshallInt     (writer &, int32_t);
 void marshallFloat   (writer &, float);
 void marshallUByte   (writer &, uint8_t);
 void marshallBoolean (writer &, bool);
-void marshallString  (writer &, const string &, int maxSize = 0);
+void marshallString  (writer &, const string &);
 void marshallString4 (writer &, const string &);
 void marshallCoord   (writer &, const coord_def &);
 void marshallItem    (writer &, const item_def &, bool info = false);
 void marshallMonster (writer &, const monster&);
-void marshallMonsterInfo (writer &, const monster_info &);
-void marshallMapCell (writer &, const map_cell &);
 void marshall_level_id(writer& th, const level_id& id);
 void marshallUnsigned(writer& th, uint64_t v);
 void marshallSigned(writer& th, int64_t v);
@@ -139,13 +137,11 @@ int32_t     unmarshallInt     (reader &);
 float       unmarshallFloat   (reader &);
 uint8_t     unmarshallUByte   (reader &);
 bool        unmarshallBoolean (reader &);
-string      unmarshallString  (reader &, int maxSize = 1000);
+string      unmarshallString  (reader &);
 void        unmarshallString4 (reader &, string&);
 coord_def   unmarshallCoord   (reader &);
 void        unmarshallItem    (reader &, item_def &item);
 void        unmarshallMonster (reader &, monster& item);
-void        unmarshallMonsterInfo (reader &, monster_info &mi);
-void        unmarshallMapCell (reader &, map_cell& cell);
 level_id    unmarshall_level_id(reader& th);
 
 uint64_t unmarshallUnsigned(reader& th);

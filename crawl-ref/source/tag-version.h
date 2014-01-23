@@ -9,13 +9,19 @@
 #define TAG_CHR_FORMAT 0
 
 // Let CDO updaters know if the syntax changes.
+// Really, really, REALLY _never_ ever bump this and clean up old #ifdefs
+// in a single commit, please.  Making clean-up and actual code changes,
+// especially of this size, separated is vital for sanity.
+#ifndef TAG_MAJOR_VERSION
 #define TAG_MAJOR_VERSION 34
+#endif
 
 // Minor version will be reset to zero when major version changes.
 enum tag_minor_version
 {
     TAG_MINOR_INVALID         = -1,
     TAG_MINOR_RESET           = 0, // Minor tags were reset
+#if TAG_MAJOR_VERSION == 34
     TAG_MINOR_BRANCHES_LEFT,       // Note the first time branches are left
     TAG_MINOR_VAULT_LIST,          // Don't try to store you.vault_list as prop
     TAG_MINOR_TRAPS_DETERM,        // Searching for traps is deterministic.
@@ -48,6 +54,28 @@ enum tag_minor_version
     TAG_MINOR_AUTOMATIC_MANUALS,   // Manuals are now always studied
     TAG_MINOR_RM_GARGOYLE_DR,      // Gargoyle DR is redundant.
     TAG_MINOR_STAT_ZERO,           // Stat zero doesn't cause death.
+    TAG_MINOR_BOX_OF_BEASTS_CHARGES, // Box of Beasts counts its charges.
+    TAG_MINOR_WAR_DOG_REMOVAL,     // War dogs become wolves, then disappear
+    TAG_MINOR_CANARIES,            // Canaries in save files.
+    TAG_MINOR_CHIMERA_GHOST_DEMON, // Use ghost demon
+    TAG_MINOR_MONSTER_PARTS,       // Flag the presence of ghost_demon (and more)
+    TAG_MINOR_OPTIONAL_PARTS,      // Make three big monster structs optional.
+    TAG_MINOR_SHORT_SPELL_TYPE,    // Spell types changed to short instead of byte
+    TAG_MINOR_FORGOTTEN_MAP,       // X^F can be undone.
+    TAG_MINOR_CONTAM_SCALE,        // Scale the magic contamination by a factor of 1000
+    TAG_MINOR_SUMMONER,            // Store summoner data.
+    TAG_MINOR_STAT_MUT,            // Flag for converting stat mutations
+    TAG_MINOR_MAP_ORDER,           // map_def::order added to des cache
+    TAG_MINOR_FIXED_CONSTRICTION,  // Corrected a constricting marshalling bug.
+    TAG_MINOR_SEEDS,               // Per-game seeds for deterministic stuff.
+    TAG_MINOR_ABYSS_BRANCHES,      // Spawn abyss monsters from other branches.
+    TAG_MINOR_BRANCH_ENTRY,        // Store branch entry point (rather than just depth).
+    TAG_MINOR_16_BIT_TABLE,        // Increase the limit for CrawlVector/HashTable to 65535.
+    TAG_MINOR_ABIL_1000,           // Start god ability enums at 1000.
+    TAG_MINOR_CLASS_HP_0,          // Base class maxhp at 0.
+    TAG_MINOR_NOISES,              // Save incompat recovery wrt ATTR_NOISES.
+    TAG_MINOR_ABIL_GOD_FIXUP,      // Movement of some non-god-specific abils.
+#endif
     NUM_TAG_MINORS,
     TAG_MINOR_VERSION = NUM_TAG_MINORS - 1
 };

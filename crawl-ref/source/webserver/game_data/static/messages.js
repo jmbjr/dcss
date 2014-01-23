@@ -1,8 +1,13 @@
-define(["jquery", "comm", "client", "./util", "./settings"],
-function ($, comm, client, util, settings) {
+define(["jquery", "comm", "client", "./util", "./options"],
+function ($, comm, client, util, options) {
+    "use strict";
+
+    var HISTORY_SIZE = 10;
+
     var messages = [];
     var more = false;
     var old_scroll_top;
+    var histories = {};
 
     function hide()
     {
@@ -17,11 +22,11 @@ function ($, comm, client, util, settings) {
     }
 
     var prefix_glyph_classes = "turn_marker command_marker";
-    function set_last_prefix_glyph(html, classes)
+    function set_last_prefix_glyph(text, classes)
     {
         var last_msg_elem = $("#messages .game_message").last();
         var prefix_glyph = last_msg_elem.find(".prefix_glyph");
-        prefix_glyph.html(html);
+        prefix_glyph.text(text);
         prefix_glyph.addClass(classes);
     }
 
@@ -64,18 +69,12 @@ function ($, comm, client, util, settings) {
             msg_elem.append(" ");
             msg_elem.append(repeats);
         }
-        if (settings.get("animations"))
-        {
-            $("#messages_container")
-                .stop(true, false)
-                .animate({
-                    scrollTop: $("#messages").height()
-                }, 100);
-        }
-        else
-        {
-            $("#messages_container").scrollTop($("#messages").height());
-        }
+        /*$("#messages_container")
+            .stop(true, false)
+            .animate({
+                scrollTop: $("#messages").height()
+            }, 1000);*/
+        $("#messages_container").scrollTop($("#messages").height());
     }
 
     function rollback(count)
@@ -111,18 +110,48 @@ function ($, comm, client, util, settings) {
         if (client.is_watching != null && client.is_watching())
             return;
 
+        assert(msg.tag !== "repeat" || !msg.prefill);
+
         $("#text_cursor").remove();
 
         var prompt = $("#messages .game_message").last();
         var input = $("<input class='text' type='text'>");
-        prompt.append(input);
+        var history;
+        var historyPosition;
 
+        if ("maxlen" in msg)
+            input.attr("maxlength", msg.maxlen)
+        if ("size" in msg)
+            input.attr("size", msg.size)
+        if ("prefill" in msg)
+            input.val(msg.prefill)
+        if ("historyId" in msg)
+        {
+            if (!histories[msg.historyId])
+                histories[msg.historyId] = [];
+            history = histories[msg.historyId];
+            historyPosition = history.length;
+        }
+
+        prompt.append(input);
         input.focus();
 
-        function restore()
-        {
-            input.blur();
-            input.remove();
+        function send_input_line(finalChar) {
+            if (history && input.val().length > 0)
+            {
+                if (history.indexOf(input.val()) != -1)
+                    history.splice(history.indexOf(input.val()), 1);
+                history.push(input.val());
+                if (history.length > HISTORY_SIZE)
+                    history.shift();
+            }
+
+            var text = input.val() + String.fromCharCode(finalChar);
+            // ctrl-u to wipe any pre-fill
+            if (msg.tag !== "repeat")
+                comm.send_message("key", { keycode: 21 });
+            comm.send_message("input", { text: text });
+            abort_get_line();
         }
 
         input.keydown(function (ev) {
@@ -132,26 +161,64 @@ function ($, comm, client, util, settings) {
                 comm.send_message("key", { keycode: 27 }); // Send ESC
                 return false;
             }
-            else if (ev.which == 13)
+            else if (ev.which == 13) // enter
             {
-                var enter = String.fromCharCode(13);
-                var text = input.val() + enter;
-                comm.send_message("input", { text: text});
+                send_input_line(13);
                 ev.preventDefault();
                 return false;
+            }
+            else if (history && history.length > 0 && (ev.which == 38 || ev.which == 40))
+            {
+                historyPosition += ev.which == 38 ? -1 : 1;
+                if (historyPosition < 0)
+                    historyPosition = history.length - 1;
+                if (historyPosition >= history.length)
+                    historyPosition = 0;
+                input.val(history[historyPosition]);
             }
         });
         input.keypress(function (ev) {
             if (msg.tag == "stash_search")
             {
-                if (String.fromCharCode(ev.which) == "?")
+                if (String.fromCharCode(ev.which) == "?" && input.val().length === 0)
                 {
                     ev.preventDefault();
                     comm.send_message("key", { keycode: ev.which });
                     return false;
                 }
             }
+            else if (msg.tag == "repeat")
+            {
+                var ch = String.fromCharCode(ev.which);
+                if (ch != "" && !/^\d$/.test(ch))
+                {
+                    send_input_line(ev.which);
+                    ev.preventDefault();
+                    return false;
+                }
+            }
+            else if (msg.tag == "travel_depth")
+            {
+                var ch = String.fromCharCode(ev.which);
+                if ("<>?$^-p".indexOf(ch) != -1)
+                {
+                    send_input_line(ev.which);
+                    ev.preventDefault();
+                    return false;
+                }
+            }
         });
+    }
+
+    function messages_key_handler()
+    {
+        var input = $("#messages .game_message input");
+
+        if (!input.is(":visible"))
+            return true;
+
+        input.focus();
+        return false;
     }
 
     function abort_get_line()
@@ -178,6 +245,17 @@ function ($, comm, client, util, settings) {
         }
     }
 
+    options.add_listener(function ()
+    {
+        if (options.get("tile_font_msg_size") === 0)
+            $("#message_pane").css("font-size", "");
+        else
+        {
+            $("#message_pane").css("font-size",
+                options.get("tile_font_msg_size") + "px");
+        }
+    });
+
     comm.register_handlers({
         "msgs": handle_messages,
         "text_cursor": text_cursor,
@@ -189,6 +267,9 @@ function ($, comm, client, util, settings) {
         .on("game_init.messages", function () {
             messages = [];
             more = false;
+            $(document).off("game_keydown.messages game_keypress.messages")
+                .on("game_keydown.messages", messages_key_handler)
+                .on("game_keypress.messages", messages_key_handler);
         });
 
     return {

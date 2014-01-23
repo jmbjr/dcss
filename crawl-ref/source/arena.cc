@@ -7,12 +7,14 @@
 
 #include "arena.h"
 
+#include "act-iter.h"
 #include "cio.h"
 #include "colour.h"
 #include "command.h"
 #include "dungeon.h"
 #include "env.h"
 #include "externs.h"
+#include "food.h"
 #include "items.h"
 #include "itemname.h" // for make_name()
 #include "libutil.h"
@@ -21,7 +23,6 @@
 #include "maps.h"
 #include "message.h"
 #include "mon-behv.h"
-#include "mon-iter.h"
 #include "mon-pick.h"
 #include "mon-util.h"
 #include "mon-place.h"
@@ -87,7 +88,7 @@ namespace arena
 
     static int total_trials = 0;
 
-    static bool contest_canceled = false;
+    static bool contest_cancelled = false;
 
     static bool is_respawning = false;
 
@@ -132,7 +133,7 @@ namespace arena
     static uint32_t cycle_random_pos = 0;
 
     static FILE *file = NULL;
-    static level_id place(BRANCH_MAIN_DUNGEON, 20);
+    static level_id place(BRANCH_DEPTHS, 1);
 
     static void adjust_spells(monster* mons, bool no_summons, bool no_animate)
     {
@@ -244,7 +245,7 @@ namespace arena
             for (int y = 0; y < GYM; ++y)
                 grd[x][y] = DNGN_ROCK_WALL;
 
-        unwind_bool gen(Generating_Level, true);
+        unwind_bool gen(crawl_state.generating_level, true);
 
         typedef unwind_var< set<string> > unwind_stringset;
 
@@ -522,16 +523,10 @@ namespace arena
         int orig_b = faction_b.active_members;
 
         if (orig_a < 0)
-        {
-            mpr("Book-keeping says faction_a has negative active members.",
-                MSGCH_ERROR);
-        }
+            mprf(MSGCH_ERROR, "Book-keeping says faction_a has negative active members.");
 
         if (orig_b < 0)
-        {
-            mpr("Book-keeping says faction_b has negative active members.",
-                MSGCH_ERROR);
-        }
+            mprf(MSGCH_ERROR, "Book-keeping says faction_b has negative active members.");
 
         faction_a.active_members = 0;
         faction_b.active_members = 0;
@@ -549,7 +544,10 @@ namespace arena
         if (orig_a != faction_a.active_members
             || orig_b != faction_b.active_members)
         {
-            mpr("Book-keeping error in faction member count.", MSGCH_ERROR);
+            mprf(MSGCH_ERROR, "Book-keeping error in faction member count: "
+                              "%d:%d instead of %d:%d",
+                              orig_a, orig_b,
+                              faction_a.active_members, faction_b.active_members);
 
             if (faction_a.active_members > 0
                 && faction_b.active_members <= 0)
@@ -573,8 +571,7 @@ namespace arena
         {
             if (faction_a.won || faction_b.won)
             {
-                mpr("Both factions alive but one declared the winner.",
-                    MSGCH_ERROR);
+                mprf(MSGCH_ERROR, "Both factions alive but one declared the winner.");
                 faction_a.won = false;
                 faction_b.won = false;
             }
@@ -585,7 +582,7 @@ namespace arena
         // any inconsistencies.
         count_foes();
 
-        return (faction_a.active_members > 0 && faction_b.active_members > 0);
+        return faction_a.active_members > 0 && faction_b.active_members > 0;
     }
 
     static void dump_messages()
@@ -651,8 +648,8 @@ namespace arena
 
         if (faction_a.active_members == 0 || faction_b.active_members == 0)
         {
-            mpr("ERROR: Both sides have spawners, but the active member "
-                "count of one side has been reduced to zero!", MSGCH_ERROR);
+            mprf(MSGCH_ERROR, "ERROR: Both sides have spawners, but the active "
+                 "member count of one side has been reduced to zero!");
             return;
         }
 
@@ -690,7 +687,7 @@ namespace arena
     {
         if (key_is_escape(ch) || toalower(ch) == 'q')
         {
-            contest_canceled = true;
+            contest_cancelled = true;
             mpr("Canceled contest at user request");
             return;
         }
@@ -800,8 +797,9 @@ namespace arena
                 {
                     const int ch = getchm();
                     handle_keypress(ch);
-                    ASSERT(crawl_state.game_is_arena() && !crawl_state.arena_suspended);
-                    if (contest_canceled)
+                    ASSERT(crawl_state.game_is_arena());
+                    ASSERT(!crawl_state.arena_suspended);
+                    if (contest_cancelled)
                         return;
                 }
 
@@ -816,7 +814,7 @@ namespace arena
                 viewwindow();
                 you.time_taken = 10;
                 // Make sure we don't starve.
-                you.hunger = 10999;
+                you.hunger = HUNGER_MAXIMUM;
                 //report_foes();
                 world_reacts();
                 do_miscasts();
@@ -843,13 +841,13 @@ namespace arena
         {
             if (faction_a.active_members > 0)
             {
-                mpr("Tie declared, but faction_a won.", MSGCH_ERROR);
+                mprf(MSGCH_ERROR, "Tie declared, but faction_a won.");
                 team_a_wins++;
                 faction_a.won = true;
             }
             else if (faction_b.active_members > 0)
             {
-                mpr("Tie declared, but faction_b won.", MSGCH_ERROR);
+                mprf(MSGCH_ERROR, "Tie declared, but faction_b won.");
                 faction_b.won = true;
             }
             else
@@ -863,21 +861,21 @@ namespace arena
             faction_a.won = false;
             faction_b.won = false;
 
-            mpr("*BOTH* factions won?!", MSGCH_ERROR);
+            mprf(MSGCH_ERROR, "*BOTH* factions won?!");
             if (faction_a.active_members > 0)
             {
-                mpr("Faction_a real winner.", MSGCH_ERROR);
+                mprf(MSGCH_ERROR, "Faction_a real winner.");
                 team_a_wins++;
                 faction_a.won = true;
             }
             else if (faction_b.active_members > 0)
             {
-                mpr("Faction_b real winner.", MSGCH_ERROR);
+                mprf(MSGCH_ERROR, "Faction_b real winner.");
                 faction_b.won = true;
             }
             else
             {
-                mpr("Both sides dead.", MSGCH_ERROR);
+                mprf(MSGCH_ERROR, "Both sides dead.");
                 ties++;
                 was_tied = true;
             }
@@ -910,12 +908,12 @@ namespace arena
         // Clear some things that shouldn't persist across restart_after_game.
         // parse_monster_spec and setup_fight will clear the rest.
         total_trials = trials_done = team_a_wins = ties = 0;
-        contest_canceled = false;
+        contest_cancelled = false;
         is_respawning = false;
         uniques_list.clear();
         memset(banned_glyphs, 0, sizeof(banned_glyphs));
         arena_type = "";
-        place = level_id(BRANCH_MAIN_DUNGEON, 20);
+        place = level_id(BRANCH_DEPTHS, 1);
 
         // [ds] Turning off view_lock crashes arena.
         Options.view_lock_x = Options.view_lock_y = true;
@@ -1008,7 +1006,7 @@ namespace arena
             if (trials_done < total_trials)
                 delay(Options.arena_delay * 5);
         }
-        while (!contest_canceled && trials_done < total_trials);
+        while (!contest_cancelled && trials_done < total_trials);
 
         if (total_trials > 0)
         {
@@ -1092,9 +1090,9 @@ bool arena_veto_place_monster(const mgen_data &mg, bool first_band_member,
         }
 
     }
-    return (!arena::allow_bands && !first_band_member
-            || !(mons_char(mg.cls) & !127)
-               && arena::banned_glyphs[mons_char(mg.cls)]);
+    return !arena::allow_bands && !first_band_member
+           || !(mons_char(mg.cls) & !127)
+              && arena::banned_glyphs[mons_char(mg.cls)];
 }
 
 // XXX: Still having some trouble with book-keeping if a slime creature
@@ -1223,7 +1221,7 @@ void arena_monster_died(monster* mons, killer_type killer,
              && arena::faction_b.active_members <= 0)
     {
         if (mons->flags & MF_HARD_RESET && !MON_KILL(killer))
-            game_ended_with_error("Last arena monster was dismissed.");
+            mpr("Last arena monster was dismissed.");
         // If all monsters are dead, and the last one to die is a giant
         // spore or ball lightning, then that monster's faction is the
         // winner, since self-destruction is their purpose.  But if a
@@ -1238,7 +1236,7 @@ void arena_monster_died(monster* mons, killer_type killer,
         }
     }
 
-    // Only respawn those monsers which were initally placed in the
+    // Only respawn those monsters which were initially placed in the
     // arena.
     const int midx = mons->mindex();
     if (arena::respawn && arena::to_respawn[midx] != -1
@@ -1300,7 +1298,7 @@ void arena_monster_died(monster* mons, killer_type killer,
 
 static bool _sort_by_age(int a, int b)
 {
-    return (arena::item_drop_times[a] < arena::item_drop_times[b]);
+    return arena::item_drop_times[a] < arena::item_drop_times[b];
 }
 
 #define DESTROY_ITEM(i) \
@@ -1357,6 +1355,7 @@ int arena_cull_items()
             // Arrows/needles/etc on the floor is just clutter.
             if (item.base_type != OBJ_MISSILES
                || item.sub_type == MI_JAVELIN
+               || item.sub_type == MI_TOMAHAWK
                || item.sub_type == MI_THROWING_NET)
             {
                 ammo.push_back(idx);

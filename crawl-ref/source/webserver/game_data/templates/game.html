@@ -4,6 +4,7 @@
   });
   require(['jquery', 'client'], function ($, client) {
     client.inhibit_messages();
+    window.game_loading = true;
     require(['game-{{ version }}/game'], function (game) {
       $(document).trigger("game_preinit");
       $(document).trigger("game_init");
@@ -40,7 +41,7 @@
        --><span id="stats_hp_bar_increase" /><!--
      --></span>
         <span class="stats_caption">HP:</span>
-        <span id="stats_hp" />/<span id="stats_hp_max" />
+        <span id="stats_hp" /><span id="stats_hp_separator">/</span><span id="stats_hp_max" />
         <span id="stats_real_hp_max" />
       </div>
       <div id="stats_mpline">
@@ -50,7 +51,7 @@
        --><span id="stats_mp_bar_increase" /><!--
      --></span>
         <span class="stats_caption">Magic:</span>
-        <span id="stats_mp" />/<span id="stats_mp_max" />
+        <span id="stats_mp" /><span id="stats_mp_separator">/</span><span id="stats_mp_max" />
       </div>
       <div id="stats_contamline">
         <span id="stats_contam_bar" class="bar" style="float:right; width:55%; height:1em;"><!-- Whitespace...
@@ -96,7 +97,7 @@
           <div><span class="stats_caption">Place:</span>
             <span id="stats_place" /></div>
           <div class="stats_zot_defense">&nbsp;</div>
-          <div><span class="stats_caption">Time:</span>
+          <div><span class="stats_caption" id="stats_time_caption"></span>
             <span id="stats_time" /></div>
         </div>
         <div><span class="stats_caption">Wp:</span>
@@ -112,31 +113,6 @@
     </div>
     <div id="monster_list"></div>
   </div>
-</div>
-
-<div id="settings" style="display: none;" class="floating_dialog">
-  <div class="title">Settings</div>
-  <p>
-    Display:
-    <input type="radio" name="setting_glyph_mode"
-           data-setting="display_mode" value="tiles">Tiles</input>
-    <input type="radio" name="setting_glyph_mode"
-           data-setting="display_mode" value="glyphs">Glyphs</input>
-    <input type="radio" name="setting_glyph_mode"
-           data-setting="display_mode" value="hybrid">Glyphs+Icons</input>
-  </p>
-  <p>
-    Tile scaling:
-    <input type="text" class="text" name="setting_tile_scaling"
-           data-setting="tile_scaling"></input><br />
-    <input type="checkbox" name="setting_smooth_scaling"
-           data-setting="smooth_scaling">Smooth scaling</input>
-  </p>
-  <p>
-    <input type="checkbox" name="setting_animations"
-           data-setting="animations">Animations</input>
-  </p>
-  <a id="close_settings" href="javascript:">(close)</a>
 </div>
 
 <div id="menu" style="display: none;" class="floating_dialog"></div>

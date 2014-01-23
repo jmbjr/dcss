@@ -55,7 +55,7 @@ void GLStateManager::shutdown()
 GLShapeBuffer *GLShapeBuffer::create(bool texture, bool colour,
                                      drawing_modes prim)
 {
-    return (new OGLShapeBuffer(texture, colour, prim));
+    return new OGLShapeBuffer(texture, colour, prim);
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -587,7 +587,6 @@ void OGLShapeBuffer::draw(const GLState &state)
         break;
     }
     glDebug("glDrawElements");
-
 }
 
 void OGLShapeBuffer::clear()

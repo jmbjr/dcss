@@ -9,6 +9,13 @@ amulet of conservation
 Este amuleto protege de la destrucción algunas de las pertenencias de su
 portador, aunque no de forma infalible.
 %%%%
+amulet of faith
+
+Este es un talismán creado para reclamar la atención de los dioses. De esta
+forma, será más fácil agradar a tu dios, pero al mismo tiempo, también será más
+difícil que tu dios perdone tus transgresiones. Al quitarte este amuleto,
+perderás una parte del favor divino logrado.
+%%%%
 amulet of guardian spirit
 
 Este amuleto hace que su portador sea un poco menos vulnerable al daño externo.
@@ -35,19 +42,6 @@ amulet of resist mutation
 Este amuleto previene que su portador adquiera mutaciones, aunque no es
 infalible.
 %%%%
-amulet of warding
-
-Este amuleto repele los ataques de criaturas que hayan sido convocadas mediante
-magia, y también hace a su portador más resistente a los ataques basados en
-energías negativas.
-%%%%
-amulet of faith
-
-Este es un talismán creado para reclamar la atención de los dioses. De esta
-forma, será más fácil agradar a tu dios, pero al mismo tiempo, también será más
-difícil que tu dios perdone tus transgresiones. Al quitarte este amuleto,
-perderás una parte del favor divino logrado.
-%%%%
 amulet of stasis
 
 Un amuleto que ha sido elaborado meticulosamente para bloquear los efectos
@@ -56,6 +50,12 @@ paralizar a su portador.
 
 Aunque el amuleto es efectivo contra la mayoría de las magias de translocación,
 los cambios de plano como el destierro están fuera de su alcance.
+%%%%
+amulet of warding
+
+Este amuleto repele los ataques de criaturas que hayan sido convocadas mediante
+magia, y también hace a su portador más resistente a los ataques basados en
+energías negativas.
 %%%%
 animal skin
 
@@ -73,15 +73,6 @@ arrow
 
 Una flecha, hecha para ser disparada con un arco.
 %%%%
-arrow:quote
-
-“En un corredor vi una flecha que indicaba una dirección y pensé que aquel
-símbolo inofensivo había sido alguna vez una cosa de hierro, un proyectil
-inevitable y mortal, que entró en la carne de los hombres y de los leones y
-nubló el sol en las Termópilas y dio a Harald Sigurdarson, para siempre, seis
-pies de tierra inglesa.”
-    -Jorge Luis Borges, Mutaciones. 1960.
-%%%%
 banana
 
 Una deliciosa fruta amarillenta, probablemente cultivada e importada por alguna
@@ -98,11 +89,6 @@ Una gran hacha con una cuchilla de doble filo.
 beef jerky
 
 Una tira de carne seca de vaca o toro.
-%%%%
-blessed double sword
-
-Un arma mágica con dos cuchillas muy afiladas. Ha sido mejorada con el poder de
-El Resplandeciente.
 %%%%
 blessed falchion
 
@@ -123,11 +109,6 @@ blessed scimitar
 
 Una espada con una cuchilla curvada. Ha sido mejorada con el poder de El
 Resplandeciente.
-%%%%
-blessed triple sword
-
-Un arma mágica con tres cuchillas muy afiladas. Ha sido mejorada con el poder
-de El Resplandeciente.
 %%%%
 blowgun
 
@@ -212,6 +193,10 @@ book of envenomations
 
 Un libro con hechizos mágicos.
 %%%%
+book of fire
+
+Un libro completamente abrasado que contiene hechizos mágicos.
+%%%%
 book of fixed level
 
 Un libro con hechizos mágicos.
@@ -219,10 +204,6 @@ Un libro con hechizos mágicos.
 book of fixed theme
 
 Un libro con hechizos mágicos.
-%%%%
-book of fire
-
-Un libro completamente abrasado que contiene hechizos mágicos.
 %%%%
 book of flames
 
@@ -313,38 +294,19 @@ book of wizardry
 
 Un libro con hechizos mágicos.
 %%%%
-bottled efreet
-
-Un poderoso ifrit, capturado por algún mago y sellado en un matraz de bronce.
-Romper el sello del frasco le hará libre para que cause estragos, quizás sobre
-ti.
-%%%%
 bow
 
 Una pieza curva de madera con una cuerda atada entre sus extremos, diseñada
 para disparar flechas. Hace bastante daño en combate, y alguien con habilidad
 puede usarlo con gran eficiencia.
 %%%%
-box of beasts
-
-Una caja mágica que contiene muchas bestias salvajes. Es posible levantar la
-tapa para permitir que salgan.
-%%%%
 bread ration
 
 Pan un poco rancio, aunque sustancioso.
 %%%%
-broad axe
-
-Un hacha con una gran cuchilla.
-%%%%
 buckler
 
 Un pequeño escudo.
-%%%%
-cap
-
-Un sombrero de tela o cuero.
 %%%%
 centaur barding
 
@@ -370,11 +332,6 @@ cloak
 
 Una capa de tela.
 %%%%
-club
-
-Un pesado trozo de madera que puede ser lanzado o empuñado. Golpear a alguien
-en la cabeza mientras que duerme, parece una gran idea.
-%%%%
 corpse
 
 Un cadáver. Puedes descuartizarlo para conseguir trozos de carne comestible.
@@ -397,14 +354,13 @@ crystal plate armour
 
 Una armadura de cristal, increíblemente pesada, pero extremadamente efectiva.
 %%%%
-dagger
-
-Un largo cuchillo, o pequeña espada, que puede ser empuñada o lanzada. Causa un
-daño enorme cuando se usa para apuñalar a alguien.
-%%%%
 dart
 
 Una pequeña arma arrojadiza.
+%%%%
+decaying skeleton
+
+Un esqueleto en descomposición.
 %%%%
 deck of changes
 
@@ -495,10 +451,6 @@ demon whip
 
 Un arma terrible, fabricada en las profundidades del Hades.
 %%%%
-dire flail
-
-Un flagelo con puntiagudas protuberancias en ambos extremos.
-%%%%
 disc of storms
 
 Este objeto extremadamente poderoso es capaz de de desencadenar una destructiva
@@ -506,18 +458,10 @@ tormenta eléctrica. Su efectividad mejora considerablemente cuando está en las
 manos de alguien habilidoso en el uso de dispositivos mágicos, pero es
 imposible su uso por parte de alguien que no sea conductivo.
 %%%%
-double sword
-
-Un arma mágica con dos cuchillas muy afiladas.
-%%%%
 eggplant
 
 Una berenjena podrida que puedes arrojar a los desarrolladores de Crawl. (Si
 ves este mensaje, se trata de un error del programa.)
-%%%%
-empty ebony casket
-
-Una caja mágica cuyo poder se ha agotado.
 %%%%
 eudemon blade
 
@@ -620,10 +564,6 @@ hammer
 
 La cosa con la que clavas puntillas, modificada para el combate.
 %%%%
-hand axe
-
-Una pequeña hacha ideada para el combate cuerpo a cuerpo, o para ser arrojada.
-%%%%
 helmet
 
 Una protección metálica para la cabeza.
@@ -677,8 +617,9 @@ la oscuridad, aunque con un pequeño coste.
 large rock
 
 Un piedra, usada por los gigantes como proyectil. {{
-    if string.find(you.race(), "Ogre")
+    if you.race() == "Ogre"
        or you.race() == "Troll"
+       or you.race() == "Formicid"
     then
         return ""
     else
@@ -690,8 +631,7 @@ eres incapaz de usarla."
 large shield
 
 Parecido a un escudo convencional, pero un poco más grande. {{
-    if string.find(you.race(), "Ogre")
-       or string.find(you.race(), "Draconian")
+    if you.race() == "Ogre"
        or you.race() == "Troll"
     then
         return "Parece que es de tu talla."
@@ -712,23 +652,6 @@ Una fruta amarillenta.
 long sword
 
 Una espada con una larga cuchilla.
-%%%%
-long sword:quote
-
-"Y andando en estas priesas entre aquellos grandes guerreros y sus temerosos
-montantes, parece ser acordaron de se juntar muchos dellos y de mayores fuerzas
-para tomar a manos algún caballo, y lo pusieron por obra, y arremetieron, y
-echan mano a una muy buena yegua y bien revuelta, de juego y de carrera, y el
-caballero que en ella iba muy buen jinete, que se decía Pedro de Morón; y como
-entró rompiendo con otros tres de a caballo entre los escuadrones de los
-contrarios, porque así les era mandado, porque se ayudasen unos a otros,
-échanle mano de la lanza, que no la pudo sacar, y otros le dan de cuchilladas
-con los montantes y le hirieron malamente, y entonces dieron una cuchillada a
-la yegua, que le cortaron el pescuezo en redondo, y allí quedó muerta; y si de
-presto no socorrieran los dos compañeros de a caballo al Pedro de Morón,
-también le acabaran de matar."
-    -Bernal Díaz del Castillo, Historia verdadera de la conquista de la Nueva
-España. 1632.
 %%%%
 longbow
 
@@ -754,14 +677,6 @@ Una ración nutritiva de carne seca y en conserva.
 morningstar
 
 Una maza cubierta de pinchos.
-%%%%
-mottled dragon armour
-
-Una armadura mágica elaborada a partir de las escamas de un dragón moteado.
-Aunque no proporciona una gran protección mágica, es bastante ligera en
-comparación con las armaduras echas de escamas de dragones más grandes. Es tan
-liviana y cómoda como la armadura de cuero. También es muy suave, de tal forma
-que el fuego adherente se cae como si fuera agua.
 %%%%
 mottled dragon hide
 
@@ -797,14 +712,6 @@ habrás completado tu misión.
 pair of boots
 
 Un par de botas.
-%%%%
-pair of bracers
-
-Un par de muñequeras.
-%%%%
-pair of gauntlets
-
-Un par de guanteletes.
 %%%%
 pair of gloves
 
@@ -936,11 +843,6 @@ potion of resistance
 
 Una poción que te da temporalmente resistencia a los elementos y al veneno.
 %%%%
-potion of restore abilities
-
-Una poción que restaura las habilidades de quien la beba. También permite usar
-un arma de aliento, cancelando su retardo.
-%%%%
 potion of slowing
 
 Una poción que vuelve más lentas tus acciones.
@@ -986,22 +888,10 @@ ring of evasion
 Este anillo hace que su portador sea más o menos capaz de evitar ataques, en
 función de su grado de encantamiento.
 %%%%
-ring of fire
-
-Este anillo hace que su portador esté más en contacto con los poderes del
-fuego. Ganará resistencia al calor y podrá usar la magia del fuego más
-eficazmente pero será más vulnerable a los efectos del frío.
-%%%%
 ring of hunger
 
 Este anillo maldito hace que su portador tenga hambre considerablemente más
 deprisa.
-%%%%
-ring of ice
-
-Este anillo hace que su portador esté más en contacto con los poderes del
-hielo. Ganará resistencia al frío y podrá usar la magia del hielo más
-eficazmente, pero será más vulnerable a los efectos del fuego.
 %%%%
 ring of intelligence
 
@@ -1013,12 +903,6 @@ ring of invisibility
 Este poderoso anillo puede ser activado para ocultar a su portador de la vista
 de los demás, pero incrementa la velocidad de su metabolismo en gran medida
 mientras lo hace.
-%%%%
-ring of life protection
-
-Este anillo bendito protege la fuerza vital de su portador de energías
-negativas, haciéndole parcialmente inmune a los efectos de absorción de vida de
-los no-muertos y de la necromancia.
 %%%%
 ring of magical power
 
@@ -1098,14 +982,6 @@ rod of demonology
 Esta vara contiene hechizos de invocación, algunos de los cuales pueden liberar
 demonios hacia este mundo desprevenido.
 %%%%
-rod of destruction
-
-Esta vara contiene hechizos de caos y destrucción.
-%%%%
-rod of striking
-
-Esta vara permite al portador atacar a distancia.
-%%%%
 rod of venom
 
 Esta vara contiene hechizos ofensivos de veneno.
@@ -1122,12 +998,6 @@ habilidades, además de que es saludable.
 rune of zot
 
 Un talismán que permite la entrada a los dominios de Zot.
-%%%%
-sabre
-
-Aunque fue originalmente diseñada para provocar heridas desde una montura, esta
-espada corta, levemente curvada y de un solo filo, sigue siendo eficaz en manos
-de guerreros desmontados.
 %%%%
 sacred scourge
 
@@ -1173,6 +1043,13 @@ scroll of curse weapon
 
 Este pergamino impone una maldición a un arma empuñada.
 %%%%
+scroll of enchant armour
+
+Este pergamino le echa un encantamiento a una pieza de una armadura. La mayoría
+de ellas solo pueden ser encantadas hasta +2, excepto los escudos que pueden
+llegar a +3, y las corazas y bardas que pueden encantarse hasta un valor igual
+a su CA básico.
+%%%%
 scroll of fear
 
 Este pergamino causa un gran temor a aquellos que están viendo al lector.
@@ -1192,12 +1069,6 @@ Este útil pergamino mágico permite determinar las propiedades mágicas de
 cualquier objeto, y ocasionalmente permitirá múltiples identificaciones.
 
 Si es usado en un mazo de cartas, este pergamino revelará la carta superior.
-%%%%
-scroll of immolation
-
-Este pergamino fue tratado con una sustancia increíblemente inflamable, que
-explota violentamente cuando éste es abierto y leído, quemando al lector y a
-todo lo cercano.
 %%%%
 scroll of magic mapping
 
@@ -1235,10 +1106,6 @@ short sword
 
 Una espada de hoja corta y cortante.
 %%%%
-decaying skeleton
-
-Un esqueleto en descomposición.
-%%%%
 slice of pizza
 
 Un trozo de pizza: un pan plano con salsa de tomate, mozzarela de búfala y
@@ -1259,28 +1126,6 @@ snozzcumber
 
 Un vegetal repulsivo en forma de pepino.
 %%%%
-spear
-
-Un palo largo con una punta de metal en un extremo, para ser asido o lanzado.
-%%%%
-spiked flail
-
-Un flagelo con largos pinchos en su cabeza de metal.
-%%%%
-staff of air
-
-Este bastón incrementa el poder de los hechizos de aire recitados por su
-portador, y lo aisla de la electricidad. Si el portador del bastón tiene
-capacidad en evocaciones y magia del aire, puede provocar descargas a quienes
-golpee con él.
-%%%%
-staff of cold
-
-Este bastón incrementa el poder de los hechizos de hielo recitados por su
-portador y lo protege de los efectos del frío. Si el portador del bastón tiene
-capacidad en evocaciones puede congelar a quienes golpee con él, con mayor
-efecto si también posee conocimiento de la magia del hielo.
-%%%%
 staff of conjuration
 
 Este bastón aumenta el poder de los conjuros lanzados por su portador.
@@ -1291,19 +1136,6 @@ Este bastón aumenta el poder de los conjuros necromántico del portador, ademá
 de protegerlo de energía negativa. Si el portador tiene la habilidad
 evocaciones además de la de necromancia, pueden causar mucho dolor a las almas
 vivientes que golpee.
-%%%%
-staff of earth
-
-Este bastón aumenta el poder de los conjuros de tierra del portador. Si éste es
-hábil en evocaciones, puede triturar a quien es golpeado, el daño es aún mayor
-si también se es hábil en magia de tierra.
-%%%%
-staff of fire
-
-Este bastón aumenta el poder de los conjuros de fuego del portador, y lo
-protege de los efectos producidos por el calor y el fuego. Si el portador es
-hábil en evocación, puede quemar a quien es golpeado por este bastón; el efecto
-es aún mayor si se tiene habilidad en magia de fuego.
 %%%%
 staff of poison
 

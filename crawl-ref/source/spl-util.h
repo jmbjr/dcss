@@ -3,7 +3,6 @@
  * @brief data handlers for player spell list
 **/
 
-
 #ifndef SPL_UTIL_H
 #define SPL_UTIL_H
 
@@ -41,7 +40,7 @@ enum spell_highlight_colours
     COL_MEMORIZED    = LIGHTGRAY,   // spell has been memorized
     COL_USELESS      = DARKGRAY,    // ability would have no useful effect
     COL_INAPPLICABLE = COL_USELESS, // ability cannot be meanifully applied (eg, no targets)
-    COL_FORBIDDEN    = LIGHTRED,    // The player's god hates this abilty
+    COL_FORBIDDEN    = LIGHTRED,    // The player's god hates this ability
 
     COL_EMPOWERED    = LIGHTGREEN,  // The ability is made stronger by the player's status
     COL_FAVORED      = GREEN,       // the player's god likes this ability
@@ -112,7 +111,7 @@ void apply_area_cloud(cloud_func func, const coord_def& where,
                       int excl_rad = -1);
 
 bool spell_direction(dist &spelld, bolt &pbolt,
-                      targetting_type restrict = DIR_NONE,
+                      targeting_type restrict = DIR_NONE,
                       targ_mode_type mode = TARG_HOSTILE,
                       // pbolt.range if applicable, otherwise LOS_RADIUS
                       int range = 0,

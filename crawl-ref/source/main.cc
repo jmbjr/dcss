@@ -29,9 +29,10 @@
 
 #include "externs.h"
 
-#include "abl-show.h"
+#include "ability.h"
 #include "abyss.h"
 #include "acquire.h"
+#include "act-iter.h"
 #include "areas.h"
 #include "art-enum.h"
 #include "artefact.h"
@@ -47,6 +48,7 @@
 #include "coord.h"
 #include "coordit.h"
 #include "crash.h"
+#include "dactions.h"
 #include "database.h"
 #include "dbg-scan.h"
 #include "dbg-util.h"
@@ -59,6 +61,8 @@
 #include "effects.h"
 #include "env.h"
 #include "errors.h"
+#include "exercise.h"
+#include "goditem.h"
 #include "map_knowledge.h"
 #include "fprop.h"
 #include "fight.h"
@@ -86,11 +90,9 @@
 #include "melee_attack.h"
 #include "message.h"
 #include "misc.h"
-#include "mislead.h"
 #include "mon-act.h"
 #include "mon-abil.h"
 #include "mon-cast.h"
-#include "mon-iter.h"
 #include "mon-stuff.h"
 #include "mon-transit.h"
 #include "mon-util.h"
@@ -117,7 +119,6 @@
 #include "spl-goditem.h"
 #include "spl-other.h"
 #include "spl-selfench.h"
-#include "spl-summoning.h"
 #include "spl-transloc.h"
 #include "spl-util.h"
 #include "stairs.h"
@@ -198,6 +199,7 @@ static void _launch_game_loop();
 NORETURN static void _launch_game();
 
 static void _do_berserk_no_combat_penalty(void);
+static void _do_searing_ray(void);
 static void _input(void);
 static void _move_player(int move_x, int move_y);
 static void _move_player(coord_def move);
@@ -392,7 +394,7 @@ static void _launch_game_loop()
         {
             end(1, false, "%s", fe.msg.c_str());
         }
-        catch(short_read_exception &E)
+        catch (short_read_exception &E)
         {
             end(1, false, "Error: truncation inside the save file.\n");
         }
@@ -432,9 +434,6 @@ NORETURN static void _launch_game()
 #ifdef USE_TILE
     viewwindow();
 #endif
-
-    if (!game_start)
-        env.map_shadow = env.map_knowledge;
 
     if (game_start && you.char_class == JOB_WANDERER)
         _wanderer_startup_message();
@@ -530,12 +529,17 @@ static void _show_commandline_options_help()
     puts("  -arena \"<monster list> v <monster list> arena:<arena map>\"");
 #ifdef DEBUG_DIAGNOSTICS
     puts("");
-    puts("  -test            run test cases in ./test");
+    puts("  -test            run all test cases in test/ except test/big/");
+    puts("  -test foo,bar    run only tests \"foo\" and \"bar\"");
+    puts("  -test list       list available tests");
     puts("  -script <name>   run script matching <name> in ./scripts");
 #endif
     puts("");
     puts("Miscellaneous options:");
     puts("  -dump-maps       write map Lua to stderr when parsing .des files");
+#ifndef TARGET_OS_WINDOWS
+    puts("  -gdb/-no-gdb     produce gdb backtrace when a crash happens (default:on)");
+#endif
 
 #if defined(TARGET_OS_WINDOWS) && defined(USE_TILE_LOCAL)
     text_popup(help, L"Dungeon Crawl command line help");
@@ -572,33 +576,29 @@ static void _announce_goal_message()
 
 static void _god_greeting_message(bool game_start)
 {
-    if (you.religion == GOD_NO_GOD)
+    if (you_worship(GOD_NO_GOD))
         return;
 
-    string msg = god_name(you.religion);
+    string msg, result;
 
-    if (brdepth[BRANCH_ABYSS] == -1 && you.religion == GOD_LUGONU)
-        msg += " welcome";
+    if (brdepth[BRANCH_ABYSS] == -1 && you_worship(GOD_LUGONU))
+        ;
     else if (game_start)
-        msg += " newgame";
-    else if (you.religion == GOD_XOM)
+        msg = " newgame";
+    else if (you_worship(GOD_XOM))
     {
         if (you.gift_timeout <= 1)
-            msg += " bored";
-        else
-            msg += " generic";
+            msg = " bored";
     }
     else
     {
         if (player_under_penance())
-            msg += " penance";
-        else
-            msg += " welcome";
+            msg = " penance";
     }
 
-    string result = getSpeakString(msg);
-
-    if (!result.empty())
+    if (!msg.empty() && !(result = getSpeakString(god_name(you.religion) + msg)).empty())
+        god_speaks(you.religion, result.c_str());
+    else if (!(result = getSpeakString(god_name(you.religion) + " welcome")).empty())
         god_speaks(you.religion, result.c_str());
 }
 
@@ -678,6 +678,7 @@ static void _do_wizard_command(int wiz_command, bool silent_fail)
     case CONTROL('R'): wizard_recreate_level(); break;
     case CONTROL('S'): wizard_abyss_speed(); break;
     case CONTROL('T'): debug_terp_dlua(); break;
+    case CONTROL('U'): debug_terp_dlua(clua); break;
     case CONTROL('V'): wizard_toggle_xray_vision(); break;
     case CONTROL('X'): debug_xom_effects(); break;
 
@@ -710,7 +711,6 @@ static void _do_wizard_command(int wiz_command, bool silent_fail)
     case 'r': wizard_change_species();               break;
     case '>': wizard_place_stairs(true);             break;
     case '<': wizard_place_stairs(false);            break;
-    case 'p': wizard_create_portal();                break;
     case 'L': debug_place_map(false);                break;
     case 'P': debug_place_map(true);                 break;
     case 'i': wizard_identify_pack();                break;
@@ -737,6 +737,7 @@ static void _do_wizard_command(int wiz_command, bool silent_fail)
     case 'w': wizard_god_mollify();                  break;
     case '#': wizard_load_dump_file();               break;
     case '&': wizard_list_companions();              break;
+    case 'p': wizard_list_props();                   break;
 
     case 'x':
         you.experience = 1 + exp_needed(1 + you.experience_level);
@@ -789,7 +790,7 @@ static void _do_wizard_command(int wiz_command, bool silent_fail)
         int result = 0;
         do
         {
-            if (you.religion == GOD_XOM)
+            if (you_worship(GOD_XOM))
                 result = xom_acts(abs(you.piety - HALF_MAX_PIETY));
             else
                 result = xom_acts(coinflip(), random_range(0, HALF_MAX_PIETY));
@@ -815,7 +816,6 @@ static void _do_wizard_command(int wiz_command, bool silent_fail)
         else
             mpr("But you're not in Zot Defence!");
         break;
-
 
     default:
         if (!silent_fail)
@@ -846,10 +846,10 @@ static void _handle_wizard_command(void)
 
     if (!you.wizard)
     {
-        mpr("WARNING: ABOUT TO ENTER WIZARD MODE!", MSGCH_WARN);
+        mprf(MSGCH_WARN, "WARNING: ABOUT TO ENTER WIZARD MODE!");
 
 #ifndef SCORE_WIZARD_CHARACTERS
-        mpr("If you continue, your game will not be scored!", MSGCH_WARN);
+        mprf(MSGCH_WARN, "If you continue, your game will not be scored!");
 #endif
 
         if (!yesno("Do you really want to enter wizard mode?", false, 'n'))
@@ -873,7 +873,7 @@ static void _handle_wizard_command(void)
     }
 
     {
-        mpr("Enter Wizard Command (? - help): ", MSGCH_PROMPT);
+        mprf(MSGCH_PROMPT, "Enter Wizard Command (? - help): ");
         cursor_control con(true);
         wiz_command = getchm();
         if (wiz_command == '*')
@@ -928,10 +928,9 @@ static void _start_running(int dir, int mode)
     for (adjacent_iterator ai(next_pos); ai; ++ai)
     {
         if (env.grid(*ai) == DNGN_SLIMY_WALL
-            && (you.religion != GOD_JIYVA || you.penance[GOD_JIYVA]))
+            && (!you_worship(GOD_JIYVA) || you.penance[GOD_JIYVA]))
         {
-            mpr("You're about to run into the slime covered wall!",
-                MSGCH_WARN);
+            mprf(MSGCH_WARN, "You're about to run into the slime covered wall!");
             return;
         }
     }
@@ -947,7 +946,6 @@ static bool _cmd_is_repeatable(command_type cmd, bool is_again = false)
     case CMD_LOOK_AROUND:
     case CMD_INSPECT_FLOOR:
     case CMD_SHOW_TERRAIN:
-    case CMD_EXAMINE_OBJECT:
     case CMD_LIST_ARMOUR:
     case CMD_LIST_JEWELLERY:
     case CMD_LIST_EQUIPMENT:
@@ -1000,7 +998,6 @@ static bool _cmd_is_repeatable(command_type cmd, bool is_again = false)
     case CMD_SAVE_GAME_NOW:
     case CMD_SUSPEND_GAME:
     case CMD_QUIT:
-    case CMD_DESTROY_ITEM:
     case CMD_FIX_WAYPOINT:
     case CMD_CLEAR_MAP:
     case CMD_INSCRIBE_ITEM:
@@ -1009,6 +1006,7 @@ static bool _cmd_is_repeatable(command_type cmd, bool is_again = false)
 #ifdef USE_TILE
     case CMD_EDIT_PLAYER_TILE:
 #endif
+    case CMD_LUA_CONSOLE:
         mpr("You can't repeat that command.");
         return false;
 
@@ -1090,7 +1088,6 @@ static void _center_cursor()
 #endif
 }
 
-
 // We have to refresh the SH display if the player's incapacitated state
 // changes (getting confused/paralyzed/etc. sets SH to 0, recovering
 // from the condition sets SH back to normal).
@@ -1156,8 +1153,8 @@ static void _update_place_info()
         }
         else
         {
-           delta.turns_other++;
-           delta.elapsed_other += you.time_taken;
+            delta.turns_other++;
+            delta.elapsed_other += you.time_taken;
         }
 
         if (you.delay_queue.empty()
@@ -1203,6 +1200,9 @@ static void _input()
         bring_to_safety();
         redraw_screen();
     }
+
+    // Unhandled things that should have caused death.
+    ASSERT(you.hp > 0);
 
     if (crawl_state.is_replaying_keys() && crawl_state.is_repeating_cmd()
         && kbhit())
@@ -1260,6 +1260,7 @@ static void _input()
 
     if (you_are_delayed() && current_delay_action() != DELAY_MACRO_PROCESS_KEY)
     {
+        end_searing_ray();
         handle_delay();
 
         // Some delays reset you.time_taken.
@@ -1303,8 +1304,10 @@ static void _input()
                 clua.callfn("ready", 0, 0);
         }
 
+#ifdef WATCHDOG
         // We're not in an infinite loop, reset the timer.
         watchdog();
+#endif
 
         // Flush messages and display message window.
         msgwin_new_cmd();
@@ -1366,6 +1369,8 @@ static void _input()
     {
         if (apply_berserk_penalty)
             _do_berserk_no_combat_penalty();
+
+        _do_searing_ray();
 
         update_can_train();
         world_reacts();
@@ -1430,6 +1435,11 @@ static bool _can_take_stairs(dungeon_feature_type ftype, bool down,
                 mpr("There is nothing on the other side of the stone arch.");
             else if (ftype == DNGN_ABANDONED_SHOP)
                 mpr("This shop appears to be closed.");
+            else if (ftype == DNGN_SEALED_STAIRS_UP
+                     || ftype == DNGN_SEALED_STAIRS_DOWN )
+            {
+                mpr("A magical barricade bars your way!");
+            }
             else if (down)
                 mpr("You can't go down here!");
             else
@@ -1479,7 +1489,7 @@ static bool _prompt_unique_pan_rune(dungeon_feature_type ygrd)
 {
     if (ygrd != DNGN_TRANSIT_PANDEMONIUM
         && ygrd != DNGN_EXIT_PANDEMONIUM
-        && ygrd != DNGN_ENTER_ABYSS)
+        && ygrd != DNGN_EXIT_THROUGH_ABYSS)
     {
         return true;
     }
@@ -1488,8 +1498,8 @@ static bool _prompt_unique_pan_rune(dungeon_feature_type ygrd)
     if (rune && item_is_unique_rune(*rune))
     {
         return yesno("An item of great power still resides in this realm, "
-                "and once you leave you can never return. "
-                "Are you sure you want to leave?");
+                     "and once you leave you can never return. "
+                     "Are you sure you want to leave?", false, 'n');
     }
     return true;
 }
@@ -1513,11 +1523,12 @@ static bool _prompt_stairs(dungeon_feature_type ygrd, bool down)
         return false;
 
     // Exiting Ziggurats early.
-    if (ygrd == DNGN_EXIT_PORTAL_VAULT
-        && player_in_branch(BRANCH_ZIGGURAT)
+    if (ygrd == DNGN_EXIT_ZIGGURAT
         && you.depth < brdepth[BRANCH_ZIGGURAT])
     {
-        if (!yesno("Are you sure you want to leave this Ziggurat?"))
+        // "unsafe", as often you bail at single-digit hp and a wasted turn to
+        // an overeager prompt cancellation might be nasty.
+        if (!yesno("Are you sure you want to leave this Ziggurat?", false, 'n'))
         {
             canned_msg(MSG_OK);
             return false;
@@ -1534,8 +1545,8 @@ static bool _prompt_stairs(dungeon_feature_type ygrd, bool down)
     // Escaping.
     if (!down && ygrd == DNGN_EXIT_DUNGEON && !player_has_orb())
     {
-        string prompt = make_stringf("Are you sure you want to leave the "
-                                     "Dungeon?%s",
+        string prompt = make_stringf("Are you sure you want to leave %s?%s",
+                                     branches[root_branch].longname,
                                      crawl_state.game_is_tutorial() ? "" :
                                      " This will make you lose the game!");
         if (!yesno(prompt.c_str(), false, 'n'))
@@ -1550,7 +1561,8 @@ static bool _prompt_stairs(dungeon_feature_type ygrd, bool down)
 
 static void _take_stairs(bool down)
 {
-    ASSERT(!crawl_state.game_is_arena() && !crawl_state.arena_suspended);
+    ASSERT(!crawl_state.game_is_arena());
+    ASSERT(!crawl_state.arena_suspended);
 
     const dungeon_feature_type ygrd = grd(you.pos());
 
@@ -1560,10 +1572,10 @@ static void _take_stairs(bool down)
     if (!_can_take_stairs(ygrd, down, shaft))
         return;
 
-    if (!you.attempt_escape()) // false means constricted and don't escape
+    if (!_prompt_stairs(ygrd, down))
         return;
 
-    if (!_prompt_stairs(ygrd, down))
+    if (!you.attempt_escape()) // false means constricted and don't escape
         return;
 
     you.clear_clinging();
@@ -1663,23 +1675,6 @@ static void _print_friendly_pickup_setting(bool was_changed)
         mprf(MSGCH_ERROR, "Your allies%s are collecting bugs!", now.c_str());
 }
 
-static void _do_look_around()
-{
-    dist lmove;   // Will be initialised by direction().
-    direction_chooser_args args;
-    args.restricts = DIR_TARGET;
-    args.just_looking = true;
-    args.needs_path = false;
-    args.target_prefix = "Here";
-    args.may_target_monster = "Move the cursor around to observe a square.";
-    direction(lmove, args);
-    if (lmove.isValid && lmove.isTarget && !lmove.isCancel
-        && !crawl_state.arena_suspended)
-    {
-        start_travel(lmove.target);
-    }
-}
-
 static void _do_remove_armour()
 {
     if (you.species == SP_FELID)
@@ -1704,8 +1699,8 @@ static void _toggle_friendly_pickup()
     // Toggle pickup mode for friendlies.
     _print_friendly_pickup_setting(false);
 
-    mpr("Change to (d)efault, (n)othing, (f)riend-dropped, (p)layer, "
-        "or (a)ll? ", MSGCH_PROMPT);
+    mprf(MSGCH_PROMPT, "Change to (d)efault, (n)othing, (f)riend-dropped, "
+                       "(p)layer, or (a)ll? ");
 
     int type;
     {
@@ -1881,7 +1876,7 @@ void process_command(command_type cmd)
             mprf(MSGCH_ERROR, "Lua error: %s", clua.error.c_str());
         break;
     case CMD_AUTOFIGHT_NOMOVE:
-        if (!clua.callfn("hit_adjacent", 0, 0))
+        if (!clua.callfn("hit_closest_nomove", 0, 0))
             mprf(MSGCH_ERROR, "Lua error: %s", clua.error.c_str());
         break;
 #endif
@@ -1915,7 +1910,6 @@ void process_command(command_type cmd)
     case CMD_TOGGLE_FRIENDLY_PICKUP:     _toggle_friendly_pickup(); break;
     case CMD_TOGGLE_VIEWPORT_MONSTER_HP: toggle_viewport_monster_hp(); break;
     case CMD_TOGGLE_TRAVEL_SPEED:        _toggle_travel_speed(); break;
-
 
         // Map commands.
     case CMD_CLEAR_MAP:       _do_clear_map();   break;
@@ -1959,10 +1953,9 @@ void process_command(command_type cmd)
     case CMD_CAST_SPELL:           do_cast_spell_cmd(false); break;
     case CMD_DISPLAY_SPELLS:       inspect_spells();         break;
     case CMD_EAT:                  eat_food();               break;
-    case CMD_EXAMINE_OBJECT:       examine_object();         break;
     case CMD_FIRE:                 fire_thing();             break;
     case CMD_FORCE_CAST_SPELL:     do_cast_spell_cmd(true);  break;
-    case CMD_LOOK_AROUND:          _do_look_around();        break;
+    case CMD_LOOK_AROUND:          do_look_around();         break;
     case CMD_PRAY:                 pray();                   break;
     case CMD_QUAFF:                drink();                  break;
     case CMD_READ:                 read_scroll();            break;
@@ -2085,7 +2078,6 @@ void process_command(command_type cmd)
         break;
     }
 
-
         // Quiver commands.
     case CMD_QUIVER_ITEM:           choose_item_for_quiver(); break;
     case CMD_CYCLE_QUIVER_FORWARD:  _do_cycle_quiver(+1);     break;
@@ -2127,7 +2119,7 @@ void process_command(command_type cmd)
 
     case CMD_QUIT:
         if (crawl_state.disables[DIS_CONFIRMATIONS]
-            || yes_or_no("Are you sure you want to abandon this character and quit the game"))
+            || yes_or_no("Are you sure you want to abandon this character and quit the game?"))
         {
             ouch(INSTANT_DEATH, NON_MONSTER, KILLED_BY_QUITTING);
         }
@@ -2135,16 +2127,17 @@ void process_command(command_type cmd)
             canned_msg(MSG_OK);
         break;
 
+    case CMD_LUA_CONSOLE:
+        debug_terp_dlua(clua); break;
+        break;
+
     case CMD_NO_CMD:
     default:
+        // The backslash in ?\? is there so it doesn't start a trigraph.
         if (crawl_state.game_is_hints())
-        {
-            string msg = "Unknown command. (For a list of commands type "
-                         "<w>?\?<lightgrey>.)";
-            mpr(msg);
-        }
+            mpr("Unknown command. (For a list of commands type <w>?\?</w>.)");
         else // well, not examine, but...
-            mpr("Unknown command.", MSGCH_EXAMINE_FILTER);
+            mprf(MSGCH_EXAMINE_FILTER, "Unknown command.");
 
         break;
     }
@@ -2166,14 +2159,13 @@ static void _prep_input()
     if (check_for_interesting_features() && you.running.is_explore())
             stop_running();
 
-
     if (you.seen_portals)
     {
-        ASSERT(you.religion == GOD_ASHENZARI);
+        ASSERT(you_worship(GOD_ASHENZARI));
         if (you.seen_portals == 1)
-            mpr("You have a vision of a gate.", MSGCH_GOD);
+            mprf(MSGCH_GOD, "You have a vision of a gate.");
         else
-            mpr("You have a vision of multiple gates.", MSGCH_GOD);
+            mprf(MSGCH_GOD, "You have a vision of multiple gates.");
 
         you.seen_portals = 0;
     }
@@ -2216,7 +2208,7 @@ static bool _decrement_a_duration(duration_type dur, int delay,
             if (need_expiration_warning(dur))
                 mprf(MSGCH_DANGER, "Careful! %s", midmsg);
             else
-                mpr(midmsg, chan);
+                mprf(chan, "%s", midmsg);
         }
         you.duration[dur] -= midloss * BASELINE_DELAY;
     }
@@ -2225,7 +2217,7 @@ static bool _decrement_a_duration(duration_type dur, int delay,
     if (you.duration[dur] == 0)
     {
         if (endmsg)
-            mpr(endmsg, chan);
+            mprf(chan, "%s", endmsg);
         return true;
     }
 
@@ -2242,7 +2234,7 @@ static void _decrement_paralysis(int delay)
 
         if (!you.duration[DUR_PARALYSIS] && !you.petrified())
         {
-            mpr("You can move again.", MSGCH_DURATION);
+            mprf(MSGCH_DURATION, "You can move again.");
             you.redraw_evasion = true;
             you.duration[DUR_PARALYSIS_IMMUNITY] = roll_dice(1, 3)
                                                    * BASELINE_DELAY;
@@ -2282,6 +2274,84 @@ static void _decrement_petrification(int delay)
     }
 }
 
+static int _zin_recite_to_monsters(coord_def where, int prayertype, int, actor *)
+{
+    ASSERT_RANGE(prayertype, 0, NUM_RECITE_TYPES);
+    return zin_recite_to_single_monster(where, (recite_type)prayertype);
+}
+
+static bool _check_recite()
+{
+    if (you.hp*2 < you.attribute[ATTR_RECITE_HP]
+        || silenced(you.pos())
+        || you.paralysed()
+        || you.confused()
+        || you.asleep()
+        || you.petrified()
+        || you.berserk())
+    {
+        zin_recite_interrupt();
+        return false;
+    }
+    return true;
+}
+
+static void _handle_recitation(int step)
+{
+    mprf(MSGCH_MULTITURN_ACTION, "\"%s\"",
+         zin_recite_text(you.attribute[ATTR_RECITE_SEED],
+                         you.attribute[ATTR_RECITE_TYPE], step).c_str());
+
+    if (apply_area_visible(_zin_recite_to_monsters,
+                           you.attribute[ATTR_RECITE_TYPE], &you))
+        viewwindow();
+
+    // Recite trains more than once per use, because it has a
+    // long timer in between uses and actually takes up multiple
+    // turns.
+    practise(EX_USED_ABIL, ABIL_ZIN_RECITE);
+
+    const string shout_verb = you.shout_verb();
+
+    int noise_level = 12; // "shout"
+
+    // Tweak volume for different kinds of vocalisation.
+    if (shout_verb == "roar")
+        noise_level = 18;
+
+    else if (shout_verb == "hiss")
+        noise_level = 8;
+    else if (shout_verb == "squeak")
+        noise_level = 4;
+    else if (shout_verb == "__NONE")
+        noise_level = 0;
+    else if (shout_verb == "yell")
+        noise_level = 14;
+    else if (shout_verb == "scream")
+        noise_level = 16;
+
+    noisy(noise_level, you.pos());
+
+    if (step == 0)
+    {
+        string speech = zin_recite_text(you.attribute[ATTR_RECITE_SEED],
+                                        you.attribute[ATTR_RECITE_TYPE], -1);
+        speech += ".";
+        if (one_chance_in(9))
+        {
+            const string closure = getSpeakString("recite_closure");
+            if (!closure.empty() && one_chance_in(3))
+            {
+                speech += " ";
+                speech += closure;
+            }
+        }
+        mprf(MSGCH_DURATION, "You finish reciting %s", speech.c_str());
+        mpr("You feel short of breath.");
+        you.increase_duration(DUR_BREATH_WEAPON, random2(10) + random2(30));
+    }
+}
+
 //  Perhaps we should write functions like: update_liquid_flames(), etc.
 //  Even better, we could have a vector of callback functions (or
 //  objects) which get installed at some point.
@@ -2308,7 +2378,7 @@ static void _decrement_durations()
             you.duration[DUR_ICEMAIL_DEPLETED] -= delay;
 
         if (!you.duration[DUR_ICEMAIL_DEPLETED])
-            mpr("Your icy envelope is fully restored.", MSGCH_DURATION);
+            mprf(MSGCH_DURATION, "Your icy envelope is fully restored.");
 
         you.redraw_armour_class = true;
     }
@@ -2355,12 +2425,17 @@ static void _decrement_durations()
                           coinflip(),
                           "Your deflect missiles spell is about to expire...");
 
-    if (_decrement_a_duration(DUR_REGENERATION, delay,
+    if (_decrement_a_duration(DUR_TROGS_HAND, delay,
                               NULL, coinflip(),
-                              "Your skin is crawling a little less now."))
+                              "You feel the effects of Trog's Hand fading."))
     {
-        remove_regen(you.attribute[ATTR_DIVINE_REGENERATION]);
+        trog_remove_trogs_hand();
     }
+
+    _decrement_a_duration(DUR_REGENERATION, delay,
+                          "Your skin stops crawling.",
+                          coinflip(),
+                          "Your skin is crawling a little less now.");
 
     _decrement_a_duration(DUR_VEHUMET_GIFT, delay);
 
@@ -2374,7 +2449,7 @@ static void _decrement_durations()
             if (you.duration[DUR_DIVINE_SHIELD] <= 1)
             {
                 you.duration[DUR_DIVINE_SHIELD] = 1;
-                mpr("Your divine shield starts to fade.", MSGCH_DURATION);
+                mprf(MSGCH_DURATION, "Your divine shield starts to fade.");
             }
         }
 
@@ -2384,7 +2459,7 @@ static void _decrement_durations()
             if (--you.attribute[ATTR_DIVINE_SHIELD] == 0)
             {
                 you.duration[DUR_DIVINE_SHIELD] = 0;
-                mpr("Your divine shield fades away.", MSGCH_DURATION);
+                mprf(MSGCH_DURATION, "Your divine shield fades away.");
             }
         }
     }
@@ -2403,57 +2478,57 @@ static void _decrement_durations()
             const int temp_effect = get_weapon_brand(weapon);
 
             set_item_ego_type(weapon, OBJ_WEAPONS, SPWPN_NORMAL);
-            string msg = weapon.name(DESC_YOUR);
+            const char *msg = nullptr;
 
             switch (temp_effect)
             {
             case SPWPN_VORPAL:
                 if (get_vorpal_type(weapon) == DVORP_SLICING)
-                    msg += " seems blunter.";
+                    msg = " seems blunter.";
                 else
-                    msg += " feels lighter.";
+                    msg = " feels lighter.";
                 break;
             case SPWPN_FLAME:
             case SPWPN_FLAMING:
-                msg += " goes out.";
+                msg = " goes out.";
                 break;
             case SPWPN_FREEZING:
-                msg += " stops glowing.";
+                msg = " stops glowing.";
                 break;
             case SPWPN_FROST:
-                msg += "'s frost melts away.";
+                msg = "'s frost melts away.";
                 break;
             case SPWPN_VENOM:
-                msg += " stops dripping with poison.";
+                msg = " stops dripping with poison.";
                 break;
             case SPWPN_DRAINING:
-                msg += " stops crackling.";
+                msg = " stops crackling.";
                 break;
             case SPWPN_DISTORTION:
-                msg += " seems straighter.";
+                msg = " seems straighter.";
                 break;
             case SPWPN_PAIN:
-                msg += " seems less pained.";
+                msg = " seems less pained.";
                 break;
             case SPWPN_CHAOS:
-                msg += " seems more stable.";
+                msg = " seems more stable.";
                 break;
             case SPWPN_ELECTROCUTION:
-                msg += " stops emitting sparks.";
+                msg = " stops emitting sparks.";
                 break;
             case SPWPN_HOLY_WRATH:
-                msg += "'s light goes out.";
+                msg = "'s light goes out.";
                 break;
             case SPWPN_ANTIMAGIC:
-                msg += " stops repelling magic.";
+                msg = " stops repelling magic.";
                 calc_mp();
                 break;
             default:
-                msg += " seems inexplicably less special.";
+                msg = " seems inexplicably less special.";
                 break;
             }
 
-            mpr(msg.c_str(), MSGCH_DURATION);
+            mprf(MSGCH_DURATION, "%s%s", weapon.name(DESC_YOUR).c_str(), msg);
             you.wield_change = true;
         }
     }
@@ -2481,9 +2556,27 @@ static void _decrement_durations()
                           "You have got your breath back.", 0, NULL,
                           MSGCH_RECOVERY);
 
-    _decrement_a_duration(DUR_SWIFTNESS, delay,
-                          "You feel sluggish.", coinflip(),
-                          "You start to feel a little slower.");
+    if (you.attribute[ATTR_SWIFTNESS] >= 0)
+    {
+        if (_decrement_a_duration(DUR_SWIFTNESS, delay,
+                                  "You feel sluggish.", coinflip(),
+                                  "You start to feel a little slower."))
+        {
+            // Start anti-swiftness.
+            you.duration[DUR_SWIFTNESS] = you.attribute[ATTR_SWIFTNESS];
+            you.attribute[ATTR_SWIFTNESS] = -1;
+        }
+    }
+    else
+    {
+        if (_decrement_a_duration(DUR_SWIFTNESS, delay,
+                                  "You no longer feel sluggish.", coinflip(),
+                                  "You start to feel a little faster."))
+        {
+            you.attribute[ATTR_SWIFTNESS] = 0;
+        }
+    }
+
     _decrement_a_duration(DUR_RESISTANCE, delay,
                           "Your resistance to elements expires.", coinflip(),
                           "You start to feel less resistant.");
@@ -2541,9 +2634,13 @@ static void _decrement_durations()
     _decrement_a_duration(DUR_STEALTH, delay, "You feel less stealthy.");
     _decrement_a_duration(DUR_SLAYING, delay, "You feel less lethal.");
 
-    if (_decrement_a_duration(DUR_INVIS, delay, "You flicker back into view.",
+    if (_decrement_a_duration(DUR_INVIS, delay, NULL,
                               coinflip(), "You flicker for a moment."))
     {
+        if (you.invisible())
+            mprf(MSGCH_DURATION, "You feel more conspicuous.");
+        else
+            mprf(MSGCH_DURATION, "You flicker back into view.");
         you.attribute[ATTR_INVIS_UNCANCELLABLE] = 0;
     }
 
@@ -2552,11 +2649,6 @@ static void _decrement_durations()
     _decrement_a_duration(DUR_LOWERED_MR, delay, "You feel less vulnerable to hostile enchantments.");
     _decrement_a_duration(DUR_SLIMIFY, delay, "You feel less slimy.",
                           coinflip(), "Your slime is starting to congeal.");
-    if (_decrement_a_duration(DUR_MISLED, delay,
-                              "Your thoughts are your own once more."))
-    {
-        end_mislead();
-    }
     if (_decrement_a_duration(DUR_QUAD_DAMAGE, delay, NULL, 0,
                               "Quad Damage is wearing off."))
     {
@@ -2567,8 +2659,8 @@ static void _decrement_durations()
     if (_decrement_a_duration(DUR_HEROISM, delay,
                           "You feel like a meek peon again."))
     {
-            you.redraw_evasion      = true;
-            you.redraw_armour_class = true;
+        you.redraw_evasion      = true;
+        you.redraw_armour_class = true;
     }
     _decrement_a_duration(DUR_FINESSE, delay, "Your hands slow down.");
 
@@ -2643,21 +2735,22 @@ static void _decrement_durations()
         {
             // Note the beauty of Trog!  They get an extra save that's at
             // the very least 20% and goes up to 100%.
-            if (you.religion == GOD_TROG && x_chance_in_y(you.piety, 150)
-                && !player_under_penance())
+            if (you_worship(GOD_TROG)
+                && !player_under_penance()
+                && x_chance_in_y(you.piety, piety_breakpoint(5)))
             {
                 mpr("Trog's vigour flows through your veins.");
             }
             else
             {
-                mpr("You pass out from exhaustion.", MSGCH_WARN);
+                mprf(MSGCH_WARN, "You pass out from exhaustion.");
                 you.increase_duration(DUR_PARALYSIS, roll_dice(1,4));
                 you.stop_constricting_all();
             }
         }
 
         if (!you.duration[DUR_PARALYSIS] && !you.petrified())
-            mpr("You are exhausted.", MSGCH_WARN);
+            mprf(MSGCH_WARN, "You are exhausted.");
 
         if (you.species == SP_LAVA_ORC)
             mpr("You feel less hot-headed.");
@@ -2691,7 +2784,7 @@ static void _decrement_durations()
     }
 
     if (_decrement_a_duration(DUR_CORONA, delay) && !you.backlit())
-        mpr("You are no longer glowing.", MSGCH_DURATION);
+        mprf(MSGCH_DURATION, "You are no longer glowing.");
 
     // Leak piety from the piety pool into actual piety.
     // Note that changes of religious status without corresponding actions
@@ -2705,10 +2798,10 @@ static void _decrement_durations()
         gain_piety(1, 1, true);
 
 #if defined(DEBUG_DIAGNOSTICS) || defined(DEBUG_SACRIFICE) || defined(DEBUG_PIETY)
-        mpr("Piety increases by 1 due to piety pool.", MSGCH_DIAGNOSTICS);
+        mprf(MSGCH_DIAGNOSTICS, "Piety increases by 1 due to piety pool.");
 
         if (you.duration[DUR_PIETY_POOL] == 0)
-            mpr("Piety pool is now empty.", MSGCH_DIAGNOSTICS);
+            mprf(MSGCH_DIAGNOSTICS, "Piety pool is now empty.");
 #endif
     }
 
@@ -2740,9 +2833,7 @@ static void _decrement_durations()
     {
         if (!you.permanent_flight())
         {
-            if (_decrement_a_duration(DUR_FLIGHT, delay,
-                                      0,
-                                      random2(6),
+            if (_decrement_a_duration(DUR_FLIGHT, delay, nullptr, random2(6),
                                       "You are starting to lose your buoyancy."))
             {
                 land_player();
@@ -2767,7 +2858,7 @@ static void _decrement_durations()
         else if (x_chance_in_y(you.rotting, 20)
                  && !you.duration[DUR_DEATHS_DOOR])
         {
-            mpr("You feel your flesh rotting away.", MSGCH_WARN);
+            mprf(MSGCH_WARN, "You feel your flesh rotting away.");
             rot_hp(1);
             you.rotting--;
         }
@@ -2782,7 +2873,7 @@ static void _decrement_durations()
     {
         int resilience = 400;
 
-        if (you.religion == GOD_CHEIBRIADOS && you.piety >= piety_breakpoint(0))
+        if (you_worship(GOD_CHEIBRIADOS) && you.piety >= piety_breakpoint(0))
             resilience = resilience * 3 / 2;
 
         // Faster rotting when hungry.
@@ -2792,7 +2883,7 @@ static void _decrement_durations()
         if (one_chance_in(resilience))
         {
             dprf("rot rate: 1/%d", resilience);
-            mpr("You feel your flesh rotting away.", MSGCH_WARN);
+            mprf(MSGCH_WARN, "You feel your flesh rotting away.");
             rot_hp(1);
             if (you.rotting > 0)
                 you.rotting--;
@@ -2858,6 +2949,16 @@ static void _decrement_durations()
                           0,
                           "Your shroud begins to fray at the edges.");
 
+    _decrement_a_duration(DUR_INFUSION, delay,
+            "Your attacks are no longer magically infused.",
+            0,
+            "You are feeling less magically infused.");
+
+    _decrement_a_duration(DUR_SONG_OF_SLAYING, delay,
+            "Your song has ended.",
+            0,
+            "Your song is almost over.");
+
     _decrement_a_duration(DUR_SENTINEL_MARK, delay,
                           "The sentinel's mark upon you fades away.");
 
@@ -2899,8 +3000,38 @@ static void _decrement_durations()
 
     _decrement_a_duration(DUR_RETCHING, delay, "Your fit of retching subsides.");
 
+    if (you.duration[DUR_TOXIC_RADIANCE])
+    {
+        int ticks = (you.duration[DUR_TOXIC_RADIANCE] / 10)
+                     - ((you.duration[DUR_TOXIC_RADIANCE] - delay) / 10);
+        toxic_radiance_effect(&you, ticks);
+        _decrement_a_duration(DUR_TOXIC_RADIANCE, delay,
+                              "Your toxic aura wanes.");
+    }
+
+    if (you.duration[DUR_RECITE] && _check_recite())
+    {
+        const int old_recite =
+            (you.duration[DUR_RECITE] + BASELINE_DELAY - 1) / BASELINE_DELAY;
+        _decrement_a_duration(DUR_RECITE, delay);
+        const int new_recite =
+            (you.duration[DUR_RECITE] + BASELINE_DELAY - 1) / BASELINE_DELAY;
+        if (old_recite != new_recite)
+            _handle_recitation(new_recite);
+    }
+
+    if (you.duration[DUR_GRASPING_ROOTS])
+        check_grasping_roots(&you);
+
     if (you.attribute[ATTR_NEXT_RECALL_INDEX] > 0)
         do_recall(delay);
+
+    _decrement_a_duration(DUR_SLEEP_IMMUNITY, delay);
+
+    _decrement_a_duration(DUR_FIRE_VULN, delay,
+                          "You feel less vulnerable to fire.");
+
+    dec_elixir_player(delay);
 
     if (!env.sunlight.empty())
         process_sunlights();
@@ -2913,11 +3044,11 @@ static void _check_banished()
         ASSERT(brdepth[BRANCH_ABYSS] != -1);
         you.banished = false;
         if (!player_in_branch(BRANCH_ABYSS))
-            mpr("You are cast into the Abyss!", MSGCH_BANISHMENT);
+            mprf(MSGCH_BANISHMENT, "You are cast into the Abyss!");
         else if (you.depth < brdepth[BRANCH_ABYSS])
-            mpr("You are cast deeper into the Abyss!", MSGCH_BANISHMENT);
+            mprf(MSGCH_BANISHMENT, "You are cast deeper into the Abyss!");
         else
-            mpr("The Abyss bends around you!", MSGCH_BANISHMENT);
+            mprf(MSGCH_BANISHMENT, "The Abyss bends around you!");
         more();
         banished(you.banished_by);
         you.banished_by.clear();
@@ -3046,20 +3177,41 @@ static void _update_mold()
     {
         if (mon_it->type == MONS_HYPERACTIVE_BALLISTOMYCETE)
         {
-            for (radius_iterator rad_it(mon_it->pos(),
-                                        2, true, false); rad_it; ++rad_it)
+            for (radius_iterator rad_it(mon_it->pos(), 2, C_ROUND);
+                 rad_it; ++rad_it)
             {
-                // A threshold greater than 5, less than 8 on distance
-                // matches the blast of a radius 2 explosion.
-                int range = distance2(mon_it->pos(), *rad_it);
-                if (range < 6 && is_moldy(*rad_it))
-                {
-                    env.pgrid(*rad_it) |= FPROP_MOLD;
-                    env.pgrid(*rad_it) |= FPROP_GLOW_MOLD;
-                }
+                // Matche the blast of a radius 2 explosion.
+                env.pgrid(*rad_it) |= FPROP_MOLD;
+                env.pgrid(*rad_it) |= FPROP_GLOW_MOLD;
             }
             env.level_state |= LSTATE_GLOW_MOLD;
         }
+    }
+}
+
+// For worn items; weapons do this on melee attacks.
+static void _check_equipment_conducts()
+{
+    if (you_worship(GOD_DITHMENGOS) && one_chance_in(10))
+    {
+        bool illuminating = false, fiery = false;
+        const item_def* item;
+        for (int i = EQ_MIN_ARMOUR; i < NUM_EQUIP; i++)
+        {
+            item = you.slot_item(static_cast<equipment_type>(i));
+            if (!item)
+                continue;
+            if (is_illuminating_item(*item))
+                illuminating = true;
+            else if (is_fiery_item(*item))
+                fiery = true;
+            if (illuminating && fiery)
+                break;
+        }
+        if (illuminating)
+            did_god_conduct(DID_ILLUMINATE, 1, true);
+        else if (fiery)
+            did_god_conduct(DID_FIRE, 1, true);
     }
 }
 
@@ -3083,11 +3235,24 @@ static void _player_reacts()
     if (player_mutation_level(MUT_DEMONIC_GUARDIAN))
         check_demonic_guardian();
 
+    _check_equipment_conducts();
+
     if (you.unrand_reacts != 0)
         unrand_reacts();
 
-    if (you.attribute[ATTR_NOISES])
-        noisy_equipment();
+    // Handle sound-dependent effects that are silenced
+    if (silenced(you.pos()))
+    {
+        if (you.duration[DUR_SONG_OF_SLAYING])
+        {
+            mpr("The silence causes your song to end.");
+            _decrement_a_duration(DUR_SONG_OF_SLAYING, you.duration[DUR_SONG_OF_SLAYING]);
+        }
+    }
+
+    // Singing makes a continuous noise
+    if (you.duration[DUR_SONG_OF_SLAYING])
+        noisy(10, you.pos());
 
     if (one_chance_in(10))
     {
@@ -3103,22 +3268,23 @@ static void _player_reacts()
         else if (player_in_branch(BRANCH_ABYSS) && one_chance_in(80)
           && (!map_masked(you.pos(), MMT_VAULT) || one_chance_in(3)))
         {
-            mpr("You are suddenly pulled into a different region of the Abyss!",
-                MSGCH_BANISHMENT);
+            mprf(MSGCH_BANISHMENT, "You are suddenly pulled into a different region of the Abyss!");
             you_teleport_now(false, true); // to new area of the Abyss
 
             // It's effectively a new level, make a checkpoint save so eventual
             // crashes lose less of the player's progress (and fresh new bad
             // mutations).
-            save_game(false);
+            if (!crawl_state.disables[DIS_SAVE_CHECKPOINTS])
+                save_game(false);
         }
-        else if (you.form == TRAN_WISP)
+        else if (you.form == TRAN_WISP && !you.stasis())
             random_blink(false);
     }
 
     actor_apply_cloud(&you);
 
-    slime_wall_damage(&you, you.time_taken);
+    if (env.level_state & LSTATE_SLIMY_WALL)
+        slime_wall_damage(&you, you.time_taken);
 
     // Icy shield and armour melt over lava.
     if (grd(you.pos()) == DNGN_LAVA)
@@ -3153,7 +3319,6 @@ static void _player_reacts()
     }
 
     _regenerate_hp_and_mp(capped_time);
-
     recharge_rods(you.time_taken, false);
 
     // Reveal adjacent mimics.
@@ -3166,7 +3331,7 @@ static void _player_reacts()
     update_stat_zero();
 
     // XOM now ticks from here, to increase his reaction time to tension.
-    if (you.religion == GOD_XOM)
+    if (you_worship(GOD_XOM))
         xom_tick();
 }
 
@@ -3181,10 +3346,14 @@ static void _player_reacts_to_monsters()
         manage_fire_shield(you.time_taken);
 
     // penance checked there (as you can have antennae too)
-    if (player_mutation_level(MUT_ANTENNAE) || you.religion == GOD_ASHENZARI)
+    if (player_mutation_level(MUT_ANTENNAE)
+        || you.religion == GOD_ASHENZARI
+        || player_equip_unrand(UNRAND_BOOTS_ASSASSIN))
+    {
         check_antennae_detect();
+    }
 
-    if ((you.religion == GOD_ASHENZARI && !player_under_penance())
+    if ((you_worship(GOD_ASHENZARI) && !player_under_penance())
         || you.mutation[MUT_JELLY_GROWTH])
     {
         detect_items(-1);
@@ -3220,31 +3389,6 @@ static void _player_reacts_to_monsters()
     _decrement_petrification(you.time_taken);
     if (_decrement_a_duration(DUR_SLEEP, you.time_taken))
         you.awake();
-
-    // Entering/leaving a suppression aura needs to redraw player stats
-    // and generally recalculate some things that aren't generally recalc'd
-    // with every step. This is how we detect crossing the threshold.
-    if (you.props.exists("exists_if_suppressed") != you.suppressed())
-    {
-        // HP and MP generally aren't recalculated each step, so we do it now
-        calc_hp_artefact();  // different from calc_hp()
-        calc_mp();
-
-        // Redraw everything that suppression might affect
-        you.redraw_hit_points = true;
-        you.redraw_magic_points = true;
-        you.redraw_armour_class = true;
-        you.redraw_evasion = true;
-        you.redraw_stats[STAT_STR] = true;
-        you.redraw_stats[STAT_DEX] = true;
-        you.redraw_stats[STAT_INT] = true;
-        notify_stat_change("suppression");
-
-        if (you.suppressed())
-            you.props["exists_if_suppressed"] = true;
-        else
-           you.props.erase("exists_if_suppressed");
-    }
 }
 
 static void _update_golubria_traps()
@@ -3260,7 +3404,7 @@ static void _update_golubria_traps()
                 if (you.see_cell(*it))
                     mpr("Your passage of Golubria closes with a snap!");
                 else
-                    mpr("You hear a snapping sound.", MSGCH_SOUND);
+                    mprf(MSGCH_SOUND, "You hear a snapping sound.");
                 trap->destroy();
                 noisy(8, *it);
             }
@@ -3342,6 +3486,7 @@ void world_reacts()
 
     handle_time();
     manage_clouds();
+    fume();
     if (env.level_state & LSTATE_GLOW_MOLD)
         _update_mold();
     if (env.level_state & LSTATE_GOLUBRIA)
@@ -3362,8 +3507,8 @@ void world_reacts()
             if (you.num_turns<ZOTDEF_CYCLE_LENGTH && one_chance_in(3))
                 continue;
 
-            if ((you.num_turns % ZOTDEF_CYCLE_LENGTH > ZOTDEF_CYCLE_INTERVAL)
-                && x_chance_in_y((you.num_turns % ZOTDEF_CYCLE_LENGTH), ZOTDEF_CYCLE_LENGTH*3))
+            if (you.num_turns % ZOTDEF_CYCLE_LENGTH > ZOTDEF_CYCLE_INTERVAL
+                && x_chance_in_y(you.num_turns % ZOTDEF_CYCLE_LENGTH, ZOTDEF_CYCLE_LENGTH*3))
             {
                 zotdef_spawn(false);
             }
@@ -3381,7 +3526,7 @@ void world_reacts()
     }
 
 #if defined(DEBUG_TENSION) || defined(DEBUG_RELIGION)
-    if (you.religion != GOD_NO_GOD)
+    if (!you_worship(GOD_NO_GOD))
         mprf(MSGCH_DIAGNOSTICS, "TENSION = %d", get_tension());
 #endif
 
@@ -3402,7 +3547,8 @@ void world_reacts()
         crawl_state.lua_calls_no_turn = 0;
         if (crawl_state.game_is_sprint()
             && !(you.num_turns % 256)
-            && !you_are_delayed())
+            && !you_are_delayed()
+            && !crawl_state.disables[DIS_SAVE_CHECKPOINTS])
         {
             // Resting makes the saving quite random, but meh.
             save_game(false);
@@ -3508,7 +3654,7 @@ static int _check_adjacent(dungeon_feature_type feat, coord_def& delta)
 
                 // Check if it's part of a gate. If so, remember all its doors.
                 set<coord_def> all_door;
-                find_connected_identical(*ai, grd(*ai), all_door);
+                find_connected_identical(*ai, all_door);
                 for (set<coord_def>::const_iterator dc = all_door.begin();
                      dc != all_door.end(); ++dc)
                 {
@@ -3620,7 +3766,8 @@ static bool _untrap_target(const coord_def move, bool check_confused)
 // direction for the door to be opened (eg if you type ctrl + dir).
 static void _open_door(coord_def move, bool check_confused)
 {
-    ASSERT(!crawl_state.game_is_arena() && !crawl_state.arena_suspended);
+    ASSERT(!crawl_state.game_is_arena());
+    ASSERT(!crawl_state.arena_suspended);
 
     if (you.attribute[ATTR_HELD])
     {
@@ -3665,7 +3812,7 @@ static void _open_door(coord_def move, bool check_confused)
             door_move.delta = move;
         else
         {
-            mpr("Which direction?", MSGCH_PROMPT);
+            mprf(MSGCH_PROMPT, "Which direction?");
             direction_chooser_args args;
             args.restricts = DIR_DIR;
             direction(door_move, args);
@@ -3737,7 +3884,8 @@ static void _open_door(coord_def move, bool check_confused)
     }
 
     // Finally, open the closed door!
-    set<coord_def> all_door = connected_doors(doorpos);
+    set<coord_def> all_door;
+    find_connected_identical(doorpos, all_door);
     const char *adj, *noun;
     get_door_description(all_door.size(), &adj, &noun);
 
@@ -3923,7 +4071,7 @@ static void _close_door(coord_def move)
             door_move.delta = move;
         else
         {
-            mpr("Which direction?", MSGCH_PROMPT);
+            mprf(MSGCH_PROMPT, "Which direction?");
             direction_chooser_args args;
             args.restricts = DIR_DIR;
             direction(door_move, args);
@@ -3962,7 +4110,7 @@ static void _close_door(coord_def move)
     if (feat == DNGN_OPEN_DOOR)
     {
         set<coord_def> all_door;
-        find_connected_identical(doorpos, grd(doorpos), all_door);
+        find_connected_identical(doorpos, all_door);
         const char *adj, *noun;
         get_door_description(all_door.size(), &adj, &noun);
         const string waynoun_str = make_stringf("%sway", noun);
@@ -4143,13 +4291,13 @@ static void _do_berserk_no_combat_penalty(void)
         switch (you.berserk_penalty)
         {
         case 2:
-            mpr("You feel a strong urge to attack something.", MSGCH_DURATION);
+            mprf(MSGCH_DURATION, "You feel a strong urge to attack something.");
             break;
         case 4:
-            mpr("You feel your anger subside.", MSGCH_DURATION);
+            mprf(MSGCH_DURATION, "You feel your anger subside.");
             break;
         case 6:
-            mpr("Your blood rage is quickly leaving you.", MSGCH_DURATION);
+            mprf(MSGCH_DURATION, "Your blood rage is quickly leaving you.");
             break;
         }
 
@@ -4162,6 +4310,29 @@ static void _do_berserk_no_combat_penalty(void)
             you.duration[DUR_BERSERK] = 1;
     }
     return;
+}
+
+// Fire the next searing ray stage if we have taken no other action this turn,
+// otherwise cancel
+static void _do_searing_ray()
+{
+    if (you.attribute[ATTR_SEARING_RAY] == 0)
+        return;
+
+    // Convert prepping value into stage one value (so it can fire next turn)
+    if (you.attribute[ATTR_SEARING_RAY] == -1)
+    {
+        you.attribute[ATTR_SEARING_RAY] = 1;
+        return;
+    }
+
+    if (crawl_state.prev_cmd == CMD_WAIT
+        || crawl_state.prev_cmd == CMD_MOVE_NOWHERE)
+    {
+        handle_searing_ray();
+    }
+    else
+        end_searing_ray();
 }
 
 // Called when the player moves by walking/running. Also calls attack
@@ -4178,6 +4349,9 @@ static void _move_player(coord_def move)
     bool attacking = false;
     bool moving = true;         // used to prevent eventual movement (swap)
     bool swap = false;
+
+    ASSERT(!in_bounds(you.pos()) || !cell_is_solid(you.pos())
+           || you.wizmode_teleported_into_rock);
 
     if (you.attribute[ATTR_HELD])
     {
@@ -4289,6 +4463,12 @@ static void _move_player(coord_def move)
 
     dungeon_feature_type targ_grid = grd(targ);
 
+    const string walkverb = you.flight_mode()           ? "fly"
+                          : you.form == TRAN_SPIDER     ? "crawl"
+                          : (you.species == SP_NAGA
+                             && form_keeps_mutations()) ? "slither"
+                                                        : "walk";
+
     monster* targ_monst = monster_at(targ);
     if (fedhas_passthrough(targ_monst))
     {
@@ -4302,7 +4482,7 @@ static void _move_player(coord_def move)
         if (!current || !fedhas_passthrough(current))
         {
             // Probably need a better message. -cao
-            mprf("You walk carefully through the %s.",
+            mprf("You %s carefully through the %s.", walkverb.c_str(),
                  mons_genus(targ_monst->type) == MONS_FUNGUS ? "fungus"
                                                              : "plants");
         }
@@ -4314,7 +4494,7 @@ static void _move_player(coord_def move)
     // You can swap places with a friendly or good neutral monster if
     // you're not confused, or if both of you are inside a sanctuary.
     const bool can_swap_places = targ_monst
-                                 && !mons_is_stationary(targ_monst)
+                                 && !targ_monst->is_stationary()
                                  && (targ_monst->wont_attack()
                                        && !you.confused()
                                      || is_sanctuary(you.pos())
@@ -4340,16 +4520,6 @@ static void _move_player(coord_def move)
 
     coord_def mon_swap_dest;
 
-    string verb;
-    if (you.flight_mode())
-        verb = "fly";
-    else if (you.is_wall_clinging())
-        verb = "cling";
-    else if (you.species == SP_NAGA && !form_changed_physiology())
-        verb = "slither";
-    else
-        verb = "walk";
-
     if (targ_monst && !targ_monst->submerged())
     {
         if (can_swap_places && !beholder && !fmonger)
@@ -4369,7 +4539,7 @@ static void _move_player(coord_def move)
 
             // Don't allow the player to freely locate invisible monsters
             // with confirmation prompts.
-            if (!you.can_see(targ_monst) && !check_moveto(targ, verb))
+            if (!you.can_see(targ_monst) && !check_moveto(targ, walkverb))
             {
                 stop_running();
                 you.turn_is_over = false;
@@ -4435,15 +4605,15 @@ static void _move_player(coord_def move)
             }
         }
 
-        if (!you.attempt_escape()) // false means constricted and did not escape
-            return;
-
-        if (!you.confused() && !check_moveto(targ, verb))
+        if (!you.confused() && !check_moveto(targ, walkverb))
         {
             stop_running();
             you.turn_is_over = false;
             return;
         }
+
+        if (!you.attempt_escape()) // false means constricted and did not escape
+            return;
 
         if (you.duration[DUR_WATER_HOLD])
         {
@@ -4471,6 +4641,15 @@ static void _move_player(coord_def move)
         else if (!delay_is_run(current_delay_action()))
             clear_travel_trail();
 
+        // clear constriction data
+        you.stop_constricting_all(true);
+        you.stop_being_constricted();
+
+        move_player_to_grid(targ, true, false);
+
+        if (delay_is_run(current_delay_action()))
+            env.travel_trail.push_back(you.pos());
+
         you.time_taken *= player_movement_speed();
         you.time_taken = div_rand_round(you.time_taken, 10);
 
@@ -4484,15 +4663,6 @@ static void _move_player(coord_def move)
         if (move.abs() == 2)
             you.time_taken *= 1.4;
 #endif
-
-        // clear constriction data
-        you.stop_constricting_all(true);
-        you.stop_being_constricted();
-
-        move_player_to_grid(targ, true, false);
-
-        if (delay_is_run(current_delay_action()))
-            env.travel_trail.push_back(you.pos());
 
         you.walking = move.abs();
         you.prev_move = move;
@@ -4530,7 +4700,7 @@ static void _move_player(coord_def move)
             mpr("The ferocious winds and tides of the open sea thwart your progress.");
         else if (grd(targ) == DNGN_LAVA_SEA)
             mpr("The endless sea of lava is not a nice place.");
-        else if (feat_is_tree(grd(targ)) && you.religion == GOD_FEDHAS)
+        else if (feat_is_tree(grd(targ)) && you_worship(GOD_FEDHAS))
             mpr("You cannot walk through the dense trees.");
 
         stop_running();
@@ -4562,7 +4732,7 @@ static void _move_player(coord_def move)
 
     apply_berserk_penalty = !attacking;
 
-    if (!attacking && you.religion == GOD_CHEIBRIADOS && one_chance_in(10)
+    if (!attacking && you_worship(GOD_CHEIBRIADOS) && one_chance_in(10)
         && you.run())
     {
         did_god_conduct(DID_HASTY, 1, true);
@@ -4580,11 +4750,14 @@ static int _get_num_and_char_keyfun(int &ch)
 static int _get_num_and_char(const char* prompt, char* buf, int buf_len)
 {
     if (prompt != NULL)
-        mpr(prompt, MSGCH_PROMPT);
+        mprf(MSGCH_PROMPT, "%s", prompt);
 
     line_reader reader(buf, buf_len);
 
     reader.set_keyproc(_get_num_and_char_keyfun);
+#ifdef USE_TILE_WEB
+    reader.set_tag("repeat");
+#endif
 
     return reader.read_line(true);
 }
@@ -4653,7 +4826,7 @@ static void _run_input_with_keys(const keyseq& keys)
 
     if (get_macro_buf_size() < old_buf_size)
     {
-        mpr("(Key replay stole keys)", MSGCH_ERROR);
+        mprf(MSGCH_ERROR, "(Key replay stole keys)");
         crawl_state.cancel_cmd_all();
     }
 }
@@ -4696,7 +4869,7 @@ static void _do_cmd_repeat()
     c_input_reset(true);
     if (ch == ' ' || ch == CK_ENTER)
     {
-        mpr("Enter command to be repeated: ", MSGCH_PROMPT);
+        mprf(MSGCH_PROMPT, "Enter command to be repeated: ");
         // Enable the cursor to read input.
         cursor_control con(true);
 
@@ -4776,7 +4949,7 @@ static void _do_prev_cmd_again()
 
     if (crawl_state.doing_prev_cmd_again)
     {
-        mpr("Trying to re-do re-do command, aborting.", MSGCH_ERROR);
+        mprf(MSGCH_ERROR, "Trying to re-do re-do command, aborting.");
         crawl_state.cancel_cmd_all();
         return;
     }
@@ -4810,7 +4983,6 @@ static void _update_replay_state()
     if (!is_processing_macro())
         repeat_again_rec.clear();
 }
-
 
 static void _compile_time_asserts()
 {

@@ -58,7 +58,7 @@ static macromap *all_maps[] =
 {
     &Keymaps[KMC_DEFAULT],
     &Keymaps[KMC_LEVELMAP],
-    &Keymaps[KMC_TARGETTING],
+    &Keymaps[KMC_TARGETING],
     &Keymaps[KMC_CONFIRM],
 
     &Macros,
@@ -81,7 +81,8 @@ struct command_name
     const char*  name;
 };
 
-static command_name _command_name_list[] = {
+static command_name _command_name_list[] =
+{
 #include "cmd-name.h"
 };
 
@@ -94,7 +95,8 @@ struct default_binding
     command_type  cmd;
 };
 
-static default_binding _default_binding_list[] = {
+static default_binding _default_binding_list[] =
+{
 #include "cmd-keys.h"
 };
 
@@ -108,8 +110,8 @@ static KeymapContext _context_for_command(command_type cmd);
 
 static inline int userfunc_index(int key)
 {
-    int index = (key <= USERFUNCBASE? USERFUNCBASE - key : -1);
-    return (index < 0 || index >= (int) userfunctions.size()? -1 : index);
+    int index = (key <= USERFUNCBASE ? USERFUNCBASE - key : -1);
+    return index < 0 || index >= (int) userfunctions.size()? -1 : index;
 }
 
 static int userfunc_index(const keyseq &seq)
@@ -122,24 +124,24 @@ static int userfunc_index(const keyseq &seq)
 
 bool is_userfunction(int key)
 {
-    return (userfunc_index(key) != -1);
+    return userfunc_index(key) != -1;
 }
 
 static bool is_userfunction(const keyseq &seq)
 {
-    return (userfunc_index(seq) != -1);
+    return userfunc_index(seq) != -1;
 }
 
 string get_userfunction(int key)
 {
     int index = userfunc_index(key);
-    return (index == -1 ? NULL : userfunctions[index]);
+    return index == -1 ? NULL : userfunctions[index];
 }
 
 static string get_userfunction(const keyseq &seq)
 {
     int index = userfunc_index(seq);
-    return (index == -1 ? NULL : userfunctions[index]);
+    return index == -1 ? NULL : userfunctions[index];
 }
 
 static bool userfunc_referenced(int index, const macromap &mm)
@@ -198,7 +200,7 @@ static int userfunc_getindex(const string &fname)
     }
 
     userfunctions.push_back(fname);
-    return (userfunctions.size() - 1);
+    return userfunctions.size() - 1;
 }
 
 // Returns the name of the file that contains macros.
@@ -222,9 +224,9 @@ static string get_macro_file()
     check_mkdir("Macro directory", &dir, true);
 
 #if defined(DGL_NAMED_MACRO_FILE)
-    return (dir + strip_filename_unsafe_chars(you.your_name) + "-macro.txt");
+    return dir + strip_filename_unsafe_chars(you.your_name) + "-macro.txt";
 #else
-    return (dir + "macro.txt");
+    return dir + "macro.txt";
 #endif
 }
 
@@ -265,7 +267,7 @@ static int read_key_code(string s)
     else if (s[0] == '^')
     {
         // ^A = 1, etc.
-        return (1 + toupper(s[1]) - 'A');
+        return 1 + toupper(s[1]) - 'A';
     }
 
     char *tail;
@@ -389,7 +391,7 @@ static string vtostr(const keyseq &seq)
 }
 
 /*
- * Add a macro (suprise, suprise).
+ * Add a macro (surprise, surprise).
  */
 static void macro_add(macromap &mapref, keyseq key, keyseq action)
 {
@@ -568,7 +570,7 @@ void macro_clear_buffers()
 
 bool is_processing_macro()
 {
-    return (macro_keys_left >= 0);
+    return macro_keys_left >= 0;
 }
 
 bool has_pending_input()
@@ -708,7 +710,7 @@ static keyseq _getch_mul(int (*rgetch)() = NULL)
     // get new keys from the user.
     if (crawl_state.is_replaying_keys())
     {
-        mpr("(Key replay ran out of keys)", MSGCH_ERROR);
+        mprf(MSGCH_ERROR, "(Key replay ran out of keys)");
         crawl_state.cancel_cmd_repeat();
         crawl_state.cancel_cmd_again();
     }
@@ -874,7 +876,7 @@ static string _macro_type_name(bool keymap, KeymapContext keymc)
     return make_stringf("%s%s",
                         keymap ? (keymc == KMC_DEFAULT    ? "default " :
                                   keymc == KMC_LEVELMAP   ? "level-map " :
-                                  keymc == KMC_TARGETTING ? "targetting " :
+                                  keymc == KMC_TARGETING  ? "targeting " :
                                   keymc == KMC_CONFIRM    ? "confirm " :
                                   keymc == KMC_MENU       ? "menu "
                                   : "buggy") : "",
@@ -889,10 +891,9 @@ void macro_add_query(void)
     KeymapContext keymc = KMC_DEFAULT;
 
     mesclr();
-    mpr("(m)acro, (M)acro raw, keymap "
-        "[(k) default, (x) level-map, (t)argetting, (c)onfirm, m(e)nu], "
-        "(s)ave? ",
-        MSGCH_PROMPT);
+    mprf(MSGCH_PROMPT, "(m)acro, (M)acro raw, keymap "
+                       "[(k) default, (x) level-map, (t)argeting, "
+                       "(c)onfirm, m(e)nu], (s)ave? ");
     input = m_getch();
     int low = toalower(input);
 
@@ -909,7 +910,7 @@ void macro_add_query(void)
     else if (low == 't')
     {
         keymap = true;
-        keymc  = KMC_TARGETTING;
+        keymc  = KMC_TARGETING;
     }
     else if (low == 'c')
     {
@@ -951,12 +952,12 @@ void macro_add_query(void)
 
     msgwin_reply(vtostr(key));
 
-    if (mapref.find(key) != mapref.end() && !mapref[key].empty())
+    if (mapref.count(key) && !mapref[key].empty())
     {
         string action = vtostr(mapref[key]);
         action = replace_all(action, "<", "<<");
         mprf(MSGCH_WARN, "Current Action: %s", action.c_str());
-        mpr("Do you wish to (r)edefine, (c)lear, or (a)bort? ", MSGCH_PROMPT);
+        mprf(MSGCH_PROMPT, "Do you wish to (r)edefine, (c)lear, or (a)bort? ");
 
         input = m_getch();
 
@@ -1068,7 +1069,6 @@ void macro_init()
     _read_macros_from(get_macro_file().c_str());
 }
 
-
 void macro_userfn(const char *keys, const char *regname)
 {
     // TODO: Implement.
@@ -1103,7 +1103,6 @@ void key_recorder::add_key(int key, bool reverse)
 {
     if (paused)
         return;
-
 
     if (reverse)
         keys.push_front(key);
@@ -1171,7 +1170,7 @@ void init_keybindings()
         command_name &data = _command_name_list[i];
 
         ASSERT(VALID_BIND_COMMAND(data.cmd));
-        ASSERT(_names_to_cmds.find(data.name) == _names_to_cmds.end());
+        ASSERT(!_names_to_cmds.count(data.name));
         ASSERT(_cmds_to_names.find(data.cmd)  == _cmds_to_names.end());
 
         _names_to_cmds[data.name] = data.cmd;
@@ -1195,7 +1194,7 @@ void init_keybindings()
 
         // Only one command per key, but it's okay to have several
         // keys map to the same command.
-        ASSERT(key_map.find(data.key) == key_map.end());
+        ASSERT(!key_map.count(data.key));
 
         key_map[data.key] = data.cmd;
         cmd_map[data.cmd] = data.key;
@@ -1293,7 +1292,7 @@ static KeymapContext _context_for_command(command_type cmd)
         return KMC_LEVELMAP;
 
     if (cmd >= CMD_MIN_TARGET && cmd <= CMD_MAX_TARGET)
-        return KMC_TARGETTING;
+        return KMC_TARGETING;
 
 #ifdef USE_TILE
     if (cmd >= CMD_MIN_DOLL && cmd <= CMD_MAX_DOLL)
@@ -1325,13 +1324,13 @@ void bind_command_to_key(command_type cmd, int key)
 
     if (is_userfunction(key))
     {
-        mpr("Cannot bind user function keys to a command.", MSGCH_ERROR);
+        mprf(MSGCH_ERROR, "Cannot bind user function keys to a command.");
         return;
     }
 
     if (is_synthetic_key(key))
     {
-        mpr("Cannot bind synthetic keys to a command.", MSGCH_ERROR);
+        mprf(MSGCH_ERROR, "Cannot bind synthetic keys to a command.");
         return;
     }
 

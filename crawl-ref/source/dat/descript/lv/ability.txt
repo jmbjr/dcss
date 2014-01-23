@@ -1,45 +1,86 @@
 %%%%
-Breathe Frost
+Spit Poison ability
+
+Uzspļaut indi izvēlētajam briesmonim.
+%%%%
+Breathe Frost ability
 
 Uzpūst izvēlētajam briesmonim ledus brāzmu.
 %%%%
-Breathe Steam
+Breathe Poison Gas ability
+
+Uzpūst izvēlētajam briesmonim indīgas gāzes mākoni.
+%%%%
+Breathe Steam ability
 
 Uzpūst izvēlētajam briesmonim tvaika strūklu.
 %%%%
-Evoke Teleportation
+Spit Acid ability
+
+Uzspļaut indi izvēlētajam briesmonim.
+%%%%
+Stop Singing ability
+
+Pārstāt dziedāt savu Slaktēšanas dziesmu.
+%%%%
+Evoke Teleportation ability
 
 Aizteleportē sevi uz nejaušu līmeņu vietu.
 %%%%
-Banish
+Turn Visible ability
 
-=
+Atkal kļūt redzamam.
 %%%%
-Make arrow trap
+Cure All Mutations ability
+
+Izdziedēt visas mutācijas, taču tikai vienreiz.
+%%%%
+Animate Dead ability
+
+Atdzīvināt visus apkārtnē esošos līķus un ģindeņus kā savus sekotājus. Ņemiet
+vērā, ka zombiji un ģindeņi nevar pamest to līmeni, kurā tika atdzīvināti.
+%%%%
+End Transfer Knowledge ability
+
+Pārtraukt notiekošo pramju parnesi.
+%%%%
+Make dart trap ability
+
+Izvēlētajā vietā izveidot šautriņu lamatas.
+%%%%
+Make arrow trap ability
 
 Izvēlētajā vietā izveidot bultu lamatas.
 %%%%
-Remove Curse
+Remove Curse ability
 
 Noņemt lāstu no sava apbruņojuma.
 %%%%
-Make net trap
+Make altar ability
+
+Izvēlētajā vietā izveidot ziedokli vēlamajam dievam.
+%%%%
+Make net trap ability
 
 Izvēlētajā vietā izveidot tīkla lamatas.
 %%%%
-Make water
+Make spear trap ability
+
+Izvēlētajā vietā izveidot šķēpu lamatas.
+%%%%
+Make water ability
 
 Izvēlētajā vietā izveidot baseinu sekla ūdens.
 %%%%
-Acquire gold
+Acquire gold ability
 
 Iegūt lielu daudzumu zelta.
 %%%%
-Acquirement
+Acquirement ability
 
 Iegūt izvēlētā veida priekšmetu.
 %%%%
-Make blade trap
+Make blade trap ability
 
 Izvēlētajā vietā izveidot asmeņu lamatas.
 %%%%

@@ -3,7 +3,6 @@
  * @brief Misc (mostly) inventory related functions.
 **/
 
-
 #ifndef ITEMS_H
 #define ITEMS_H
 
@@ -44,10 +43,10 @@ int  move_item_to_player(int obj, int quant_got, bool quiet = false,
                          bool ignore_burden = false);
 void mark_items_non_pickup_at(const coord_def &pos);
 void mark_items_non_visit_at(const coord_def &pos);
+void clear_item_pickup_flags(item_def &item);
 bool is_stackable_item(const item_def &item);
 bool items_similar(const item_def &item1, const item_def &item2);
-bool items_stack(const item_def &item1, const item_def &item2,
-                  bool force_merge = false);
+bool items_stack(const item_def &item1, const item_def &item2);
 void merge_item_stacks(item_def &source, item_def &dest,
                        int quant = -1);
 
@@ -148,7 +147,7 @@ bool get_item_by_name(item_def *item, char* specs,
 void move_items(const coord_def r, const coord_def p);
 object_class_type get_random_item_mimic_type();
 object_class_type get_item_mimic_type();
-bool is_valid_mimic_item(object_class_type type);
+bool is_valid_mimic_item(const item_def &item);
 // Returns the Orb's position on the ground, or origin()
 coord_def orb_position();
 

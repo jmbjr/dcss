@@ -2,37 +2,97 @@
 tutorial intro
 
 Możesz przeczytać wcześniejsze komunikaty w dowolnym momencie wciskając
-<w>$cmd[CMD_REPLAY_MESSAGES]</w>. Naciśnij <w>spację</w> aby przejść przez
-<cyan>--more--</cyan>.
+<input>$cmd[CMD_REPLAY_MESSAGES]</input>. Naciśnij <input>spację</input> aby
+przejść przez <cyan>--more--</cyan>.
 %%%%
 tutorial1 start
 
 W tej lekcji nauczymy się jak się poruszać oraz zwiedzać otoczenie. Możesz
-ruszać się <localtiles> przez kliknięci gdziekolwiek myszką <w>[Mouse]</w>, lub
-</localtiles> używając <w>[arrow keys]</w>.
+ruszać się<localtiles> przez kliknięci gdziekolwiek myszką
+<input>Mouse</input>, lub</localtiles> używając <input>arrow keys</input>.
 %%%%
 tutorial1 go_on
 
-Idzie Ci świetnie ! Teraz, przeszukaj trochę okolicę aż nie dotrzesz do
+Idzie Ci świetnie! Teraz, przeszukaj trochę okolicę aż nie dotrzesz do
 następnego niebieskiego pola .
 %%%%
 tutorial1 diagonal
 
 :nowrap
-Możesz poruszać się po przekątnej naciskając <w>[number pad]</w> (włącz Numlock) lub przez użwyanie <w>[vi keys]</w>.
+Możesz poruszać się po przekątnej naciskając <input>number pad</input> (włącz Numlock) lub przez użwyanie <input>vi keys</input>.
 
-<w></w>  Numpad:       <w>7 8 9</w>           vi-keys: <w>   $cmd[CMD_MOVE_UP_LEFT] $cmd[CMD_MOVE_UP] $cmd[CMD_MOVE_UP_RIGHT]</w>
-<w></w>                 \|/                         \|/
-<w></w>                <w>4</w>-<w>.</w>-<w>6</w> <w>                      $cmd[CMD_MOVE_LEFT]</w>-<w>.</w>-<w>$cmd[CMD_MOVE_RIGHT]</w>
-<w></w>                 /|\                         /|\
-<w></w>                <w>1 2 3</w> <w>                      $cmd[CMD_MOVE_DOWN_LEFT] $cmd[CMD_MOVE_DOWN] $cmd[CMD_MOVE_DOWN_RIGHT]</w>
+  Numpad:       <w>7 8 9</w>           vi-keys: <w>   $cmd[CMD_MOVE_UP_LEFT] $cmd[CMD_MOVE_UP] $cmd[CMD_MOVE_UP_RIGHT]</w>
+                 \|/                         \|/
+                <w>4</w>-<w>.</w>-<w>6</w> <w>                      $cmd[CMD_MOVE_LEFT]</w>-<w>.</w>-<w>$cmd[CMD_MOVE_RIGHT]</w>
+                 /|\                         /|\
+                <w>1 2 3</w> <w>                      $cmd[CMD_MOVE_DOWN_LEFT] $cmd[CMD_MOVE_DOWN] $cmd[CMD_MOVE_DOWN_RIGHT]</w>
 
-<localtiles>Możesz poruszać się także ,używając <w>[Mouse clicks]</w>.</localtiles>
+<localtiles>Możesz poruszać się także ,używając <input>Mouse clicks</input>.</localtiles>
 %%%%
 tutorial1 shiftmove
 
-Szybszym sposobem "Biegania" przez korytarze jest wcisniecie <w>[Shift]</w>
-razem z <w>[number pad]</w> (sprawdź Numpad) lub <w>[vi keys]</w>.
+Szybszym sposobem „Biegania” przez korytarze jest wcisniecie
+<input>Shift</input> razem z <input>number pad</input> (sprawdź Numpad) lub
+<input>vi keys</input>.
+%%%%
+tutorial1 downstairs
+
+Stojąc na schodach prowadzących w dół, możesz przejść do następnej lokacji,
+używając <input>$cmd[CMD_GO_DOWNSTAIRS]</input><localtiles> lub klikając
+<input>Shift-Click</input> na swoją postać</localtiles>.
+%%%%
+tutorial1 door
+
+Zamknięte drzwi możesz otworzyć podchodząc do nich.
+%%%%
+tutorial1 water
+
+Zauważ, że możesz przechodzić tylko przez płytką wodę.
+%%%%
+tutorial1 upstairs
+
+Stojąc na schodach prowadzących w górę, możesz powrócić do wcześniejszej
+lokacji, używająć <input>$cmd[CMD_GO_UPSTAIRS]</input><localtiles> lub
+klikając <input>Shift-clicking</input> na swoją postać</localtiles>.
+%%%%
+tutorial2 start
+
+Ta lekcja nauczy cię o potworach oraz walce. Po pierwsze, potrzebujemy broni!
+Idź i podnieś tą broń.
+%%%%
+tutorial2 rest_and_chop_reminder
+
+Nie zapomnij o cięciu ciał na jedzenie (with <input>$cmd[CMD_BUTCHER]</input>),
+lub odpoczywaniu (with <input>$cmd[CMD_REST]</input>)!
+%%%%
+tutorial2 wait
+
+Zamiast wchodzić w pomieszczenie pełne potworów, które po chwili cię otoczą
+możesz poczekać(with <input>$cmd[CMD_MOVE_NOWHERE]</input>) aż same do ciebie
+podejdą.
+%%%%
+tutorial2 resting_reminder
+
+Pamiętaj, możesz odpoczywać używając <input>$cmd[CMD_REST]</input>.
+%%%%
+tutorial2 newlevel
+
+Pamiętaj: Możesz przeczytać stare wiadomości używając
+<input>$cmd[CMD_REPLAY_MESSAGES]</input>.
+%%%%
+tutorial3 battle
+
+Kiedy już uda ci się zatruć przeciwnika, lepiej jest czasami oddalić się i
+pozwolić truciźnie działać. Oddal się także, by się uleczyć jeśli to potrzebne
+%%%%
+tutorial4 start
+
+Na tej lekcji dowiesz się jak nauczyć się zaklęć i jak ich używać.
+%%%%
+tutorial4 tutorial_end
+
+Gratulacje, jesteś już prawdziwym czarownikiem! Aby wyjść z samouczka, idź
+schodami w dół.
 %%%%
 tutorial5 start
 
@@ -41,28 +101,30 @@ W tej lekcji nauczysz się o bogach, i jak używać ich mocy.
 tutorial5 dungeon_overview
 
 Trog jest tylko jednym z wielu bogów. Podczas normalnej gry, możesz wcisnąć
-<w>$cmd[CMD_DISPLAY_OVERMAP],/w><localtiles> lub kliknąć <w>schemat lochów</w>
-w panelu czynności</localtiles> aby obejrzeć listę ołtarzy i podobnych
-interesujących miejsc.
+<input>$cmd[CMD_DISPLAY_OVERMAP]</input><localtiles> lub kliknąć
+<input>schemat lochów</input> w panelu czynności</localtiles> aby obejrzeć
+listę ołtarzy i podobnych interesujących miejsc.
 %%%%
 tutorial5 altar
 
-Możesz pomodlić się na ołtarzu wciskając <w>$cmd[CMD_PRAY]</w><localtiles>(lub
-klikając <w>przycisk modlitwy</w> w panelu czynności lub też
-<w>shift-klikając</w> twą postać)</localtiles> aby zobaczyć moce danego boga
-lub też przyłączyć się do tej religii. Jeśli wciśniesz <w>!</w><localtiles>lub
-klikniesz <w>prawym przyciskiem myszy</w></localtiles> na ekranie religii,
-zobaczysz bardziej szczegółowy opis.
+Możesz pomodlić się na ołtarzu wciskając <input>$cmd[CMD_PRAY]</input>
+<localtiles> (lub klikając <input>przycisk modlitwy</input> w panelu czynności
+lub też <input>shift-klikając</input> twą postać)</localtiles> aby zobaczyć
+moce danego boga lub też przyłączyć się do tej religii. Jeśli wciśniesz
+<input>!</input><localtiles> lub klikniesz <input>prawym przyciskiem
+myszy</input></localtiles> na ekranie religii, zobaczysz bardziej szczegółowy
+opis.
 
-Aby potwierdzić ten wybór, należy wcisnąć duże <w>Y</w>.
+Aby potwierdzić ten wybór, należy wcisnąć duże <input>Y</input>.
 %%%%
 tutorial5 religion
 
 Teraz rzuć okiem na swój religijny status wciskając
-<w>$cmd[CMD_DISPLAY_RELIGION]</w><localtiles> (lub klikając <w>przycisk
-religii</w> w panelu czynności, lub <w>shift-klikając</w> swą
-postać)</localtiles>. Tutaj też, wciskając <w>!</w><localtiles> lub <w>prawy
-przycisk myszy</w></localtiles> możesz obejrzeć szczegółowy opis swego boga.
+<input>$cmd[CMD_DISPLAY_RELIGION]</input><localtiles> (lub klikając
+<w>przycisk religii</w> w panelu czynności, lub <input>shift-klikając</input>
+swą postać)</localtiles>. Tutaj też, wciskając <input>!</input><localtiles>
+lub <input>prawy przycisk myszy</input></localtiles> możesz obejrzeć
+szczegółowy opis swego boga.
 %%%%
 tutorial5 piety_on_kill
 
@@ -70,29 +132,29 @@ Niektórzy bogowie uwielbiają kiedy zabijasz w ich imieniu. Czas na małą rze�
 %%%%
 tutorial5 sacrificing
 
-Modląc się nad zwłokami pokonanych klawiszem
-<w>$cmd[CMD_PRAY]</w><localtiles>lub przyciskiem <w>modlitwy</w> w panelu
-czynności</localtiles>, składasz je w ofierze Trogowi. Spróbuj to zrobić!
+Modląc się nad zwłokami pokonanych klawiszem <input>$cmd[CMD_PRAY]</input>
+<localtiles> lub przyciskiem <w>modlitwy</w> w panelu czynności</localtiles>,
+składasz je w ofierze Trogowi. Spróbuj to zrobić!
 %%%%
 tutorial5 burn_book
 
 Trogowi się spodoba jeśli podpalisz tą księgę (przez
-<w>$cmd[CMD_USE_ABILITY]</w><localtiles> lub przycisk <w>zdolności</w> w panelu
-czynności</localtiles>). Czasem, możesz woleć poczekać chwilę
-(<w>$cmd[CMD_MOVE_NOWHERE]<w>) aż ktoś stanie na księdze która ma stanąć w
-płomieniach.
+<input>$cmd[CMD_USE_ABILITY]</input><localtiles> lub przycisk <w>zdolności</w>
+w panelu czynności</localtiles>). Czasem, możesz woleć poczekać chwilę
+(<input>$cmd[CMD_MOVE_NOWHERE]<input>) aż ktoś stanie na księdze która ma
+stanąć w płomieniach.
 %%%%
 tutorial5 berserk
 
 Przeciw szczególnie groźnym wrogom, możesz użyć Berserkerskiego Szału za pomocą
-mocy Troga (klawisz <w>$cmd[CMD_USE_ABILITY]</w><localtiles> lub przycisk
-<w>zdolności</w> w panelu czynności</localtiles>).
+mocy Troga (klawisz <input>$cmd[CMD_USE_ABILITY]</input><localtiles> lub
+przycisk <w>zdolności</w> w panelu czynności</localtiles>).
 %%%%
 tutorial5 exhaustion
 
 Szał bojowy jest bardzo wyczerpujący. Będąc zmęczony, nie możesz ponownie w
 niego wpaść, a twe ruchy są spowolnione. Najlepiej wówczas trochę odpocząć
-(klawisz <w>$cmd[CMD_REST]</w><localtiles> lub przycisk
+(klawisz <input>$cmd[CMD_REST]</input><localtiles> lub przycisk
 <w>odpoczynku</w></localtiles>) aż ci wrócą siły.
 %%%%
 tutorial5 hunger
@@ -117,21 +179,18 @@ tutorial5 exit
 
 :nowrap
 <yellow>Religia:</yellow>
-  $cmd[CMD_PRAY]  modlitwa na ołtarzu, złożenie ofiary
-  $cmd[CMD_USE_ABILITY]  przyzwanie boskiej mocy
-  $cmd[CMD_DISPLAY_RELIGION]  sprawdzenie religijnego statusu
-<localtiles>  Kliknięcie <w>prawym przyciskiem myszy</w> na twej postaci też przejdzie do ekranu religii.</localtiles>
-
+  <input>$cmd[CMD_PRAY]</input>  modlitwa na ołtarzu, złożenie ofiary
+  <input>$cmd[CMD_USE_ABILITY]</input>  przyzwanie boskiej mocy
+  <input>$cmd[CMD_DISPLAY_RELIGION]</input>  sprawdzenie religijnego statusu<localtiles>
+  Kliknięcie <input>prawym przyciskiem myszy</input> na twej postaci też przejdzie do ekranu religii.</localtiles>
 
 <yellow>Odpoczynek:</yellow>
-  $cmd[CMD_MOVE_NOWHERE]  czekaj i odpoczywaj przez jedną turę
-  $cmd[CMD_REST]  czekaj i odpoczywaj przez do 100 tur
-
+  <input>$cmd[CMD_MOVE_NOWHERE]</input>  czekaj i odpoczywaj przez jedną turę
+  <input>$cmd[CMD_REST]</input>  czekaj i odpoczywaj przez do 100 tur
 
 <yellow>Inne:</yellow>
-  $cmd[CMD_DISPLAY_OVERMAP]  wyświetl schemat lochów
-  $cmd[CMD_DISPLAY_COMMANDS]<w>/</w>  szukaj w bazie opisów
+  <input>$cmd[CMD_DISPLAY_OVERMAP]</input> wyświetl schemat lochów
+  <input>$cmd[CMD_DISPLAY_COMMANDS]/</input>  szukaj w bazie opisów
 
-
-                                 <cyan>Wciśnij <w>dowolny klawisz</w> aby zakończyć...</cyan>
+                                 <cyan>Wciśnij <input>dowolny klawisz</input> aby zakończyć...</cyan>
 %%%%

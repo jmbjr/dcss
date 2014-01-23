@@ -58,7 +58,7 @@ struct menu_letter
     }
 };
 
-// XXX Use inheritence instead of duplicate code
+// XXX Use inheritance instead of duplicate code
 struct menu_letter2
 {
     char letter;
@@ -142,7 +142,7 @@ public:
 
     bool is_primary_hotkey(int key) const
     {
-        return (hotkeys.size()? hotkeys[0] == key : false);
+        return hotkeys.size()? hotkeys[0] == key : false;
     }
 
     virtual string get_text(const bool unused = false) const
@@ -165,7 +165,7 @@ public:
 
     virtual bool selected() const
     {
-        return (selected_qty > 0 && quantity);
+        return selected_qty > 0 && quantity;
     }
 
     // -1: Invert
@@ -342,8 +342,10 @@ public:
     bool draw_title_suffix(const formatted_string &fs, bool titlefirst = true);
     void update_title();
 
-    // Sets a replacement for the --more-- string.
+    // Sets a replacement for the default -more- string.
     void set_more(const formatted_string &more);
+    // Shows a stock message about scrolling the menu instead of -more-
+    void set_more();
     const formatted_string &get_more() const { return more; }
 
     void set_highlighter(MenuHighlighter *h);
@@ -536,7 +538,7 @@ private:
         column(int marg = 1) : margin(marg), lines(0) { }
     };
 
-    int ncols, pagesize;
+    int pagesize;
     vector<column> columns;
     vector<formatted_string> flines;
 };
@@ -1092,7 +1094,6 @@ class MenuButton : public MenuObject
 public:
 
 protected:
-
 };
 
 /**

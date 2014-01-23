@@ -3,7 +3,6 @@
  * @brief Misc functions.
 **/
 
-
 #ifndef ITEMNAME_H
 #define ITEMNAME_H
 
@@ -81,7 +80,6 @@ enum
 };
 
 bool is_vowel(const ucs_t chr);
-int property(const item_def &item, int prop_type);
 
 const char* racial_description_string(const item_def& item, bool terse = false);
 
@@ -108,8 +106,6 @@ string make_name(uint32_t seed, bool all_caps, int maxlen = -1, char start = 0);
 const char* weapon_brand_name(const item_def& item, bool terse);
 const char* armour_ego_name(const item_def& item, bool terse);
 
-void init_properties();
-
 bool item_type_has_ids(object_class_type base_type);
 item_type_id_state_type get_ident_type(const item_def &item);
 item_type_id_state_type get_ident_type(object_class_type basetype,
@@ -118,6 +114,7 @@ void set_ident_type(item_def &item, item_type_id_state_type setting,
                      bool force = false);
 void set_ident_type(object_class_type basetype, int subtype,
                      item_type_id_state_type setting, bool force = false);
+void identify_healing_pots();
 
 string item_prefix(const item_def &item, bool temp = true);
 string get_menu_colour_prefix_tags(const item_def &item,
@@ -137,5 +134,5 @@ string base_type_string(const item_def &item, bool known = true);
 
 string sub_type_string(const item_def &item, bool known = true);
 
-string ego_type_string(const item_def &item);
+string ego_type_string(const item_def &item, bool terse = false);
 #endif

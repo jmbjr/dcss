@@ -34,7 +34,8 @@ dolls_data::dolls_data(const dolls_data& _orig)
 
 const dolls_data& dolls_data::operator=(const dolls_data& other)
 {
-    memcpy(parts, other.parts, TILEP_PART_MAX * sizeof(tileidx_t));
+    if (this != &other)
+        memcpy(parts, other.parts, TILEP_PART_MAX * sizeof(tileidx_t));
     return *this;
 }
 
@@ -113,7 +114,6 @@ bool load_doll_data(const char *fn, dolls_data *dolls, int max,
     const char *dollsTxt = (dollsTxtString.c_str()[0] == 0
                               || !(stFileInfo.st_mode & S_IRUSR)) ? "dolls.txt"
                             : dollsTxtString.c_str();
-
 
     if ((fp = fopen_u(dollsTxt, "r")) == NULL)
     {
@@ -220,8 +220,8 @@ void init_player_doll()
 static int _get_random_doll_part(int p)
 {
     ASSERT_RANGE(p, 0, TILEP_PART_MAX + 1);
-    return (tile_player_part_start[p]
-            + random2(tile_player_part_count[p]));
+    return tile_player_part_start[p]
+           + random2(tile_player_part_count[p]);
 }
 
 static void _fill_doll_part(dolls_data &doll, int p)
@@ -264,7 +264,7 @@ static tileidx_t _random_trousers()
         offset += *name * 4643;
 
     const int range = TILEP_LEG_LAST_NORM - TILEP_LEG_FIRST_NORM + 1;
-    return (TILEP_LEG_FIRST_NORM + offset % range);
+    return TILEP_LEG_FIRST_NORM + offset % range;
 }
 
 void fill_doll_equipment(dolls_data &result)

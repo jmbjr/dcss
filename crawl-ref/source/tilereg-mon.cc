@@ -64,7 +64,6 @@ int MonsterRegion::handle_mouse(MouseEvent &event)
     if (mouse_control::current_mode() != MOUSE_MODE_COMMAND)
         return 0;
 
-
     unsigned int item_idx = cursor_index();
     const monster_info* mon = get_monster(item_idx);
     if (!mon)
@@ -131,7 +130,7 @@ bool MonsterRegion::update_alt_text(string &alt)
     if (!you.see_cell(gc))
         return false;
 
-    get_square_desc(gc, inf, true, false);
+    get_square_desc(gc, inf);
 
     alt_desc_proc proc(crawl_view.msgsz.x, crawl_view.msgsz.y);
     process_description<alt_desc_proc>(proc, inf);

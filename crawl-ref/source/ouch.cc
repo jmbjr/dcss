@@ -60,6 +60,7 @@
 #include "religion.h"
 #include "shopping.h"
 #include "skills2.h"
+#include "spl-clouds.h"
 #include "spl-selfench.h"
 #include "spl-other.h"
 #include "state.h"
@@ -89,7 +90,7 @@ static void _maybe_melt_player_enchantments(beam_type flavour, int damage)
 
         if (you.mutation[MUT_ICEMAIL])
         {
-            mpr("Your icy envelope dissipates!", MSGCH_DURATION);
+            mprf(MSGCH_DURATION, "Your icy envelope dissipates!");
             you.duration[DUR_ICEMAIL_DEPLETED] = ICEMAIL_TIME;
             you.redraw_armour_class = true;
         }
@@ -231,24 +232,11 @@ int check_your_resists(int hurted, beam_type flavour, string source,
         break;
 
     case BEAM_NEG:
-        resist = player_prot_life();
-
-        // TSO's protection.
-        if (you.religion == GOD_SHINING_ONE && you.piety > resist * 50)
-        {
-            int unhurted = min(hurted, (you.piety * hurted) / 150);
-
-            if (unhurted > 0)
-                hurted -= unhurted;
-        }
-        else if (resist > 0)
-            hurted -= (resist * hurted) / 3;
+        hurted = resist_adjust_damage(&you, flavour, player_prot_life(),
+                                      hurted, true);
 
         if (doEffects)
-        {
-            drain_exp(true, beam ? beam->beam_source : NON_MONSTER,
-                      !kaux.empty() ? kaux.c_str() : NULL);
-        }
+            drain_exp(true, min(75, 35 + original * 2 / 3));
         break;
 
     case BEAM_ICE:
@@ -304,7 +292,7 @@ int check_your_resists(int hurted, beam_type flavour, string source,
         else if (rhe == 0)
             hurted /= 2;
         else if (rhe < -1)
-            hurted = (hurted * 3) / 2;
+            hurted = hurted * 3 / 2;
 
         if (hurted == 0 && doEffects)
             canned_msg(MSG_YOU_RESIST);
@@ -394,13 +382,14 @@ int check_your_resists(int hurted, beam_type flavour, string source,
         break;
     }                           // end switch
 
-    if (doEffects && hurted != original)
+    if (doEffects)
         maybe_id_resist(flavour);
 
     return hurted;
 }
 
-void splash_with_acid(int acid_strength, int death_source, bool corrode_items, string hurt_message)
+void splash_with_acid(int acid_strength, int death_source, bool corrode_items,
+                      const char* hurt_msg)
 {
     int dam = 0;
     const bool wearing_cloak = player_wearing_slot(EQ_CLOAK);
@@ -438,7 +427,7 @@ void splash_with_acid(int acid_strength, int death_source, bool corrode_items, s
 
     if (post_res_dam > 0)
     {
-        mpr(hurt_message.empty() ? "The acid burns!" : hurt_message);
+        mpr(hurt_msg ? hurt_msg : "The acid burns!");
 
         if (post_res_dam < dam)
             canned_msg(MSG_YOU_RESIST);
@@ -501,7 +490,7 @@ static bool _expose_invent_to_element(beam_type flavour, int strength)
     // Fedhas worshipers are exempt from the food destruction effect
     // of spores.
     if (flavour == BEAM_SPORE
-        && you.religion == GOD_FEDHAS)
+        && you_worship(GOD_FEDHAS))
     {
         simple_god_message(" protects your food from the spores.",
                            GOD_FEDHAS);
@@ -543,7 +532,7 @@ static bool _expose_invent_to_element(beam_type flavour, int strength)
                 continue;
             }
 
-            if (you.religion == GOD_JIYVA && !player_under_penance()
+            if (you_worship(GOD_JIYVA) && !player_under_penance()
                 && x_chance_in_y(you.piety, MAX_PIETY))
             {
                 ++jiyva_block;
@@ -635,80 +624,6 @@ static bool _expose_invent_to_element(beam_type flavour, int strength)
     return true;
 }
 
-bool expose_items_to_element(beam_type flavour, const coord_def& where,
-                             int strength)
-{
-    int num_dest = 0;
-
-    const int target_class = _get_target_class(flavour);
-    if (target_class == OBJ_UNASSIGNED)
-        return false;
-
-    // Beams fly *over* water and lava.
-    if (grd(where) == DNGN_LAVA || grd(where) == DNGN_DEEP_WATER)
-        return false;
-
-    for (stack_iterator si(where); si; ++si)
-    {
-        if (!si->defined())
-            continue;
-
-        if (si->base_type == target_class
-            || target_class == OBJ_FOOD && si->base_type == OBJ_CORPSES)
-        {
-            for (int j = 0; j < si->quantity; ++j)
-            {
-                if (x_chance_in_y(strength, 100))
-                {
-                    num_dest++;
-                    if (!dec_mitm_item_quantity(si->index(), 1)
-                        && is_blood_potion(*si))
-                    {
-                       remove_oldest_blood_potion(*si);
-                    }
-                }
-            }
-        }
-    }
-
-    if (!num_dest)
-        return false;
-
-    if (flavour == BEAM_DEVOUR_FOOD)
-        return true;
-
-    if (you.see_cell(where))
-    {
-        switch (target_class)
-        {
-        case OBJ_SCROLLS:
-            mprf("You see %s of smoke.",
-                 (num_dest > 1) ? "some puffs" : "a puff");
-            break;
-
-        case OBJ_POTIONS:
-            mprf("You see %s shatter.",
-                 (num_dest > 1) ? "some glass" : "glass");
-            break;
-
-        case OBJ_FOOD:
-            mprf("You see %s of spores.",
-                 (num_dest > 1) ? "some clouds" : "a cloud");
-            break;
-
-        default:
-            mprf("%s on the floor %s destroyed!",
-                 (num_dest > 1) ? "Some items" : "An item",
-                 (num_dest > 1) ? "were" : "was");
-            break;
-        }
-    }
-
-    xom_is_stimulated((num_dest > 1) ? 25 : 12);
-
-    return true;
-}
-
 // Handle side-effects for exposure to element other than damage.  This
 // function exists because some code calculates its own damage instead
 // of using check_your_resists() and we want to isolate all the special
@@ -730,6 +645,14 @@ bool expose_player_to_element(beam_type flavour, int strength,
         you.slow_down(0, strength);
     }
 
+    if (flavour == BEAM_WATER && you.duration[DUR_LIQUID_FLAMES])
+    {
+        mprf(MSGCH_WARN, "The flames go out!");
+        you.duration[DUR_LIQUID_FLAMES] = 0;
+        you.props.erase("napalmer");
+        you.props.erase("napalm_aux");
+    }
+
     if (strength <= 0 || !damage_inventory)
         return false;
 
@@ -744,7 +667,7 @@ static void _lose_level_abilities()
     {
         you.increase_duration(DUR_FLIGHT, 50, 100);
         you.attribute[ATTR_PERM_FLIGHT] = 0;
-        mpr("You feel your flight won't last long.", MSGCH_WARN);
+        mprf(MSGCH_WARN, "You feel your flight won't last long.");
     }
 }
 
@@ -755,7 +678,7 @@ void lose_level(int death_source, const char *aux)
     if (you.experience_level == 1)
     {
         ouch(INSTANT_DEATH, death_source, KILLED_BY_DRAINING, aux);
-        // Return in case death was canceled via wizard mode
+        // Return in case death was cancelled via wizard mode
         return;
     }
 
@@ -791,11 +714,11 @@ void lose_level(int death_source, const char *aux)
     ouch(0, death_source, KILLED_BY_DRAINING, aux);
 }
 
-bool drain_exp(bool announce_full, int death_source, const char *aux)
+bool drain_exp(bool announce_full, int power, bool ignore_protection)
 {
     const int protection = player_prot_life();
 
-    if (protection == 3)
+    if (protection == 3 && !ignore_protection)
     {
         if (announce_full)
             canned_msg(MSG_YOU_RESIST);
@@ -803,55 +726,23 @@ bool drain_exp(bool announce_full, int death_source, const char *aux)
         return false;
     }
 
-    if (you.experience == 0)
-    {
-        mpr("You are drained of all life!");
-        ouch(INSTANT_DEATH, death_source, KILLED_BY_DRAINING, aux);
-
-        // Return in case death was escaped via wizard mode.
-        return true;
-    }
-
-    if (you.experience_level == 1)
-    {
-        mpr("You feel drained.");
-        you.experience = 0;
-
-        return true;
-    }
-
-    unsigned int total_exp = exp_needed(you.experience_level + 1)
-                                  - exp_needed(you.experience_level);
-    unsigned int exp_drained = (total_exp * (5 + random2(11))) / 100;
-
-    // TSO's protection.
-    if (you.religion == GOD_SHINING_ONE && you.piety > protection * 50)
-    {
-        unsigned int undrained = min(exp_drained,
-                                     (you.piety * exp_drained) / 150);
-
-        if (undrained > 0)
-        {
-            simple_god_message(" protects your life force!");
-            if (undrained > 0)
-                exp_drained -= undrained;
-        }
-    }
-    else if (protection > 0)
+    if (protection > 0 && !ignore_protection)
     {
         canned_msg(MSG_YOU_PARTIALLY_RESIST);
-        exp_drained -= (protection * exp_drained) / 3;
+        power /= (protection * 2);
     }
 
-    if (exp_drained > 0)
+    if (power > 0)
     {
         mpr("You feel drained.");
         xom_is_stimulated(15);
-        you.experience -= exp_drained;
 
-        dprf("You lose %d experience points.", exp_drained);
+        you.attribute[ATTR_XP_DRAIN] += power;
+        // Losing skills may affect AC/EV.
+        you.redraw_armour_class = true;
+        you.redraw_evasion = true;
 
-        level_change(death_source, aux);
+        dprf("Drained by %d points (%d total)", power, you.attribute[ATTR_XP_DRAIN]);
 
         return true;
     }
@@ -862,9 +753,9 @@ bool drain_exp(bool announce_full, int death_source, const char *aux)
 static void _xom_checks_damage(kill_method_type death_type,
                                int dam, int death_source)
 {
-    if (you.religion == GOD_XOM)
+    if (you_worship(GOD_XOM))
     {
-        if (death_type == KILLED_BY_TARGETTING
+        if (death_type == KILLED_BY_TARGETING
             || death_type == KILLED_BY_BOUNCE
             || death_type == KILLED_BY_REFLECTION
             || death_type == KILLED_BY_SELF_AIMED
@@ -972,7 +863,9 @@ static void _maybe_spawn_jellies(int dam, const char* aux,
 
     // Exclude torment damage.
     const bool torment = aux && strstr(aux, "torment");
-    if (you.religion == GOD_JIYVA && you.piety > 160 && !torment)
+    if (you_worship(GOD_JIYVA)
+        && you.piety >= piety_breakpoint(5)
+        && !torment)
     {
         int how_many = 0;
         if (dam >= you.hp_max * 3 / 4)
@@ -984,13 +877,6 @@ static void _maybe_spawn_jellies(int dam, const char* aux,
 
         if (how_many > 0)
         {
-            if (x_chance_in_y(how_many, 8)
-                && !lose_stat(STAT_STR, 1, true, "spawning slimes"))
-            {
-                canned_msg(MSG_NOTHING_HAPPENS);
-                return;
-            }
-
             int count_created = 0;
             for (int i = 0; i < how_many; ++i)
             {
@@ -1050,6 +936,25 @@ static void _powered_by_pain(int dam)
     }
 }
 
+static void _maybe_fog(int dam)
+{
+    const int upper_threshold = you.hp_max / 2;
+    const int lower_threshold = upper_threshold
+                                - upper_threshold
+                                  * (you.piety - piety_breakpoint(2))
+                                  / (MAX_PIETY - piety_breakpoint(2));
+    if (you_worship(GOD_DITHMENGOS)
+        && you.piety >= piety_breakpoint(2)
+        && (dam > 0 && you.form == TRAN_SHADOW
+            || dam >= lower_threshold
+               && x_chance_in_y(dam - lower_threshold,
+                                upper_threshold - lower_threshold)))
+    {
+        mpr("You emit a cloud of dark smoke.");
+        big_cloud(CLOUD_BLACK_SMOKE, &you, you.pos(), 50, 4 + random2(5));
+    }
+}
+
 static void _place_player_corpse(bool explode)
 {
     if (!in_bounds(you.pos()))
@@ -1081,12 +986,13 @@ static void _place_player_corpse(bool explode)
     move_item_to_grid(&o, you.pos(), !you.in_water());
 }
 
-
 #if defined(WIZARD) || defined(DEBUG)
 static void _wizard_restore_life()
 {
     if (you.hp_max <= 0)
         unrot_hp(9999);
+    while (you.hp_max <= 0)
+        you.hp_max_perm++, calc_hp();
     if (you.hp <= 0)
         set_hp(you.hp_max);
 }
@@ -1101,7 +1007,8 @@ void reset_damage_counters()
 
 // death_source should be set to NON_MONSTER for non-monsters. {dlb}
 void ouch(int dam, int death_source, kill_method_type death_type,
-          const char *aux, bool see_source, const char *death_source_name)
+          const char *aux, bool see_source, const char *death_source_name,
+          bool attacker_effects)
 {
     ASSERT(!crawl_state.game_is_arena());
     if (you.duration[DUR_TIME_STEP])
@@ -1110,7 +1017,8 @@ void ouch(int dam, int death_source, kill_method_type death_type,
     if (you.dead) // ... but eligible for revival
         return;
 
-    if (dam != INSTANT_DEATH && !invalid_monster_index(death_source)
+    if (attacker_effects && dam != INSTANT_DEATH
+        && !invalid_monster_index(death_source)
         && menv[death_source].has_ench(ENCH_WRETCHED))
     {
         // An abstract boring simulation of reduced stats/etc due to bad muts
@@ -1138,6 +1046,8 @@ void ouch(int dam, int death_source, kill_method_type death_type,
 
     if (dam != INSTANT_DEATH)
     {
+        if (you.form == TRAN_SHADOW)
+            dam /= 2;
         if (you.petrified())
             dam /= 2;
         else if (you.petrifying())
@@ -1146,7 +1056,7 @@ void ouch(int dam, int death_source, kill_method_type death_type,
     ait_hp_loss hpl(dam, death_type);
     interrupt_activity(AI_HP_LOSS, &hpl);
 
-    if (dam > 0)
+    if (dam > 0 && death_type != KILLED_BY_POISON)
         you.check_awaken(500);
 
     const bool non_death = death_type == KILLED_BY_QUITTING
@@ -1166,14 +1076,14 @@ void ouch(int dam, int death_source, kill_method_type death_type,
         {
             // round off fairly (important for taking 1 damage at a time)
             int mp = div_rand_round(dam * you.magic_points,
-                                    you.hp + you.magic_points);
+                                    max(you.hp + you.magic_points, 1));
             // but don't kill the player with round-off errors
             mp = max(mp, dam + 1 - you.hp);
             mp = min(mp, you.magic_points);
 
             dam -= mp;
             dec_mp(mp);
-            if (dam <= 0)
+            if (dam <= 0 && you.hp > 0)
                 return;
         }
 
@@ -1196,14 +1106,14 @@ void ouch(int dam, int death_source, kill_method_type death_type,
         // Even if we have low HP messages off, we'll still give a
         // big hit warning (in this case, a hit for half our HPs) -- bwr
         if (dam > 0 && you.hp_max <= dam * 2)
-            mpr("Ouch! That really hurt!", MSGCH_DANGER);
+            mprf(MSGCH_DANGER, "Ouch! That really hurt!");
 
-        if (you.hp > 0)
+        if (you.hp > 0 && dam > 0)
         {
             if (Options.hp_warning
                 && you.hp <= (you.hp_max * Options.hp_warning) / 100)
             {
-                mpr("* * * LOW HITPOINT WARNING * * *", MSGCH_DANGER);
+                mprf(MSGCH_DANGER, "* * * LOW HITPOINT WARNING * * *");
                 dungeon_events.fire_event(DET_HP_WARNING);
             }
 
@@ -1227,10 +1137,11 @@ void ouch(int dam, int death_source, kill_method_type death_type,
 
             _yred_mirrors_injury(dam, death_source);
             _maybe_spawn_jellies(dam, aux, death_type, death_source);
+            _maybe_fog(dam);
             _powered_by_pain(dam);
-
-            return;
-        } // else hp <= 0
+        }
+        if (you.hp > 0)
+          return;
     }
 
     // Is the player being killed by a direct act of Xom?
@@ -1243,7 +1154,7 @@ void ouch(int dam, int death_source, kill_method_type death_type,
 
         // Xom should only kill his worshippers if they're under penance
         // or Xom is bored.
-        if (you.religion == GOD_XOM && !you.penance[GOD_XOM]
+        if (you_worship(GOD_XOM) && !you.penance[GOD_XOM]
             && you.gift_timeout > 0)
         {
             return;
@@ -1252,7 +1163,7 @@ void ouch(int dam, int death_source, kill_method_type death_type,
         // Also don't kill wizards testing Xom acts.
         if ((crawl_state.repeat_cmd == CMD_WIZARD
                 || crawl_state.prev_cmd == CMD_WIZARD)
-            && you.religion != GOD_XOM)
+            && !you_worship(GOD_XOM))
         {
             return;
         }
@@ -1337,9 +1248,10 @@ void ouch(int dam, int death_source, kill_method_type death_type,
 
         // You wouldn't want to lose this accomplishment to a crash, would you?
         // Especially if you manage to trigger one via lua somehow...
-        save_game(false);
+        if (!crawl_state.disables[DIS_SAVE_CHECKPOINTS])
+            save_game(false);
 
-        mprnojoin("You die...");
+        canned_msg(MSG_YOU_DIE);
         xom_death_message((kill_method_type) se.get_death_type());
         more();
 
@@ -1429,7 +1341,7 @@ void _end_game(scorefile_entry &se)
         && se.get_death_type() != KILLED_BY_QUITTING
         && se.get_death_type() != KILLED_BY_WINNING)
     {
-        mprnojoin("You die...");      // insert player name here? {dlb}
+        canned_msg(MSG_YOU_DIE);
         xom_death_message((kill_method_type) se.get_death_type());
 
         switch (you.religion)
@@ -1466,8 +1378,7 @@ void _end_game(scorefile_entry &se)
             else if (se.get_death_type() != KILLED_BY_DISINT
                      && se.get_death_type() != KILLED_BY_LAVA)
             {
-                mpr("Your body rises from the dead as a mindless zombie.",
-                    MSGCH_GOD);
+                mprf(MSGCH_GOD, "Your body rises from the dead as a mindless zombie.");
             }
             // No message if you're not undead and your corpse is lost.
             break;
@@ -1503,7 +1414,7 @@ void _end_game(scorefile_entry &se)
         more();
 
     if (!crawl_state.disables[DIS_CONFIRMATIONS])
-        browse_inventory();
+        get_invent(OSEL_ANY);
     textcolor(LIGHTGREY);
 
     // Prompt for saving macros.
@@ -1546,7 +1457,7 @@ int actor_to_death_source(const actor* agent)
     if (agent->is_player())
         return NON_MONSTER;
     else if (agent->is_monster())
-        return (agent->as_monster()->mindex());
+        return agent->as_monster()->mindex();
     else
         return NON_MONSTER;
 }

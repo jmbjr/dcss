@@ -20,6 +20,9 @@
 #include "godconduct.h"
 #include "hints.h"
 #include "item_use.h"
+#include "itemname.h"
+#include "itemprop.h"
+#include "libutil.h"
 #include "message.h"
 #include "misc.h"
 #include "mutation.h"
@@ -43,22 +46,21 @@
  * @param was_known     Whether the potion was already identified.
  * @param from_fountain Is this from a fountain?
  *
- * @return If the potion was identified.
+ * @return If the potion was used.
  */
-bool potion_effect(potion_type pot_eff, int pow, bool drank_it, bool was_known,
+bool potion_effect(potion_type pot_eff, int pow, item_def *potion, bool was_known,
                    bool from_fountain)
 {
-    bool effect = true;  // current behaviour is all potions id on quaffing
-
     pow = min(pow, 150);
 
+    bool drank_it = potion || from_fountain;
     int factor = (you.species == SP_VAMPIRE
                   && you.hunger_state < HS_SATIATED
-                  && drank_it ? 2 : 1);
+                  && potion ? 2 : 1);
 
     // Knowingly drinking bad potions is much less amusing.
     int xom_factor = factor;
-    if (drank_it && was_known)
+    if (potion && was_known)
     {
         xom_factor *= 2;
         if (!player_in_a_dangerous_place())
@@ -70,6 +72,11 @@ bool potion_effect(potion_type pot_eff, int pow, bool drank_it, bool was_known,
     case POT_CURING:
         if (you.duration[DUR_DEATHS_DOOR])
         {
+            if (potion && was_known)
+            {
+                mpr("You can't heal while in Death's door!");
+                return false;
+            }
             mpr("You feel queasy.");
             break;
         }
@@ -93,6 +100,11 @@ bool potion_effect(potion_type pot_eff, int pow, bool drank_it, bool was_known,
     case POT_HEAL_WOUNDS:
         if (you.duration[DUR_DEATHS_DOOR])
         {
+            if (potion && was_known)
+            {
+                mpr("You can't heal while in Death's door!");
+                return false;
+            }
             mpr("You feel queasy.");
             break;
         }
@@ -113,7 +125,7 @@ bool potion_effect(potion_type pot_eff, int pow, bool drank_it, bool was_known,
         if (you.species == SP_VAMPIRE)
         {
             // No healing anymore! (jpeg)
-            int value = 800;
+            int value = 840;
             if (pot_eff == POT_BLOOD)
             {
                 mpr("Yummy - fresh blood!");
@@ -126,7 +138,7 @@ bool potion_effect(potion_type pot_eff, int pow, bool drank_it, bool was_known,
         }
         else
         {
-            const int value = 200;
+            const int value = pot_eff == POT_BLOOD ? 1040 : 840;
             const int herbivorous = player_mutation_level(MUT_HERBIVOROUS);
 
             if (herbivorous < 3 && player_likes_chunks())
@@ -152,6 +164,12 @@ bool potion_effect(potion_type pot_eff, int pow, bool drank_it, bool was_known,
         break;
 
     case POT_SPEED:
+        if (potion && was_known && you.stasis(false))
+        {
+            mpr("This potion can't work under stasis.");
+            return false;
+        }
+
         if (haste_player((40 + random2(pow)) / factor))
             did_god_conduct(DID_HASTY, 10, was_known);
         break;
@@ -175,7 +193,7 @@ bool potion_effect(potion_type pot_eff, int pow, bool drank_it, bool was_known,
         const bool were_brilliant = you.duration[DUR_BRILLIANCE] > 0;
 
         mprf(MSGCH_DURATION, "You feel %s all of a sudden.",
-             were_brilliant ? "clever" : "more clever");
+             were_brilliant ? "more clever" : "clever");
 
         you.increase_duration(DUR_BRILLIANCE,
                               (35 + random2(pow)) / factor, 80);
@@ -190,7 +208,7 @@ bool potion_effect(potion_type pot_eff, int pow, bool drank_it, bool was_known,
         const bool were_agile = you.duration[DUR_AGILITY] > 0;
 
         mprf(MSGCH_DURATION, "You feel %s all of a sudden.",
-             were_agile ? "agile" : "more agile");
+             were_agile ? "more agile" : "agile");
 
         you.increase_duration(DUR_AGILITY, (35 + random2(pow)) / factor, 80);
 
@@ -217,15 +235,10 @@ bool potion_effect(potion_type pot_eff, int pow, bool drank_it, bool was_known,
 #endif
 
     case POT_FLIGHT:
-        if (you.form == TRAN_TREE)
+        if (!flight_allowed())
         {
-            mprf(MSGCH_WARN, "Your roots keep you in place.");
-            break;
-        }
-
-        if (you.liquefied_ground())
-        {
-            mprf(MSGCH_WARN, "This potion isn't strong enough to pull you from the ground!");
+            if (potion && was_known)
+                return false;
             break;
         }
 
@@ -235,11 +248,10 @@ bool potion_effect(potion_type pot_eff, int pow, bool drank_it, bool was_known,
 
     case POT_POISON:
     case POT_STRONG_POISON:
-        if (player_res_poison() > 0)
+        if (player_res_poison() >= (pot_eff == POT_POISON ? 1 : 3))
         {
             mprf("You feel %s nauseous.",
                  (pot_eff == POT_POISON) ? "slightly" : "quite");
-            maybe_id_resist(BEAM_POISON);
         }
         else
         {
@@ -264,6 +276,7 @@ bool potion_effect(potion_type pot_eff, int pow, bool drank_it, bool was_known,
             poison_player(amount, "", msg);
             xom_is_stimulated(100 / xom_factor);
         }
+        maybe_id_resist(BEAM_POISON);
         break;
 
     case POT_SLOWING:
@@ -284,32 +297,40 @@ bool potion_effect(potion_type pot_eff, int pow, bool drank_it, bool was_known,
     case POT_INVISIBILITY:
         if (you.haloed() || you.glows_naturally())
         {
+            if (potion && was_known)
+            {
+                mpr("You cannot become invisible while glowing.");
+                return false;
+            }
+
             // You can't turn invisible while haloed or glowing
             // naturally, but identify the effect anyway.
             mpr("You briefly turn translucent.");
-
-            // And also cancel corona (for whatever good that will do).
-            you.duration[DUR_CORONA] = 0;
             return true;
         }
-
-        if (get_contamination_level() > 1)
+        else if (you.backlit())
         {
+            vector<string> afflictions;
+            if (get_contamination_level() > 1)
+                afflictions.push_back("magical contamination");
+            if (you.duration[DUR_CORONA])
+                afflictions.push_back("corona");
+            if (you.duration[DUR_LIQUID_FLAMES])
+                afflictions.push_back("liquid flames");
+
             mprf(MSGCH_DURATION,
                  "You become %stransparent, but the glow from your "
-                 "magical contamination prevents you from becoming "
+                 "%s prevents you from becoming "
                  "completely invisible.",
-                 you.duration[DUR_INVIS] ? "more " : "");
+                 you.duration[DUR_INVIS] ? "more " : "",
+                 comma_separated_line(afflictions.begin(), afflictions.end()).c_str());
         }
         else
         {
-            mpr(!you.duration[DUR_INVIS] ? "You fade into invisibility!"
-                                         : "You fade further into invisibility.",
-                MSGCH_DURATION);
+            mprf(MSGCH_DURATION, !you.duration[DUR_INVIS]
+                 ? "You fade into invisibility!"
+                 : "You fade further into invisibility.");
         }
-
-        // Invisibility cancels corona.
-        you.duration[DUR_CORONA] = 0;
 
         // Now multiple invisiblity casts aren't as good. -- bwr
         if (!you.duration[DUR_INVIS])
@@ -331,7 +352,7 @@ bool potion_effect(potion_type pot_eff, int pow, bool drank_it, bool was_known,
         else
         {
             mpr("That potion was really gluggy!");
-            lessen_hunger(6000, true);
+            lessen_hunger(6040, true);
         }
         break;
 
@@ -352,7 +373,9 @@ bool potion_effect(potion_type pot_eff, int pow, bool drank_it, bool was_known,
             xom_is_stimulated(50 / xom_factor);
         break;
 
-    case POT_FIZZING:
+#if TAG_MAJOR_VERSION == 34
+    case POT_WATER:
+#endif
     case NUM_POTIONS:
         if (you.species == SP_VAMPIRE)
             mpr("Blech - this tastes like water.");
@@ -379,7 +402,7 @@ bool potion_effect(potion_type pot_eff, int pow, bool drank_it, bool was_known,
     case POT_MAGIC:
         // Allow repairing rot, disallow going through Death's Door.
         if (you.species == SP_DJINNI)
-            return potion_effect(POT_HEAL_WOUNDS, pow, drank_it, was_known);
+            return potion_effect(POT_HEAL_WOUNDS, pow, potion, was_known, from_fountain);
 
         inc_mp(10 + random2avg(28, 3));
         mpr("Magic courses through your body.");
@@ -390,8 +413,21 @@ bool potion_effect(potion_type pot_eff, int pow, bool drank_it, bool was_known,
         bool nothing_happens = true;
         if (you.duration[DUR_BREATH_WEAPON])
         {
-            mpr("You have got your breath back.", MSGCH_RECOVERY);
+            mprf(MSGCH_RECOVERY, "You have got your breath back.");
             you.duration[DUR_BREATH_WEAPON] = 0;
+            nothing_happens = false;
+        }
+
+        if (you.attribute[ATTR_XP_DRAIN])
+        {
+            you.attribute[ATTR_XP_DRAIN] = max(0, you.attribute[ATTR_XP_DRAIN] / 2 - 25);
+            // Regaining skills may affect AC/EV.
+            you.redraw_armour_class = true;
+            you.redraw_evasion = true;
+            if (!you.attribute[ATTR_XP_DRAIN])
+                mprf(MSGCH_RECOVERY, "Your life force feels restored.");
+            else
+                mpr("Your life force feels less drained.");
             nothing_happens = false;
         }
 
@@ -402,6 +438,9 @@ bool potion_effect(potion_type pot_eff, int pow, bool drank_it, bool was_known,
     }
 
     case POT_BERSERK_RAGE:
+        if (potion && was_known && !you.can_go_berserk(true, drank_it, false))
+            return false;
+
         if (you.species == SP_VAMPIRE && you.hunger_state <= HS_SATIATED)
         {
             mpr("You feel slightly irritated.");
@@ -415,6 +454,12 @@ bool potion_effect(potion_type pot_eff, int pow, bool drank_it, bool was_known,
         break;
 
     case POT_CURE_MUTATION:
+        if (potion && was_known && undead_mutation_rot(true))
+        {
+            mpr(you.form == TRAN_LICH ? "You cannot mutate at present."
+                                      : "You cannot mutate.");
+            return false;
+        }
         mpr("It has a very clean taste.");
         for (int i = 0; i < 7; i++)
             if (random2(9) >= i)
@@ -422,6 +467,13 @@ bool potion_effect(potion_type pot_eff, int pow, bool drank_it, bool was_known,
         break;
 
     case POT_MUTATION:
+        if (potion && was_known && undead_mutation_rot(true))
+        {
+            mpr(you.form == TRAN_LICH ? "You cannot mutate at present."
+                                      : "You cannot mutate.");
+            return false;
+        }
+
         mpr("You feel extremely strange.");
         for (int i = 0; i < 3; i++)
             mutate(RANDOM_MUTATION, "potion of mutation", false);
@@ -431,28 +483,61 @@ bool potion_effect(potion_type pot_eff, int pow, bool drank_it, bool was_known,
         break;
 
     case POT_BENEFICIAL_MUTATION:
+        if (undead_mutation_rot(true))
+        {
+            if (potion && was_known)
+            {
+                mpr(you.form == TRAN_LICH ? "You cannot mutate at present."
+                                          : "You cannot mutate.");
+                return false;
+            }
+
+            mpr("You feel dead inside.");
+            mutate(RANDOM_GOOD_MUTATION, "potion of beneficial mutation",
+                true, false, false, true);
+            break;
+        }
+
         if (mutate(RANDOM_GOOD_MUTATION, "potion of beneficial mutation",
                true, false, false, true))
         {
             mpr("You feel fantastic!");
             did_god_conduct(DID_DELIBERATE_MUTATING, 10, was_known);
-        } else {
-            mpr("You feel fantastic for a moment.");
         }
+        else
+            mpr("You feel fantastic for a moment.");
         learned_something_new(HINT_YOU_MUTATED);
         break;
 
-
     case POT_RESISTANCE:
-        mpr("You feel protected.", MSGCH_DURATION);
+        mprf(MSGCH_DURATION, "You feel protected.");
         you.increase_duration(DUR_RESISTANCE, (random2(pow) + 35) / factor);
         break;
 
-#if TAG_MAJOR_VERSION == 34
-    case POT_WATER:
+    case POT_LIGNIFY:
+        if (potion && was_known && !transform(0, TRAN_TREE, false, true))
+        {
+            mpr("You can't become a tree right now.");
+            return false;
+        }
+
+        if (transform(30, TRAN_TREE, !was_known))
+        {
+            you.transform_uncancellable = true;
+            did_god_conduct(DID_CHAOS, 10, was_known);
+        }
+        else
+            mpr("You feel woody for a moment.");
         break;
-#endif
     }
 
-    return (!was_known && effect);
+    if (potion && !was_known)
+    {
+        set_ident_flags(*potion, ISFLAG_IDENT_MASK);
+        set_ident_type(*potion, ID_KNOWN_TYPE);
+        mprf("It was a %s.", potion->name(DESC_QUALNAME).c_str());
+        identify_healing_pots();
+    }
+
+    return true;
 }

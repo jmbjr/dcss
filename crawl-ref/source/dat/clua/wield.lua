@@ -16,8 +16,8 @@ function ch_item_wieldable(it)
     -- by Crawl itself.
     local spells = make_hash(you.spells())
 
-    if (spells["Sublimation of Blood"] or spells["Simulacrum"])
-            and food.ischunk(it)
+    if spells["Sublimation of Blood"] and food.ischunk(it)
+            or spells["Simulacrum"] and food.ismeaty(it)
     then
         return true
     end
@@ -33,7 +33,7 @@ function ch_item_wieldable(it)
             and it.class(true) == "missile"
             and (string.find(it.name("a"), " stones?")
                  or string.find(it.name("a"), " large rocks?")
-                    and (you.race() == "Troll" or you.race() == "Ogre"))
+                    and (you.race() == "Troll" or you.race() == "Ogre" or you.race() == "Formicid"))
     then
         return true
     end

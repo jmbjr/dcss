@@ -27,10 +27,14 @@
 #include "tilepick.h"
 #endif
 
+// Don't make this larger than 255 without changing the type of you.stat_zero
+// in player.h as well as the associated marshalling code in tags.cc
+const int STATZERO_TURN_CAP = 200;
+
 int player::stat(stat_type s, bool nonneg) const
 {
     const int val = max_stat(s) - stat_loss[s];
-    return (nonneg ? max(val, 0) : val);
+    return nonneg ? max(val, 0) : val;
 }
 
 int player::strength(bool nonneg) const
@@ -94,23 +98,34 @@ bool attribute_increase()
     me->add_tile(tile_def(TILEG_DODGING_ON, TEX_GUI));
     pop->push_entry(me);
 #else
-    mpr("Your experience leads to an increase in your attributes!",
-        MSGCH_INTRINSIC_GAIN);
+    mprf(MSGCH_INTRINSIC_GAIN, "Your experience leads to an increase in your attributes!");
     learned_something_new(HINT_CHOOSE_STAT);
-    mpr("Increase (S)trength, (I)ntelligence, or (D)exterity? ", MSGCH_PROMPT);
+    mprf(MSGCH_PROMPT, "Increase (S)trength, (I)ntelligence, or (D)exterity? ");
 #endif
     mouse_control mc(MOUSE_MODE_PROMPT);
-    // Calling a user-defined lua function here to let players reply to the
-    // prompt automatically.
-    clua.callfn("choose_stat_gain", 0, 0);
 
+    bool tried_lua = false;
+    int keyin;
     while (true)
     {
+        // Calling a user-defined lua function here to let players reply to
+        // the prompt automatically. Either returning a string or using
+        // crawl.sendkeys will work.
+        if (!tried_lua && clua.callfn("choose_stat_gain", 0, 1))
+        {
+            string result;
+            clua.fnreturns(">s", &result);
+            keyin = result[0];
+        }
+        else
+        {
 #ifdef TOUCH_UI
-        const int keyin = pop->pop();
+            keyin = pop->pop();
 #else
-        const int keyin = getchm();
+            keyin = getchm();
 #endif
+        }
+        tried_lua = true;
 
         switch (keyin)
         {
@@ -175,10 +190,6 @@ void jiyva_stat_action()
 
             int weight = you.skills[sk];
 
-            // Anyone can get Spellcasting 1. Doesn't prove anything.
-            if (sk == SK_SPELLCASTING && weight >= 1)
-                weight--;
-
             if (sk >= SK_SPELLCASTING && sk < SK_INVOCATIONS)
                 magic_weights += weight;
             else
@@ -205,7 +216,8 @@ void jiyva_stat_action()
         for (int y = 0; y < 3; ++y)
         {
             if (x != y && cur_stat[y] > 1
-                && target_stat[x] - cur_stat[x] > target_stat[y] - cur_stat[y])
+                && target_stat[x] - cur_stat[x] > target_stat[y] - cur_stat[y]
+                && cur_stat[x] < 72)
             {
                 choices++;
                 if (one_chance_in(choices))
@@ -239,7 +251,8 @@ static kill_method_type _statloss_killtype(stat_type stat)
     }
 }
 
-static const char* descs[NUM_STATS][NUM_STAT_DESCS] = {
+static const char* descs[NUM_STATS][NUM_STAT_DESCS] =
+{
     { "strength", "weakened", "weaker", "stronger" },
     { "intelligence", "dopey", "stupid", "clever" },
     { "dexterity", "clumsy", "clumsy", "agile" }
@@ -247,7 +260,7 @@ static const char* descs[NUM_STATS][NUM_STAT_DESCS] = {
 
 const char* stat_desc(stat_type stat, stat_desc_type desc)
 {
-    return (descs[stat][desc]);
+    return descs[stat][desc];
 }
 
 void modify_stat(stat_type which_stat, int amount, bool suppress_msg,
@@ -356,25 +369,24 @@ static int _strength_modifier()
     if (you.duration[DUR_DIVINE_STAMINA])
         result += you.attribute[ATTR_DIVINE_STAMINA];
 
-    result += che_stat_boost();
+    result += chei_stat_boost();
 
-    if (!you.suppressed())
-    {
-        // ego items of strength
-        result += 3 * count_worn_ego(SPARM_STRENGTH);
+    // ego items of strength
+    result += 3 * count_worn_ego(SPARM_STRENGTH);
 
-        // rings of strength
-        result += you.wearing(EQ_RINGS_PLUS, RING_STRENGTH);
+    // rings of strength
+    result += you.wearing(EQ_RINGS_PLUS, RING_STRENGTH);
 
-        // randarts of strength
-        result += you.scan_artefacts(ARTP_STRENGTH);
-    }
+    // randarts of strength
+    result += you.scan_artefacts(ARTP_STRENGTH);
 
     // mutations
-    result += player_mutation_level(MUT_STRONG)
-              - player_mutation_level(MUT_WEAK);
+    result += 2 * (player_mutation_level(MUT_STRONG)
+                  - player_mutation_level(MUT_WEAK));
+#if TAG_MAJOR_VERSION == 34
     result += player_mutation_level(MUT_STRONG_STIFF)
               - player_mutation_level(MUT_FLEXIBLE_WEAK);
+#endif
     result -= player_mutation_level(MUT_THIN_SKELETAL_STRUCTURE)
               ? player_mutation_level(MUT_THIN_SKELETAL_STRUCTURE) - 1 : 0;
 
@@ -383,7 +395,6 @@ static int _strength_modifier()
     {
     case TRAN_STATUE:          result +=  2; break;
     case TRAN_DRAGON:          result += 10; break;
-    case TRAN_LICH:            result +=  3; break;
     case TRAN_BAT:             result -=  5; break;
     default:                                 break;
     }
@@ -401,23 +412,20 @@ static int _int_modifier()
     if (you.duration[DUR_DIVINE_STAMINA])
         result += you.attribute[ATTR_DIVINE_STAMINA];
 
-    result += che_stat_boost();
+    result += chei_stat_boost();
 
-    if (!you.suppressed())
-    {
-        // ego items of intelligence
-        result += 3 * count_worn_ego(SPARM_INTELLIGENCE);
+    // ego items of intelligence
+    result += 3 * count_worn_ego(SPARM_INTELLIGENCE);
 
-        // rings of intelligence
-        result += you.wearing(EQ_RINGS_PLUS, RING_INTELLIGENCE);
+    // rings of intelligence
+    result += you.wearing(EQ_RINGS_PLUS, RING_INTELLIGENCE);
 
-        // randarts of intelligence
-        result += you.scan_artefacts(ARTP_INTELLIGENCE);
-    }
+    // randarts of intelligence
+    result += you.scan_artefacts(ARTP_INTELLIGENCE);
 
     // mutations
-    result += player_mutation_level(MUT_CLEVER)
-              - player_mutation_level(MUT_DOPEY);
+    result += 2 * (player_mutation_level(MUT_CLEVER)
+                  - player_mutation_level(MUT_DOPEY));
 
     return result;
 }
@@ -432,26 +440,24 @@ static int _dex_modifier()
     if (you.duration[DUR_DIVINE_STAMINA])
         result += you.attribute[ATTR_DIVINE_STAMINA];
 
-    result += che_stat_boost();
+    result += chei_stat_boost();
 
-    if (!you.suppressed())
-    {
-        // ego items of dexterity
-        result += 3 * count_worn_ego(SPARM_DEXTERITY);
+    // ego items of dexterity
+    result += 3 * count_worn_ego(SPARM_DEXTERITY);
 
-        // rings of dexterity
-        result += you.wearing(EQ_RINGS_PLUS, RING_DEXTERITY);
+    // rings of dexterity
+    result += you.wearing(EQ_RINGS_PLUS, RING_DEXTERITY);
 
-        // randarts of dexterity
-        result += you.scan_artefacts(ARTP_DEXTERITY);
-    }
+    // randarts of dexterity
+    result += you.scan_artefacts(ARTP_DEXTERITY);
 
     // mutations
-    result += player_mutation_level(MUT_AGILE)
-              - player_mutation_level(MUT_CLUMSY);
+    result += 2 * (player_mutation_level(MUT_AGILE)
+                  - player_mutation_level(MUT_CLUMSY));
+#if TAG_MAJOR_VERSION == 34
     result += player_mutation_level(MUT_FLEXIBLE_WEAK)
               - player_mutation_level(MUT_STRONG_STIFF);
-
+#endif
     result += 2 * player_mutation_level(MUT_THIN_SKELETAL_STRUCTURE);
     result -= player_mutation_level(MUT_ROUGH_BLACK_SCALES);
 
@@ -515,7 +521,7 @@ bool lose_stat(stat_type which_stat, int stat_loss, bool force,
         int sust = player_sust_abil();
         stat_loss >>= sust;
 
-        if (sust && !stat_loss && !player_sust_abil(false))
+        if (sust && !player_sust_abil(false))
         {
             item_def *ring = get_only_unided_ring();
             if (ring && !is_artefact(*ring)
@@ -527,7 +533,8 @@ bool lose_stat(stat_type which_stat, int stat_loss, bool force,
     }
 
     mprf(stat_loss > 0 ? MSGCH_WARN : MSGCH_PLAIN,
-         "You feel %s%s.",
+         "You feel %s%s%s.",
+         stat_loss > 0 && player_sust_abil(false) ? "somewhat " : "",
          stat_desc(which_stat, SD_LOSS),
          stat_loss > 0 ? "" : " for a moment");
 
@@ -535,7 +542,7 @@ bool lose_stat(stat_type which_stat, int stat_loss, bool force,
     {
         you.stat_loss[which_stat] = min<int>(100,
                                         you.stat_loss[which_stat] + stat_loss);
-        if (you.stat_zero[which_stat] > 0)
+        if (you.stat_zero[which_stat])
         {
             mprf(MSGCH_DANGER, "You convulse from lack of %s!", stat_desc(which_stat, SD_NAME));
             ouch(5 + random2(you.hp_max / 10), NON_MONSTER, _statloss_killtype(which_stat), cause);
@@ -638,7 +645,7 @@ static void _handle_stat_change(stat_type stat, const char* cause, bool see_sour
     if (you.stat(stat) <= 0 && you.stat_zero[stat] == 0)
     {
         // Turns required for recovery once the stat is restored, randomised slightly.
-        you.stat_zero[stat] += 10 + random2(10);
+        you.stat_zero[stat] = 10 + random2(10);
         mprf(MSGCH_WARN, "You have lost your %s.", stat_desc(stat, SD_NAME));
         take_note(Note(NOTE_MESSAGE, 0, 0, make_stringf("Lost %s.",
             stat_desc(stat, SD_NAME)).c_str()), true);
@@ -682,8 +689,11 @@ void update_stat_zero()
     {
         stat_type s = static_cast<stat_type>(i);
         if (you.stat(s) <= 0)
-            you.stat_zero[s]++;
-        else if (you.stat_zero[s] > 0)
+        {
+            if (you.stat_zero[s] < STATZERO_TURN_CAP)
+                you.stat_zero[s]++;
+        }
+        else if (you.stat_zero[s])
         {
             you.stat_zero[s]--;
             if (you.stat_zero[s] == 0)

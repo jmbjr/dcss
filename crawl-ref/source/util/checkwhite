@@ -19,6 +19,7 @@ for (@files)
     chomp;
     next if -d $_;
     -f $_ or (print(STDERR "Can't read $_\n"), next);
+    next if /webserver\/static\/scripts\/contrib\//i;
     next if /\.(png|gif|ttf|ico|icns|fig|tex|eps|pdf)$/i;
     next if /\.(sln|vim|pbxproj|vsprops|plist|csproj|config|cs)$/i;
     next if /\.(vcproj|vcproj\.user|vcxproj|vcxproj\.filters)$/i;
@@ -43,7 +44,7 @@ for (@files)
         # frenchman/german/finn.  Sorry, polacks and russkies.
         Encode::from_to($_, "CP1252", "UTF-8");
     }
-    $_.="\n", print "missing newline at eof: $file\n" unless /\n$/s;
+    $_.="\n", print "missing newline at eof: $file\n" unless /\n$/s or /^$/;
     print "extra newlines at eof: $file\n" if s/\n+\n$/\n/s;
     $_=expand $_, print "tab: $file\n" if !$tab && /\t/;
     print "spaces at eol: $file\n" if s/ +\n/\n/sg;

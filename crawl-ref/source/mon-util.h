@@ -3,7 +3,6 @@
  * @brief Misc monster related functions.
 **/
 
-
 #ifndef MONUTIL_H
 #define MONUTIL_H
 
@@ -34,17 +33,17 @@ struct mon_attack_def
 #define DEFAULT_ENERGY {10, 10, 10, 10, 10, 10, 10, 100}
 struct mon_energy_usage
 {
-    int8_t move;
-    int8_t swim;
-    int8_t attack;
-    int8_t missile; // Arrows/crossbows/etc
-    int8_t spell;
-    int8_t special;
-    int8_t item;    // Using an item (i.e., drinking a potion)
+    uint8_t move;
+    uint8_t swim;
+    uint8_t attack;
+    uint8_t missile; // Arrows/crossbows/etc
+    uint8_t spell;
+    uint8_t special;
+    uint8_t item;    // Using an item (i.e., drinking a potion)
 
     // Percent of mons->speed used when picking up an item; defaults
     // to 100%
-    int8_t pickup_percent;
+    uint8_t pickup_percent;
 
     static mon_energy_usage attack_cost(int cost, int sw = 10)
     {
@@ -90,9 +89,9 @@ struct mon_energy_usage
         return me;
     }
 private:
-    static int8_t combine(int8_t a, int8_t b, int8_t def = 10)
+    static uint8_t combine(uint8_t a, uint8_t b, uint8_t def = 10)
     {
-        return (b != def? b : a);
+        return b != def? b : a;
     }
 };
 
@@ -134,7 +133,7 @@ struct monsterentry
 
     int8_t AC; // armour class
     int8_t ev; // evasion
-    int sec;   // spellbook
+    int sec;   // actually mon_spellbook_type
     corpse_effect_type corpse_thingy;
     zombie_size_type   zombie_size;
     shout_type         shouts;
@@ -193,7 +192,6 @@ flight_type mons_flies(const monster* mon, bool temp = true);
 
 bool mons_flattens_trees(const monster* mon);
 int mons_class_res_wind(monster_type mc);
-bool mons_wall_shielded(const monster* mon);
 
 mon_itemuse_type mons_class_itemuse(monster_type mc);
 mon_itemuse_type mons_itemuse(const monster* mon);
@@ -237,6 +235,7 @@ bool mons_is_statue(monster_type mc, bool allow_disintegrate = false);
 bool mons_is_demon(monster_type mc);
 bool mons_is_draconian(monster_type mc);
 bool mons_is_conjured(monster_type mc);
+bool mons_is_beast(monster_type mc);
 int mons_demon_tier(monster_type mc);
 
 bool mons_class_wields_two_weapons(monster_type mc);
@@ -266,13 +265,18 @@ int mons_base_speed(const monster* mon);
 
 bool mons_class_can_regenerate(monster_type mc);
 bool mons_can_regenerate(const monster* mon);
+bool mons_class_fast_regen(monster_type mc);
 bool mons_class_can_display_wounds(monster_type mc);
 bool mons_can_display_wounds(const monster* mon);
 int mons_zombie_size(monster_type mc);
 monster_type mons_zombie_base(const monster* mon);
 bool mons_class_is_zombified(monster_type mc);
+bool mons_class_is_hybrid(monster_type mc);
+bool mons_class_is_chimeric(monster_type mc);
+bool mons_class_is_animated_weapon(monster_type type);
 monster_type mons_base_type(const monster* mon);
 bool mons_class_can_leave_corpse(monster_type mc);
+bool mons_class_leaves_hide(monster_type mc);
 bool mons_is_zombified(const monster* mons);
 bool mons_class_can_be_zombified(monster_type mc);
 bool mons_can_be_zombified(const monster* mon);
@@ -307,6 +311,8 @@ bool mons_has_ranged_spell(const monster* mon, bool attack_only = false,
 bool mons_has_ranged_attack(const monster* mon);
 bool mons_has_known_ranged_attack(const monster* mon);
 bool mons_can_attack(const monster* mon);
+bool mons_has_incapacitating_spell(const monster* mon, const actor* foe);
+bool mons_has_incapacitating_ranged_attack(const monster* mon, const actor* foe);
 
 const char *mons_pronoun(monster_type mon_type, pronoun_type variant,
                          bool visible = true);
@@ -319,7 +325,6 @@ mon_attitude_type mons_attitude(const monster* m);
 
 bool mons_foe_is_mons(const monster* mons);
 
-bool mons_behaviour_perceptible(const monster* mon);
 bool mons_is_native_in_branch(const monster* mons,
                               const branch_type branch = you.where_are_you);
 bool mons_is_poisoner(const monster* mon);
@@ -332,12 +337,12 @@ bool mons_is_wandering(const monster* m);
 bool mons_is_seeking(const monster* m);
 bool mons_is_fleeing(const monster* m);
 bool mons_is_retreating(const monster* m);
-bool mons_is_panicking(const monster* m);
 bool mons_is_cornered(const monster* m);
 bool mons_is_lurking(const monster* m);
 bool mons_is_batty(const monster* m);
 bool mons_is_influenced_by_sanctuary(const monster* m);
 bool mons_is_fleeing_sanctuary(const monster* m);
+bool mons_just_slept(const monster* m);
 bool mons_class_is_slime(monster_type mc);
 bool mons_is_slime(const monster* mon);
 bool mons_class_is_plant(monster_type mc);
@@ -360,7 +365,6 @@ bool mons_landlubbers_in_reach(const monster* mons);
 
 bool mons_class_is_confusable(monster_type mc);
 bool mons_class_is_stationary(monster_type mc);
-bool mons_is_stationary(const monster* mon);
 bool mons_class_is_firewood(monster_type mc);
 bool mons_is_firewood(const monster* mon);
 bool mons_has_body(const monster* mon);
@@ -371,9 +375,12 @@ bool herd_monster(const monster* mon);
 
 int cheibriados_monster_player_speed_delta(const monster* mon);
 bool cheibriados_thinks_mons_is_fast(const monster* mon);
+bool mons_is_illuminating(const monster* mon);
+bool mons_is_fiery(const monster* mon);
 bool mons_is_projectile(monster_type mc);
 bool mons_is_projectile(const monster* mon);
 bool mons_is_boulder(const monster* mon);
+bool mons_can_cling_to_walls(const monster* mon);
 bool mons_is_object(monster_type mc);
 bool mons_has_blood(monster_type mc);
 bool mons_is_sensed(monster_type mc);
@@ -425,6 +432,7 @@ bool mons_is_immotile(const monster* mons);
 
 int get_dist_to_nearest_monster();
 bool monster_nearby();
+int count_mara_fakes();
 actor *actor_by_mid(mid_t m);
 monster *monster_by_mid(mid_t m);
 bool mons_is_tentacle_head(monster_type mc);
@@ -447,6 +455,8 @@ mon_threat_level_type mons_threat_level(const monster *mon,
 
 bool mons_foe_is_marked(const monster* mons);
 vector<monster* > get_on_level_followers();
+
+bool mons_stores_tracking_data(const monster* mons);
 
 void reset_all_monsters();
 void debug_mondata();

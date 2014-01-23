@@ -29,13 +29,7 @@ struct feature_def
         minimap(MF_UNSEEN)
     {}
 
-    bool is_notable() const { return (flags & FFT_NOTABLE); }
-};
-
-struct feature_override
-{
-    show_type    object;
-    feature_def  override;
+    bool is_notable() const { return flags & FFT_NOTABLE; }
 };
 
 const feature_def &get_feature_def(show_type object);
@@ -43,7 +37,7 @@ const feature_def &get_feature_def(dungeon_feature_type feat);
 
 static inline bool is_notable_terrain(dungeon_feature_type ftype)
 {
-    return (get_feature_def(ftype).is_notable());
+    return get_feature_def(ftype).is_notable();
 }
 
 void init_show_table();

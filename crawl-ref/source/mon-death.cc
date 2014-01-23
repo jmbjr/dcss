@@ -1,17 +1,17 @@
 /**
  * @file
  * @brief Contains monster death functionality, including Dowan and Duvessa,
- *        Kirke, Pikel, shedu and spirits.
+ *        Kirke, Pikel and shedu.
 **/
 
 #include "AppHdr.h"
 #include "mon-death.h"
 
+#include "act-iter.h"
 #include "areas.h"
 #include "cloud.h"
 #include "coordit.h"
 #include "database.h"
-#include "dactions.h"
 #include "env.h"
 #include "fineff.h"
 #include "items.h"
@@ -20,7 +20,6 @@
 #include "message.h"
 #include "mgen_data.h"
 #include "mon-behv.h"
-#include "mon-iter.h"
 #include "mon-place.h"
 #include "mon-speak.h"
 #include "mon-stuff.h"
@@ -42,9 +41,9 @@
 **/
 bool mons_is_pikel(monster* mons)
 {
-    return (mons->type == MONS_PIKEL
-            || (mons->props.exists("original_name")
-                && mons->props["original_name"].get_string() == "Pikel"));
+    return mons->type == MONS_PIKEL
+           || (mons->props.exists("original_name")
+               && mons->props["original_name"].get_string() == "Pikel");
 }
 
 /**
@@ -68,7 +67,7 @@ void pikel_band_neutralise()
             visible_slaves++;
         }
     }
-    string final_msg;
+    const char* final_msg = nullptr;
     if (visible_slaves == 1)
         final_msg = "With Pikel's spell broken, the former slave thanks you for freedom.";
     else if (visible_slaves > 1)
@@ -88,9 +87,9 @@ void pikel_band_neutralise()
 **/
 bool mons_is_kirke(monster* mons)
 {
-    return (mons->type == MONS_KIRKE
-            || (mons->props.exists("original_name")
-                && mons->props["original_name"].get_string() == "Kirke"));
+    return mons->type == MONS_KIRKE
+           || (mons->props.exists("original_name")
+               && mons->props["original_name"].get_string() == "Kirke");
 }
 
 /**
@@ -130,7 +129,7 @@ void hogs_to_humans()
             human++;
     }
 
-    string final_msg;
+    const char* final_msg = nullptr;
 
     if (any == 1)
     {
@@ -163,9 +162,9 @@ void hogs_to_humans()
 **/
 bool mons_is_dowan(const monster* mons)
 {
-    return (mons->type == MONS_DOWAN
-            || (mons->props.exists("original_name")
-                && mons->props["original_name"].get_string() == "Dowan"));
+    return mons->type == MONS_DOWAN
+           || (mons->props.exists("original_name")
+               && mons->props["original_name"].get_string() == "Dowan");
 }
 
 /**
@@ -178,9 +177,9 @@ bool mons_is_dowan(const monster* mons)
 **/
 bool mons_is_duvessa(const monster* mons)
 {
-    return (mons->type == MONS_DUVESSA
-            || (mons->props.exists("original_name")
-                && mons->props["original_name"].get_string() == "Duvessa"));
+    return mons->type == MONS_DUVESSA
+           || (mons->props.exists("original_name")
+               && mons->props["original_name"].get_string() == "Duvessa");
 }
 
 /**
@@ -195,7 +194,7 @@ bool mons_is_duvessa(const monster* mons)
 **/
 bool mons_is_elven_twin(const monster* mons)
 {
-    return (mons_is_dowan(mons) || mons_is_duvessa(mons));
+    return mons_is_dowan(mons) || mons_is_duvessa(mons);
 }
 
 /**
@@ -325,7 +324,7 @@ void elven_twin_died(monster* twin, bool in_transit, killer_type killer, int kil
  *
  * As twins, pacifying one pacifies the other.
  *
- * @param twin    The orignial monster pacified.
+ * @param twin    The original monster pacified.
 **/
 void elven_twins_pacify(monster* twin)
 {
@@ -357,7 +356,7 @@ void elven_twins_pacify(monster* twin)
 
     ASSERT(!mons->neutral());
 
-    if (you.religion == GOD_ELYVILON)
+    if (you_worship(GOD_ELYVILON))
         gain_piety(random2(mons->max_hit_points / (2 + you.piety / 20)), 2);
 
     if (mons_near(mons))
@@ -408,48 +407,6 @@ void elven_twins_unpacify(monster* twin)
 }
 
 /**
- * Spirit death effects.
- *
- * When a spirit dies of "nautral" causes, ie, it's FADING_AWAY timer runs out,
- * it summons a high-level monster. This function is only called for spirits
- * that have died as a result of the FADING_AWAY timer enchantment running out.
- *
- * @param spirit    The monster that died.
-**/
-void spirit_fades(monster *spirit)
-{
-    // XXX: No check for silence; summoned?
-    if (mons_near(spirit))
-        simple_monster_message(spirit, " fades away with a wail!", MSGCH_TALK);
-    else
-        mpr("You hear a distant wailing.", MSGCH_TALK);
-
-    const coord_def c = spirit->pos();
-
-    mgen_data mon = mgen_data(random_choose_weighted(
-                        10, MONS_ANGEL, 10, MONS_CHERUB,
-                        5, MONS_APIS, 2, MONS_PHOENIX,
-                        1, MONS_DAEVA, 1, MONS_PEARL_DRAGON,
-                      0), SAME_ATTITUDE(spirit),
-                      NULL, 0, 0, c,
-                      spirit->foe, 0);
-
-    if (spirit->alive())
-        monster_die(spirit, KILL_MISC, NON_MONSTER, true);
-
-    monster *new_mon = create_monster(mon);
-
-    if (!new_mon)
-        return;
-
-    if (mons_near(new_mon))
-        simple_monster_message(new_mon, " seeks to avenge the fallen spirit!", MSGCH_TALK);
-    else
-        mpr("A powerful presence appears to avenge a fallen spirit!", MSGCH_TALK);
-
-}
-
-/**
  * Phoenix death effects
  *
  * When a phoenix dies, a short time later, its corpse will go up in flames and
@@ -468,7 +425,7 @@ void spirit_fades(monster *spirit)
 **/
 bool mons_is_phoenix(const monster* mons)
 {
-    return (mons->type == MONS_PHOENIX);
+    return mons->type == MONS_PHOENIX;
 }
 
 /**
@@ -536,7 +493,7 @@ void timeout_phoenix_markers(int duration)
             coord_def place_at;
             bool from_inventory = false;
 
-            for (radius_iterator ri(mmark->corpse_pos, LOS_RADIUS, C_ROUND, NULL, false); ri; ++ri)
+            for (radius_iterator ri(mmark->corpse_pos, LOS_RADIUS, C_ROUND, false); ri; ++ri)
             {
                 for (stack_iterator si(*ri); si; ++si)
                     if (si->base_type == OBJ_CORPSES && si->sub_type == CORPSE_BODY
@@ -670,9 +627,9 @@ bool shedu_pair_alive(const monster* mons)
 **/
 bool mons_is_shedu(const monster* mons)
 {
-    return (mons->type == MONS_SHEDU
-            || (mons->props.exists("original_name")
-                && mons->props["original_name"].get_string() == "shedu"));
+    return mons->type == MONS_SHEDU
+           || (mons->props.exists("original_name")
+               && mons->props["original_name"].get_string() == "shedu");
 }
 
 /**
@@ -730,7 +687,7 @@ void shedu_do_actual_resurrection(monster* mons)
     if (mons->number == 0)
         return;
 
-    for (radius_iterator ri(mons->pos(), LOS_RADIUS, C_ROUND, mons->get_los()); ri; ++ri)
+    for (radius_iterator ri(mons->pos(), LOS_NO_TRANS); ri; ++ri)
     {
         for (stack_iterator si(*ri); si; ++si)
             if (si->base_type == OBJ_CORPSES && si->sub_type == CORPSE_BODY

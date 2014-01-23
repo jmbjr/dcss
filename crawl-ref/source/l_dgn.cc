@@ -134,6 +134,13 @@ static int dgn_desc(lua_State *ls)
     PLUARET(string, map->description.c_str());
 }
 
+static int dgn_order(lua_State *ls)
+{
+    MAP(ls, 1, map);
+    map->order = luaL_checkint(ls, 2);
+    PLUARET(number, map->order);
+}
+
 static int dgn_tags(lua_State *ls)
 {
     MAP(ls, 1, map);
@@ -688,7 +695,7 @@ static int dgn_gly_points(lua_State *ls)
 
     for (int i = 0, size = cs.size(); i < size; ++i)
         dlua_push_coordinates(ls, cs[i]);
-    return (cs.size() * 2);
+    return cs.size() * 2;
 }
 
 static int dgn_original_map(lua_State *ls)
@@ -979,7 +986,6 @@ static int dgn_cloud_at(lua_State *ls)
 
     return 1;
 }
-
 
 static int lua_dgn_set_branch_epilogue(lua_State *ls)
 {
@@ -1392,8 +1398,6 @@ static int dgn_place_cloud(lua_State *ls)
 
     return 0;
 }
-
-
 
 // XXX: Doesn't allow for messages or specifying the noise source.
 LUAFN(dgn_noisy)
@@ -1849,6 +1853,7 @@ const struct luaL_reg dgn_dlib[] =
 { "depth", dgn_depth },
 { "place", dgn_place },
 { "desc", dgn_desc },
+{ "order", dgn_order },
 { "tags",  dgn_tags },
 { "has_tag", dgn_has_tag },
 { "tags_remove", dgn_tags_remove },

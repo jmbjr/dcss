@@ -8,7 +8,7 @@
 
 bool rect_def::contains(const coord_def& p) const
 {
-    return (p.x >= min.x && p.x <= max.x && p.y >= min.y && p.y <= max.y);
+    return p.x >= min.x && p.x <= max.x && p.y >= min.y && p.y <= max.y;
 }
 
 rect_def rect_def::intersect(const rect_def& other) const
@@ -27,15 +27,15 @@ rectangle_iterator rect_def::iter() const
 }
 
 circle_def::circle_def()
-    : los_radius(true), origin(coord_def(0,0)), check_bounds(false)
+    : los_radius(true), check_bounds(false), origin(coord_def(0,0))
 {
     // Set up bounding box and shape.
     init(LOS_RADIUS, C_ROUND);
 }
 
 circle_def::circle_def(const coord_def& origin_, const circle_def& bds)
-    : los_radius(bds.los_radius), shape(bds.shape),
-      origin(origin_), check_bounds(true),
+    : los_radius(bds.los_radius), check_bounds(true),
+      origin(origin_),
       radius(bds.radius), radius_sq(bds.radius_sq)
 {
     // Set up bounding box.
@@ -43,14 +43,14 @@ circle_def::circle_def(const coord_def& origin_, const circle_def& bds)
 }
 
 circle_def::circle_def(int param, circle_type ctype)
-    : los_radius(false), origin(coord_def(0,0)), check_bounds(false)
+    : los_radius(false), check_bounds(false), origin(coord_def(0,0))
 {
     init(param, ctype);
 }
 
 circle_def::circle_def(const coord_def &origin_, int param,
                        circle_type ctype)
-    : los_radius(false), origin(origin_), check_bounds(true)
+    : los_radius(false), check_bounds(true), origin(origin_)
 {
     init(param, ctype);
 }
@@ -59,22 +59,15 @@ void circle_def::init(int param, circle_type ctype)
 {
     switch (ctype)
     {
-    case C_SQUARE:
-        shape = SH_SQUARE;
-        radius = param;
-        break;
     case C_CIRCLE:
-        shape = SH_CIRCLE;
         radius_sq = param;
         radius = isqrt_ceil(radius_sq);
         break;
     case C_ROUND:
-        shape = SH_CIRCLE;
         radius = param;
         radius_sq = radius * radius + 1;
         break;
     case C_POINTY:
-        shape = SH_CIRCLE;
         radius = param;
         radius_sq = radius * radius;
     }
@@ -99,25 +92,11 @@ const coord_def& circle_def::get_center() const
     return origin;
 }
 
-circle_iterator circle_def::iter() const
-{
-    return circle_iterator(*this);
-}
-
 bool circle_def::contains(const coord_def &p) const
 {
     if (!bbox.contains(p))
         return false;
-    switch (shape)
-    {
-    case SH_SQUARE:
-        return ((p - origin).rdist() <= radius);
-    case SH_CIRCLE:
-    {
-        int r_sq = los_radius ? get_los_radius_sq() : radius_sq;
-        return ((p - origin).abs() <= r_sq);
-    }
-    default:
-        return false;
-    }
+
+    int r_sq = los_radius ? los_radius2 : radius_sq;
+    return (p - origin).abs() <= r_sq;
 }

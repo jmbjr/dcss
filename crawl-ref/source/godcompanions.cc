@@ -9,8 +9,6 @@
 
 #include "godcompanions.h"
 
-#include "coord.h"
-#include "coordit.h"
 #include "actor.h"
 #include "mon-stuff.h"
 #include "mon-util.h"
@@ -35,6 +33,7 @@ void init_companions(void)
 
 void add_companion(monster* mons)
 {
+    ASSERT(mons->alive());
     companion_list[mons->mid] = companion(*mons);
 }
 
@@ -97,6 +96,7 @@ void update_companions()
         {
             if (mons->is_divine_companion())
             {
+                ASSERT(mons->alive());
                 i->second.mons = follower(*mons);
                 i->second.timestamp = you.elapsed_time;
             }
@@ -145,17 +145,11 @@ bool recall_offlevel_ally(mid_t mid)
         you.moveto(coord_def(0, 0));
 
         int turns = you.elapsed_time - comp->timestamp;
-        if (mons_can_regenerate(mons))
-        {
-            if (monster_descriptor(mons->type, MDSC_REGENERATES))
-                mons->heal(turns);
-            else
-            {
-                const int regen_rate =
-                    max(mons_natural_regen_rate(mons) * 2, 5);
-                mons->heal(div_rand_round(turns * regen_rate, 50));
-            }
-        }
+        // Note: these are auts, not turns, thus healing is 10 times as fast as
+        // for other monsters, confusion goes away after a single turn, etc.
+
+        mons->heal(div_rand_round(turns * mons_off_level_regen_rate(mons), 100));
+
         if (turns >= 10 && mons->alive())
         {
             // Remove confusion manually (so that the monster
@@ -176,15 +170,15 @@ bool recall_offlevel_ally(mid_t mid)
 
 bool companion_is_elsewhere(mid_t mid, bool must_exist)
 {
-    if (companion_list.find(mid) != companion_list.end())
+    if (companion_list.count(mid))
     {
-        return (companion_list[mid].level != level_id::current()
-                || (player_in_branch(BRANCH_PANDEMONIUM)
-                    && companion_list[mid].level.branch == BRANCH_PANDEMONIUM
-                    && !monster_by_mid(mid)));
+        return companion_list[mid].level != level_id::current()
+               || (player_in_branch(BRANCH_PANDEMONIUM)
+                   && companion_list[mid].level.branch == BRANCH_PANDEMONIUM
+                   && !monster_by_mid(mid));
     }
 
-    return (!must_exist);
+    return !must_exist;
 }
 
 void wizard_list_companions()

@@ -10,16 +10,13 @@
 #include "externs.h"
 
 #include "areas.h"
-#include "coord.h"
 #include "env.h"
 #include "message.h"
 #include "mon-stuff.h"
 #include "random.h"
-#include "shout.h"
 #include "spl-util.h"
 #include "stuff.h"
 #include "terrain.h"
-#include "viewmap.h"
 
 int englaciate(coord_def where, int pow, int, actor *agent)
 {
@@ -31,8 +28,7 @@ int englaciate(coord_def where, int pow, int, actor *agent)
     monster* mons = victim->as_monster();
 
     if (victim->res_cold() > 0
-        || (mons && mons_is_stationary(mons))
-        || (!mons && you.form == TRAN_TREE))
+        || victim->is_stationary())
     {
         if (!mons)
             canned_msg(MSG_YOU_UNAFFECTED);
@@ -89,18 +85,6 @@ bool backlight_monsters(coord_def where, int pow, int garbage)
     mon_enchant zin_bklt = mons->get_ench(ENCH_SILVER_CORONA);
     const int lvl = bklt.degree + zin_bklt.degree;
 
-    // This enchantment overrides invisibility (neat).
-    if (mons->has_ench(ENCH_INVIS))
-    {
-        if (!mons->has_ench(ENCH_CORONA) && !mons->has_ench(ENCH_SILVER_CORONA))
-        {
-            mons->add_ench(
-                mon_enchant(ENCH_CORONA, 1, 0, random_range(30, 50)));
-            simple_monster_message(mons, " is lined in light.");
-        }
-        return true;
-    }
-
     mons->add_ench(mon_enchant(ENCH_CORONA, 1));
 
     if (lvl == 0)
@@ -119,7 +103,7 @@ bool do_slow_monster(monster* mon, const actor* agent, int dur)
         return true;
 
     if (!mon->has_ench(ENCH_SLOW)
-        && !mons_is_stationary(mon)
+        && !mon->is_stationary()
         && mon->add_ench(mon_enchant(ENCH_SLOW, 0, agent, dur)))
     {
         if (!mon->paralysed() && !mon->petrified()

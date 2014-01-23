@@ -26,6 +26,12 @@ Cerebov
 Nežēlīgs un trakojošs dēmons, Cerebovs atgādina milzu cilvēku, kas noklāts
 mirdzošās zelta bruņās, rokās turot milzīgu ieliektu zobenu.
 %%%%
+Crazy Yiuf
+
+Izdilis, vecs gnolls ar garu, sidrabainu bārdu, plecos uzmestu mantiju un nūju
+rokā. Viņš izskatās gluži kā no grāmatas izkāpis pasaku tēls. Paga, vai viņa
+bārdu pie ausīm tur āķi?
+%%%%
 Dowan
 
 Skaists, taču augstprātīgs elfs ar dotībām galvenokārt tikai burvestībās. Viņa
@@ -98,7 +104,7 @@ mirdzošo pieres vidū esošo aci.
 Maud
 
 Noslēpumaina karotājprincese no tāltālas karaļvalsts, kura ieradusies pēc
-leģendārā 'Entareksa' zobena. Neskaitāmi ir bijuši tās apbrīnotāju, kas
+leģendārā „Entareksa” zobena. Neskaitāmi ir bijuši tās apbrīnotāju, kas
 domādami par Maud, aizmirsa par visu pārējo.
 %%%%
 Maurice
@@ -253,19 +259,22 @@ deep dwarf berserker
 
 Negants un asinskārs pazemes rūķis, kas alkst cīņas neprāta.
 %%%%
-deep dwarf necromancer
-
-Ļauns dzīļu rūķis, kas iemainījis savu mirstīgo dvēseli pret okulto nāves un
-sāpju zinšu meistarību.
-%%%%
-deep dwarf scion
-
-Bruņots pazemes rūķis, kas bīstams tuvcīņā.
-%%%%
 Executioner
 
 Briesmīgi varens un spējš dēmons, ap kura tēlu šķind izkaptveidīgu asmeņu
 mākonis.
+%%%%
+megabat
+
+Milzīgs melns sikspārnis.
+%%%%
+hellion
+
+Šaušalīgs dēmons, kuru sedz dārdošas pekles liesmas.
+%%%%
+lava worm
+
+Negants sarkans tārps, kas slīd cauri izkusušajiem iežiem.
 %%%%
 ancient champion
 

@@ -45,7 +45,8 @@ struct Branch
 };
 
 extern const Branch branches[NUM_BRANCHES];
-extern FixedVector<int, NUM_BRANCHES> startdepth, brdepth;
+extern FixedVector<level_id, NUM_BRANCHES> brentry;
+extern FixedVector<int, NUM_BRANCHES> brdepth;
 extern branch_type root_branch;
 
 const Branch& your_branch();
@@ -59,6 +60,7 @@ level_id current_level_parent();
 
 branch_type str_to_branch(const string &branch, branch_type err = NUM_BRANCHES);
 
+bool branch_has_monsters(branch_type branch);
 int current_level_ambient_noise();
 
 branch_type get_branch_at(const coord_def& pos);

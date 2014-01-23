@@ -3,9 +3,10 @@
  * @brief Misc abyss specific functions.
 **/
 
-
 #ifndef ABYSS_H
 #define ABYSS_H
+
+#include "externs.h"
 
 // When shifting areas in the abyss, shift the square containing player LOS
 // plus a little extra so that the player won't be disoriented by taking a
@@ -17,10 +18,13 @@ struct abyss_state
 {
     coord_def major_coord;
     uint32_t seed;
-    uint64_t depth;
+    uint32_t depth;
     double phase;
+    level_id level;
     bool nuke_all;
 };
+
+extern abyss_state abyssal_state;
 
 void abyss_morph(double duration);
 void push_features_to_abyss();

@@ -95,6 +95,22 @@ vgate_sealed_up DNGN_VGATE_SEALED_UP
 vgate_sealed_middle DNGN_VGATE_SEALED_MIDDLE
 vgate_sealed_down DNGN_VGATE_SEALED_DOWN
 
+# Crypt doors
+closed_door_crypt DNGN_CLOSED_DOOR_CRYPT
+gate_closed_left_crypt DNGN_GATE_CLOSED_LEFT_CRYPT
+gate_closed_middle_crypt DNGN_GATE_CLOSED_MIDDLE_CRYPT
+gate_closed_right_crypt DNGN_GATE_CLOSED_RIGHT_CRYPT
+vgate_closed_up_crypt DNGN_VGATE_CLOSED_UP_CRYPT
+vgate_closed_middle_crypt DNGN_VGATE_CLOSED_MIDDLE_CRYPT
+vgate_closed_down_crypt DNGN_VGATE_CLOSED_DOWN_CRYPT
+open_door_crypt DNGN_OPEN_DOOR_CRYPT
+gate_open_left_crypt DNGN_GATE_OPEN_LEFT_CRYPT
+gate_open_middle_crypt DNGN_GATE_OPEN_MIDDLE_CRYPT
+gate_open_right_crypt DNGN_GATE_OPEN_RIGHT_CRYPT
+vgate_open_up_crypt DNGN_VGATE_OPEN_UP_CRYPT
+vgate_open_middle_crypt DNGN_VGATE_OPEN_MIDDLE_CRYPT
+vgate_open_down_crypt DNGN_VGATE_OPEN_DOWN_CRYPT
+
 ## Alternate doors for vaults, etc. Should be in the order listed above for
 ## doors which also provide gateways; otherwise detected, closed, open, or
 ## closed, open.
@@ -102,11 +118,11 @@ vgate_sealed_down DNGN_VGATE_SEALED_DOWN
 fleshy_orifice_closed DNGN_FLESHY_ORIFICE
 fleshy_orifice_open
 
-%sdir dngn/gateways
-stone_arch DNGN_STONE_ARCH
-
 # Place new door tiles before this point, otherwise they can't be used as
 # door overrides.
+
+%sdir dngn/gateways
+stone_arch DNGN_STONE_ARCH
 
 %sdir dngn/statues
 orcish_idol DNGN_ORCISH_IDOL
@@ -193,7 +209,11 @@ sarcophagus_pedestal_right DNGN_SARCOPHAGUS_PEDESTAL_RIGHT
 statue_elephant_jade DNGN_STATUE_ELEPHANT_JADE
 statue_iron_golem DNGN_STATUE_IRON_GOLEM
 
+## The edge of the level for wizlab_golubria.
 dimension_edge DNGN_DIMENSION_EDGE
+
+## The disco ball in pan_disco_hall.
+disco_ball DNGN_DISCO_BALL
 
 # A couple of placeholders in case we absolutely need
 # to add some more tiles for vault design.
@@ -217,7 +237,6 @@ teleport DNGN_TRAP_TELEPORT
 zot DNGN_TRAP_ZOT
 passage_of_golubria DNGN_TRAP_GOLUBRIA
 pressure_plate DNGN_TRAP_PLATE
-gas_trap DNGN_TRAP_GAS
 
 # order matters (tilepick.c tileidx_feature())
 cobweb_none_0 DNGN_TRAP_WEB
@@ -254,6 +273,8 @@ enter DNGN_ENTER
 %rim 1
 return DNGN_RETURN
 %rim 0
+sealed_stairs_up DNGN_SEALED_STAIRS_UP
+sealed_stairs_down DNGN_SEALED_STAIRS_DOWN
 
 %sdir dngn/shops
 ##enter_shop DNGN_ENTER_SHOP
@@ -345,23 +366,39 @@ murky_bord_bl MURKY_WAVE_SW
 murky_bord_lft MURKY_WAVE_W
 murky_bord_tl MURKY_WAVE_NW
 
-# Make all base variants equally likely, but their special ones less so.
-%weight 4
-shoals_deep_water1 SHOALS_DEEP_WATER
+%weight 10
+shoals_deep_water0 SHOALS_DEEP_WATER
+shoals_deep_water1
 shoals_deep_water2
+%weight 8
 shoals_deep_water3
 shoals_deep_water4
-%weight 1
 shoals_deep_water5
+%weight 3
 shoals_deep_water6
 shoals_deep_water7
 shoals_deep_water8
+%weight 1
 shoals_deep_water9
+shoals_deep_water10
+shoals_deep_water11
 
-shoals_shallow_water1 SHOALS_SHALLOW_WATER
+%weight 10
+shoals_shallow_water0 SHOALS_SHALLOW_WATER
+shoals_shallow_water1
 shoals_shallow_water2
+%weight 8
 shoals_shallow_water3
 shoals_shallow_water4
+shoals_shallow_water5
+%weight 3
+shoals_shallow_water6
+shoals_shallow_water7
+shoals_shallow_water8
+%weight 1
+shoals_shallow_water9
+shoals_shallow_water10
+shoals_shallow_water11
 shoals_shallow_water_disturbance1 SHOALS_SHALLOW_WATER_DISTURBANCE
 shoals_shallow_water_disturbance2
 shoals_shallow_water_disturbance3
@@ -421,31 +458,33 @@ liquefaction1 LIQUEFACTION
 liquefaction2
 
 %sdir dngn/gateways
-%rim 1
+%rim 0
 enter_zot_closed DNGN_ENTER_ZOT_CLOSED
 enter_zot_open DNGN_ENTER_ZOT_OPEN
-%rim 0
 return_zot DNGN_RETURN_ZOT
 enter_temple DNGN_ENTER_TEMPLE
 exit_temple DNGN_EXIT_TEMPLE
-enter_orc DNGN_ENTER_ORCISH_MINES
-exit_orc DNGN_EXIT_ORCISH_MINES
-enter_elf DNGN_ENTER_ELVEN_HALLS
-exit_elf DNGN_EXIT_ELVEN_HALLS
+enter_orc DNGN_ENTER_ORC
+exit_orc DNGN_EXIT_ORC
+enter_elf DNGN_ENTER_ELF
+exit_elf DNGN_EXIT_ELF
 enter_lair DNGN_ENTER_LAIR
 exit_lair DNGN_EXIT_LAIR
-enter_snake DNGN_ENTER_SNAKE_PIT
-exit_snake DNGN_EXIT_SNAKE_PIT
+enter_snake DNGN_ENTER_SNAKE
+exit_snake DNGN_EXIT_SNAKE
 enter_swamp DNGN_ENTER_SWAMP
 exit_swamp DNGN_EXIT_SWAMP
-enter_spider DNGN_ENTER_SPIDER_NEST
-exit_spider DNGN_EXIT_SPIDER_NEST
+enter_spider DNGN_ENTER_SPIDER
+exit_spider DNGN_EXIT_SPIDER
 enter_shoals DNGN_ENTER_SHOALS
 exit_shoals DNGN_EXIT_SHOALS
-enter_slime DNGN_ENTER_SLIME_PITS
-exit_slime DNGN_EXIT_SLIME_PITS
-enter_vaults DNGN_ENTER_VAULTS
+enter_slime DNGN_ENTER_SLIME
+exit_slime DNGN_EXIT_SLIME
+enter_vaults_closed DNGN_ENTER_VAULTS_CLOSED
+enter_vaults_open DNGN_ENTER_VAULTS_OPEN
 exit_vaults DNGN_EXIT_VAULTS
+enter_depths DNGN_ENTER_DEPTHS
+return_depths DNGN_RETURN_DEPTHS
 enter_crypt DNGN_ENTER_CRYPT
 exit_crypt DNGN_EXIT_CRYPT
 enter_tomb DNGN_ENTER_TOMB
@@ -570,6 +609,9 @@ jiyva11
 fedhas DNGN_ALTAR_FEDHAS
 cheibriados DNGN_ALTAR_CHEIBRIADOS
 ashenzari DNGN_ALTAR_ASHENZARI
+dithmengos DNGN_ALTAR_DITHMENGOS
+dithmengos2
+dithmengos3
 unknown DNGN_UNKNOWN_ALTAR
 
 %sdir dngn
@@ -721,6 +763,7 @@ effect/disjunct0 DISJUNCT
 effect/disjunct1
 effect/disjunct2
 effect/disjunct3
+landing LANDING
 effect/heataura0 HEAT_AURA
 effect/heataura1
 effect/heataura2
@@ -739,7 +782,6 @@ mold_glowing2
 mold_glowing3
 mold_glowing4
 effect/silenced SILENCED
-effect/suppressed SUPPRESSED
 %shrink 0
 %sdir mon/tentacles/kraken_corners
 kraken_corner_NW KRAKEN_OVERLAY_NW

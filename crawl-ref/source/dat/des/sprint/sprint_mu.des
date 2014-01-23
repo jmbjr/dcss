@@ -1,13 +1,3 @@
-###############################################################################
-# sprint.des - vaults for the Dungeon Sprint variant
-#
-# These vaults should always have "TAGS: sprint".  No other dungeon levels will
-# be generated in Dungeon Sprint.
-#
-# Note that at the start of the game, the dungeon builder removes all monsters
-# in view of the player. Zero experience monsters like plants are exempt.
-###############################################################################
-
 : require("dlua/sprint.lua")
 
 {{
@@ -39,7 +29,8 @@ end
 #
 NAME:   dungeon_sprint_mu
 DESC:   Sprint III: "The Ten Rune Challenge"
-TAGS:   sprint no_item_gen no_trap_gen no_monster_gen no_pool_fixup no_rotate no_hmirror no_vmirror
+ORDER:  3
+TAGS:   sprint no_item_gen no_trap_gen no_pool_fixup no_rotate no_hmirror no_vmirror
 ORIENT: encompass
 SHUFFLE:  hnw
 SHUFFLE:  NI
@@ -185,8 +176,8 @@ KITEM: * = potion of flight ident:all q:2 / potion of flight q:1 / any potion, \
 SUBST: T = t.
 
 MAP
-[<x*$+...TTttttt.
-{.x*$x..3.TTtttt.
+{.x*$+...TTttttt.
+..x*$x..3.TTtttt.
 x+xxxx....TTtttT.
 .....x....WTtttT.
 1...1x...WWTTTTT.
@@ -217,7 +208,7 @@ KITEM: * = potion of flight ident:all q:2 / potion of flight q:1 / any potion, \
  potion of mutation / potion of decay / potion of strong poison
 
 MAP
-[{<x%..xxxxxxxxx.
+{..x%..xxxxxxxxx.
 ...x......xxxxx..
 ..xx.......x**x..
 xx.xx.xx..2x$$x..
@@ -269,6 +260,7 @@ KFEAT: N = altar_nemelex_xobeh
 KITEM: N = any misc
 KFEAT: X = altar_xom
 KFEAT: M = altar_makhleb
+KFEAT: D = altar_dithmengos
 KMONS: l = patrolling spatial vortex
 KFEAT: ? = altar_jiyva / w:5 altar_lugonu / w:25 floor
 KMONS: m = demigod
@@ -291,7 +283,7 @@ x..........
 #.f........
 x...xxxxxx+
 x.f.x.lxm..
-x...xN.x...
+x...xNDx...
 x+xxxX?x...
 x.s5xM.x..*
 xVSKx..+..j
@@ -513,11 +505,11 @@ KMONS: A = lindwurm
 KMONS: h = redback
 KMONS: i = hydra
 KMONS: j = patrolling spriggan ; blowgun . q:5 needle ego:sleep | \
- q:5 needle ego:paralysis | q:5 needle ego:wrath
+ q:5 needle ego:paralysis | q:5 needle ego:frenzy
 KMONS: k = patrolling spriggan druid
 KMONS: q = electric eel
 KFEAT: q = deep_water
-KMONS: r = hydra simulacrum / dragon simulacrum / grizzly bear simulacrum /\
+KMONS: r = hydra simulacrum / fire dragon simulacrum / grizzly bear simulacrum /\
  wolf simulacrum / black mamba simulacrum
 KITEM: r = any, any, any, any, any, superb_item / w:1 wand of fire /\
  w:1 wand of disintegration
@@ -750,7 +742,7 @@ MARKER:  ! = lua:fog_machine { \
                  size_buildup_time = 5, cloud_type = "freezing vapour" \
              }
 : else
-MONS: fire drake, dragon, hydra, Xtahua
+MONS: fire drake, fire dragon, hydra, Xtahua
 MARKER:  ! = lua:fog_machine { \
                  pow_max = 3, delay_min = 5, delay_max = 5, \
                  size = 2, size_buildup_amnt = 3, \
@@ -925,7 +917,7 @@ KMONS: U = Norris ; morningstar ego:vorpal . large shield ego:reflection / \
 KMONS: C = generate_awake Chuck
 KMONS: k = yaktaur captain ; crossbow ego:chaos . bolt
 KMONS: b = bush
-KMONS: D = dragon
+KMONS: D = fire dragon
 NSUBST: $ = 1:1 / *:|
 NSUBST: D = 1:D / *:*
 NSUBST: a = 1:+ / *:v
@@ -1420,7 +1412,7 @@ SUBST: . = ..........2233445
 MARKER: ! = lua:fog_machine { \
                 pow_max = 1000, delay_min = 1, delay_max = 1, \
                 size = 1000, size_buildup_amnt = 111, \
-                size_buildup_time = 1, cloud_type = "gloom" }
+                size_buildup_time = 1, cloud_type = "purple smoke" }
 MAP
 ccccccc#cccccc
 c!..c....c..!c

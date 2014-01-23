@@ -5,6 +5,7 @@
 
 #include "AppHdr.h"
 
+#include "colour.h"
 #include "defines.h"
 #include "itemname.h" // is_vowel()
 #include "libutil.h"
@@ -59,7 +60,7 @@ unsigned int isqrt(unsigned int a)
         else
             root--;
     }
-    return (root >> 1);
+    return root >> 1;
 }
 
 int isqrt_ceil(int x)
@@ -107,12 +108,12 @@ string apply_description(description_level_type desc, const string &name,
     switch (desc)
     {
     case DESC_THE:
-        return ("the " + name);
+        return "the " + name;
     case DESC_A:
-        return (quantity > 1 ? _number_to_string(quantity, in_words) + name
-                             : article_a(name, true));
+        return quantity > 1 ? _number_to_string(quantity, in_words) + name
+                            : article_a(name, true);
     case DESC_YOUR:
-        return ("your " + name);
+        return "your " + name;
     case DESC_PLAIN:
     default:
         return name;
@@ -124,7 +125,7 @@ string apply_description(description_level_type desc, const string &name,
 bool shell_safe(const char *file)
 {
     int match = strcspn(file, "\\`$*?|><&\n!;");
-    return (match < 0 || !file[match]);
+    return match < 0 || !file[match];
 }
 
 void play_sound(const char *file)
@@ -263,7 +264,7 @@ int ends_with(const string &s, const char *suffixes[])
 
     for (int i = 0; suffixes[i]; ++i)
         if (ends_with(s, suffixes[i]))
-            return (1 + i);
+            return 1 + i;
 
     return 0;
 }
@@ -427,19 +428,22 @@ string pluralise(const string &name, const char *qualifiers[],
     if (!name.empty() && name[name.length() - 1] == ')'
         && (pos = name.rfind(" (")) != string::npos)
     {
-        return (pluralise(name.substr(0, pos)) + name.substr(pos));
+        return pluralise(name.substr(0, pos)) + name.substr(pos);
     }
 
     if (!name.empty() && name[name.length() - 1] == ']'
         && (pos = name.rfind(" [")) != string::npos)
     {
-        return (pluralise(name.substr(0, pos)) + name.substr(pos));
+        return pluralise(name.substr(0, pos)) + name.substr(pos);
     }
 
     if (ends_with(name, "us"))
     {
-        // Fungus, ufetubus, for instance.
-        return name.substr(0, name.length() - 2) + "i";
+        if (ends_with(name, "lotus"))
+            return name + "es";
+        else
+            // Fungus, ufetubus, for instance.
+            return name.substr(0, name.length() - 2) + "i";
     }
     else if (ends_with(name, "larva") || ends_with(name, "amoeba")
           || ends_with(name, "antenna"))
@@ -496,9 +500,7 @@ string pluralise(const string &name, const char *qualifiers[],
              || ends_with(name, "folk") || ends_with(name, "spawn")
              || ends_with(name, "tengu") || ends_with(name, "shedu")
              || ends_with(name, "swine") || ends_with(name, "efreet")
-             // "shedu" is male, "lammasu" is female of the same creature
-             || ends_with(name, "lammasu") || ends_with(name, "lamassu")
-             || ends_with(name, "jiangshi")
+             || ends_with(name, "jiangshi") || ends_with(name, "unborn")
              || name == "gold")
     {
         return name;
@@ -529,6 +531,8 @@ string pluralise(const string &name, const char *qualifiers[],
         // pluralisation.
         return name + "im";
     }
+    else if (name == "raiju")
+        return name;
 
     return name + "s";
 }
@@ -539,13 +543,13 @@ string apostrophise(const string &name)
         return name;
 
     if (name == "you" || name == "You")
-        return (name + "r");
+        return name + "r";
 
     if (name == "it" || name == "It")
-        return (name + "s");
+        return name + "s";
 
     const char lastc = name[name.length() - 1];
-    return (name + (lastc == 's' ? "'" : "'s"));
+    return name + (lastc == 's' ? "'" : "'s");
 }
 
 string apostrophise_fixup(const string &msg)
@@ -577,12 +581,14 @@ static string pow_in_words(int pow)
 
 static string tens_in_words(unsigned num)
 {
-    static const char *numbers[] = {
+    static const char *numbers[] =
+    {
         "", "one", "two", "three", "four", "five", "six", "seven",
         "eight", "nine", "ten", "eleven", "twelve", "thirteen", "fourteen",
         "fifteen", "sixteen", "seventeen", "eighteen", "nineteen"
     };
-    static const char *tens[] = {
+    static const char *tens[] =
+    {
         "", "", "twenty", "thirty", "forty", "fifty", "sixty", "seventy",
         "eighty", "ninety"
     };
@@ -597,9 +603,9 @@ static string tens_in_words(unsigned num)
 static string join_strings(const string &a, const string &b)
 {
     if (!a.empty() && !b.empty())
-        return (a + " " + b);
+        return a + " " + b;
 
-    return (a.empty() ? b : a);
+    return a.empty() ? b : a;
 }
 
 static string hundreds_in_words(unsigned num)
@@ -972,10 +978,20 @@ string untag_tiles_console(string s)
 #endif
 #ifdef USE_TILE_LOCAL
     _untag(s, "<localtiles>", "</localtiles>", true);
+    _untag(s, "<nomouse>", "</nomouse>", false);
 #else
     _untag(s, "<localtiles>", "</localtiles>", false);
+    _untag(s, "<nomouse>", "</nomouse>", true);
 #endif
     return s;
+}
+
+string colour_string(string in, int col)
+{
+    if (in.empty())
+        return in;
+    const string cols = colour_to_str(col);
+    return "<" + cols + ">" + in + "</" + cols + ">";
 }
 
 #ifndef USE_TILE_LOCAL
@@ -1000,7 +1016,7 @@ static coord_def _cgettopleft(GotoRegion region)
 coord_def cgetpos(GotoRegion region)
 {
     const coord_def where = coord_def(wherex(), wherey());
-    return (where - _cgettopleft(region) + coord_def(1, 1));
+    return where - _cgettopleft(region) + coord_def(1, 1);
 }
 
 static GotoRegion _current_region = GOTO_CRT;
@@ -1058,8 +1074,6 @@ void cscroll(int n, GotoRegion region)
         scroll_message_window(n);
 }
 
-
-
 mouse_mode mouse_control::ms_current_mode = MOUSE_MODE_NORMAL;
 
 size_t strlcpy(char *dst, const char *src, size_t n)
@@ -1109,6 +1123,8 @@ string unwrap_desc(string desc)
     // Indented lines are pre-formatted.
     desc = replace_all(desc, "\n ", "\\n ");
 
+    // Don't add whitespaces between tags
+    desc = replace_all(desc, ">\n<", "><");
     // Newlines are still whitespace.
     desc = replace_all(desc, "\n", " ");
     // Can force a newline with a literal "\n".
@@ -1126,7 +1142,7 @@ static bool _is_aero()
     OSVERSIONINFOEX osvi;
     osvi.dwOSVersionInfoSize = sizeof(OSVERSIONINFOEX);
     if (GetVersionEx((OSVERSIONINFO *) &osvi))
-        return (osvi.dwMajorVersion >= 6);
+        return osvi.dwMajorVersion >= 6;
     else
         return false;
 }
@@ -1192,9 +1208,15 @@ static BOOL WINAPI console_handler(DWORD sig)
     case CTRL_LOGOFF_EVENT:
     case CTRL_SHUTDOWN_EVENT:
         if (crawl_state.seen_hups++)
-            return true;
+            return true; // abort immediately
 
-        sighup_save_and_exit();
+#ifndef USE_TILE_LOCAL
+        // Should never happen in tiles -- if it does (Cygwin?), this will
+        // kill the game without saving.
+        w32_insert_escape();
+
+        Sleep(15000); // allow 15 seconds for shutdown, then kill -9
+#endif
         return true;
     }
 }
@@ -1202,9 +1224,14 @@ static BOOL WINAPI console_handler(DWORD sig)
 void init_signals()
 {
     // If there's no console, this will return an error, which we ignore.
-    // For GUI programs there's no controlling terminal, but there's no hurt in
-    // blindly trying -- this way, we support Cygwin.
+    // For GUI programs there's no controlling terminal, but there might be
+    // one on Cygwin.
     SetConsoleCtrlHandler(console_handler, true);
+}
+
+void release_cli_signals()
+{
+    SetConsoleCtrlHandler(nullptr, false);
 }
 
 void text_popup(const string& text, const wchar_t *caption)
@@ -1227,14 +1254,12 @@ static void handle_hangup(int)
     // still blocking in the main thread when the HUP signal was caught.
     // This should guarantee that the main thread will un-stall and
     // will eventually return to _input() in main.cc, which will then
-    // call sighup_save_and_exit().
-    //
-    // The point to all this is that if a user is playing a game on a
-    // remote server and disconnects at a --more-- prompt, that when
-    // the player reconnects the code behind the more() call will execute
-    // before the disconnected game is saved, thus (for example) preventing
-    // the hack of avoiding excomunication consesquences because of the
-    // more() after "You have lost your religion!"
+    // gracefully save the game.
+
+    // SAVE CORRUPTING BUG!!!  We're in a signal handler, calling free()
+    // when closing the FILE object is likely to lead to lock-ups, and even
+    // if it were a plain kernel-side descriptor, calling functions such
+    // as select() or read() is undefined behaviour.
     fclose(stdin);
 }
 # endif
@@ -1272,6 +1297,14 @@ void init_signals()
         lim.rlim_cur = RLIM_INFINITY;
         setrlimit(RLIMIT_CORE, &lim);
     }
+#endif
+}
+
+void release_cli_signals()
+{
+#ifdef USE_UNIX_SIGNALS
+    signal(SIGQUIT, SIG_DFL);
+    signal(SIGINT, SIG_DFL);
 #endif
 }
 

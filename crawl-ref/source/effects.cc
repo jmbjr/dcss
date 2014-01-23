@@ -19,6 +19,7 @@
 #include "options.h"
 
 #include "abyss.h"
+#include "act-iter.h"
 #include "areas.h"
 #include "artefact.h"
 #include "beam.h"
@@ -36,6 +37,7 @@
 #include "exercise.h"
 #include "fight.h"
 #include "fprop.h"
+#include "godabil.h"
 #include "godpassive.h"
 #include "hints.h"
 #include "hiscores.h"
@@ -44,15 +46,13 @@
 #include "itemprop.h"
 #include "items.h"
 #include "libutil.h"
+#include "losglobal.h"
 #include "makeitem.h"
-#include "map_knowledge.h"
 #include "message.h"
 #include "mgen_data.h"
 #include "misc.h"
-#include "mislead.h"
 #include "mon-behv.h"
 #include "mon-cast.h"
-#include "mon-iter.h"
 #include "mon-pathfind.h"
 #include "mon-place.h"
 #include "mon-project.h"
@@ -85,7 +85,7 @@
 
 static void _update_corpses(int elapsedTime);
 
-static void _holy_word_player(int pow, int caster, actor *attacker)
+static void _holy_word_player(int pow, holy_word_source_type source, actor *attacker)
 {
     if (!you.undead_or_demonic())
         return;
@@ -105,42 +105,38 @@ static void _holy_word_player(int pow, int caster, actor *attacker)
 
     const char *aux = "holy word";
 
-    kill_method_type type = KILLED_BY_MONSTER;
-    if (invalid_monster_index(caster))
+    kill_method_type type = KILLED_BY_SOMETHING;
+    if (crawl_state.is_god_acting())
+        type = KILLED_BY_DIVINE_WRATH;
+
+    switch (source)
     {
-        type = KILLED_BY_SOMETHING;
-        if (crawl_state.is_god_acting())
-            type = KILLED_BY_DIVINE_WRATH;
+    case HOLY_WORD_SCROLL:
+        aux = "scroll of holy word";
+        break;
 
-        switch (caster)
-        {
-        case HOLY_WORD_SCROLL:
-            aux = "scroll of holy word";
-            break;
+    case HOLY_WORD_ZIN:
+        aux = "Zin's holy word";
+        break;
 
-        case HOLY_WORD_ZIN:
-            aux = "Zin's holy word";
-            break;
-
-        case HOLY_WORD_TSO:
-            aux = "the Shining One's holy word";
-            break;
-        }
+    case HOLY_WORD_TSO:
+        aux = "the Shining One's holy word";
+        break;
     }
 
-    ouch(hploss, caster, type, aux);
+    ouch(hploss, NON_MONSTER, type, aux);
 
     return;
 }
 
-void holy_word_monsters(coord_def where, int pow, int caster,
+void holy_word_monsters(coord_def where, int pow, holy_word_source_type source,
                         actor *attacker)
 {
     pow = min(300, pow);
 
     // Is the player in this cell?
     if (where == you.pos())
-        _holy_word_player(pow, caster, attacker);
+        _holy_word_player(pow, source, attacker);
 
     // Is a monster in this cell?
     monster* mons = monster_at(where);
@@ -155,11 +151,11 @@ void holy_word_monsters(coord_def where, int pow, int caster,
     else
         hploss = roll_dice(3, 15) + (random2(pow) / 10);
 
-    if (hploss && caster != HOLY_WORD_ZIN)
-        simple_monster_message(mons, " convulses!");
-    if (hploss && caster == HOLY_WORD_ZIN)
-        simple_monster_message(mons, " is blasted by Zin's holy word!");
-
+    if (hploss)
+        if (source == HOLY_WORD_ZIN)
+            simple_monster_message(mons, " is blasted by Zin's holy word!");
+        else
+            simple_monster_message(mons, " convulses!");
     mons->hurt(attacker, hploss, BEAM_MISSILE);
 
     if (!hploss || !mons->alive())
@@ -180,8 +176,8 @@ void holy_word_monsters(coord_def where, int pow, int caster,
     }
 }
 
-void holy_word(int pow, int caster, const coord_def& where, bool silent,
-               actor *attacker)
+void holy_word(int pow, holy_word_source_type source, const coord_def& where,
+               bool silent, actor *attacker)
 {
     if (!silent && attacker)
     {
@@ -190,11 +186,8 @@ void holy_word(int pow, int caster, const coord_def& where, bool silent,
              attacker->conj_verb("speak").c_str());
     }
 
-    // We could use actor.get_los(), but maybe it's NULL.
-    los_def los(where);
-    los.update();
-    for (radius_iterator ri(&los); ri; ++ri)
-        holy_word_monsters(*ri, pow, caster, attacker);
+    for (radius_iterator ri(where, LOS_SOLID); ri; ++ri)
+        holy_word_monsters(*ri, pow, source, attacker);
 }
 
 int torment_player(actor *attacker, int taux)
@@ -211,7 +204,7 @@ int torment_player(actor *attacker, int taux)
         // Negative energy resistance can alleviate torment.
         hploss = max(0, you.hp * (50 - player_prot_life() * 5) / 100 - 1);
         // Statue form is only partial petrification.
-        if (you.form == TRAN_STATUE)
+        if (you.form == TRAN_STATUE || you.species == SP_GARGOYLE)
             hploss /= 2;
     }
 
@@ -234,7 +227,6 @@ int torment_player(actor *attacker, int taux)
             }
         }
     }
-
 
     if (!hploss)
     {
@@ -333,85 +325,17 @@ int torment_monsters(coord_def where, actor *attacker, int taux)
 
 int torment(actor *attacker, int taux, const coord_def& where)
 {
-    los_def los(where);
-    los.update();
     int r = 0;
-    for (radius_iterator ri(&los); ri; ++ri)
-    {
-        if (attacker && !attacker->see_cell_no_trans(*ri))
-            continue;
+    for (radius_iterator ri(where, LOS_NO_TRANS); ri; ++ri)
         r += torment_monsters(*ri, attacker, taux);
-    }
     return r;
-}
-
-void immolation(int pow, int caster, coord_def where, bool known,
-                actor *attacker)
-{
-    ASSERT(!crawl_state.game_is_arena());
-
-    const char *aux = "immolation";
-
-    bolt beam;
-
-    switch (caster)
-    {
-    case IMMOLATION_SCROLL:
-        aux = "a scroll of immolation";
-        break;
-
-    case IMMOLATION_AFFIX:
-        aux = "a fiery explosion";
-        break;
-
-    case IMMOLATION_TOME:
-        aux = "an exploding Tome of Destruction";
-        break;
-
-    default:;
-    }
-
-    beam.flavour       = BEAM_FIRE;
-    beam.glyph         = dchar_glyph(DCHAR_FIRED_BURST);
-    beam.damage        = dice_def(3, pow);
-    beam.target        = where;
-    beam.name          = "fiery explosion";
-    beam.colour        = RED;
-    beam.aux_source    = aux;
-    beam.ex_size       = 2;
-    beam.is_explosion  = true;
-    beam.effect_known  = known;
-    beam.affects_items = caster != IMMOLATION_SCROLL
-                         && caster != IMMOLATION_AFFIX;
-
-    if (caster == IMMOLATION_GENERIC)
-    {
-        beam.thrower     = KILL_MISC;
-        beam.beam_source = NON_MONSTER;
-    }
-    else if (attacker && attacker->is_player())
-    {
-        beam.thrower     = KILL_YOU;
-        beam.beam_source = NON_MONSTER;
-    }
-    else
-    {
-        // If there was no attacker, caster should have been IMMOLATION_GENERIC
-        // which we handled above.
-        ASSERT(attacker);
-
-        beam.thrower     = KILL_MON;
-        beam.beam_source = attacker->mindex();
-    }
-
-    beam.explode();
 }
 
 static bool _conduct_electricity_affects_actor(const bolt& beam,
                                                const actor* victim)
 {
-    return (victim->alive() && victim->res_elec() <= 0
-            && victim->ground_level());
+    return victim->alive() && victim->res_elec() <= 0
+           && victim->ground_level();
 }
 
 static bool _conduct_electricity_damage(bolt &beam, actor* victim,
@@ -517,7 +441,7 @@ void cleansing_flame(int pow, int caster, coord_def where,
 
 static string _who_banished(const string &who)
 {
-    return (who.empty() ? who : " (" + who + ")");
+    return who.empty() ? who : " (" + who + ")";
 }
 
 void banished(const string &who)
@@ -540,7 +464,7 @@ void banished(const string &who)
         else
         {
             // On Abyss:5 we can't go deeper; cause a shift to a new area
-            mpr("You are banished to a different region of the Abyss.", MSGCH_BANISHMENT);
+            mprf(MSGCH_BANISHMENT, "You are banished to a different region of the Abyss.");
             abyss_teleport(true);
         }
         return;
@@ -553,7 +477,7 @@ void banished(const string &who)
     down_stairs(DNGN_ENTER_ABYSS);  // heh heh
 
     // Xom just might decide to interfere.
-    if (you.religion == GOD_XOM && who != "Xom" && who != "wizard command"
+    if (you_worship(GOD_XOM) && who != "Xom" && who != "wizard command"
         && who != "a distortion unwield")
     {
         xom_maybe_reverts_banishment(false, false);
@@ -643,6 +567,28 @@ void direct_effect(monster* source, spell_type spell,
         damage_taken = defender->apply_ac(random2avg(damage_taken, 3));
         break;
 
+    case SPELL_WATERSTRIKE:
+        if (feat_is_water(grd(defender->pos())))
+        {
+            if (defender->is_player() || you.can_see(defender))
+            {
+                if (defender->flight_mode())
+                    mprf("The water rises up and strikes %s!", defender->name(DESC_THE).c_str());
+                else
+                    mprf("The water swirls and strikes %s!", defender->name(DESC_THE).c_str());
+            }
+
+            pbolt.name       = "waterstrike";
+            pbolt.flavour    = BEAM_WATER;
+            pbolt.aux_source = "by the raging water";
+
+            damage_taken     = roll_dice(3, 8 + source->hit_dice);
+
+            damage_taken = defender->beam_resists(pbolt, damage_taken, false);
+            damage_taken = defender->apply_ac(damage_taken);
+        }
+        break;
+
     case SPELL_BRAIN_FEED:
         if (!def)
         {
@@ -664,13 +610,6 @@ void direct_effect(monster* source, spell_type spell,
         else
             mpr("You sense an evil presence.");
         mons_cast_haunt(source);
-        break;
-
-    case SPELL_MISLEAD:
-        if (!def)
-            mons_cast_mislead(source);
-        else
-            defender->confuse(source, source->hit_dice * 12);
         break;
 
     case SPELL_SUMMON_SPECTRAL_ORCS:
@@ -763,7 +702,7 @@ void random_uselessness(int scroll_slot)
         break;
 
     case 6:
-        mpr("You hear the tinkle of a tiny bell.", MSGCH_SOUND);
+        mprf(MSGCH_SOUND, "You hear the tinkle of a tiny bell.");
         noisy(2, you.pos());
         cast_summon_butterflies(100);
         break;
@@ -808,9 +747,8 @@ int recharge_wand(int item_slot, bool known, string *pre_msg)
             int charge_gain = wand_charge_value(wand.sub_type);
 
             const int new_charges =
-                max<int>(
-                    wand.plus,
-                    min(charge_gain * 3,
+                max<int>(wand.plus,
+                         min(charge_gain * 3,
                              wand.plus +
                              1 + random2avg(((charge_gain - 1) * 3) + 1, 3)));
 
@@ -849,7 +787,7 @@ int recharge_wand(int item_slot, bool known, string *pre_msg)
 
             if (wand.plus2 < MAX_ROD_CHARGE * ROD_CHARGE_MULT)
             {
-                wand.plus2 += ROD_CHARGE_MULT * random_range(1,2);
+                wand.plus2 += ROD_CHARGE_MULT * random_range(1, 2);
 
                 if (wand.plus2 > MAX_ROD_CHARGE * ROD_CHARGE_MULT)
                     wand.plus2 = MAX_ROD_CHARGE * ROD_CHARGE_MULT;
@@ -892,22 +830,29 @@ int recharge_wand(int item_slot, bool known, string *pre_msg)
 // Berserking monsters cannot be ordered around.
 static bool _follows_orders(monster* mon)
 {
-    return (mon->friendly()
-            && mon->type != MONS_GIANT_SPORE
-            && mon->type != MONS_BATTLESPHERE
-            && !mon->berserk()
-            && !mon->is_projectile()
-            && !mon->has_ench(ENCH_HAUNTING));
+    return mon->friendly()
+           && mon->type != MONS_GIANT_SPORE
+           && mon->type != MONS_BALL_LIGHTNING
+           && mon->type != MONS_BATTLESPHERE
+           && mon->type != MONS_SPECTRAL_WEAPON
+           && !mon->berserk_or_insane()
+           && !mon->is_projectile()
+           && !mon->has_ench(ENCH_HAUNTING);
 }
 
 // Sets foe target of friendly monsters.
 // If allow_patrol is true, patrolling monsters get MHITNOT instead.
 static void _set_friendly_foes(bool allow_patrol = false)
 {
-    for (monster_iterator mi(you.get_los()); mi; ++mi)
+    for (monster_near_iterator mi(you.pos()); mi; ++mi)
     {
         if (!_follows_orders(*mi))
             continue;
+        if (you.pet_target != MHITNOT && mi->behaviour == BEH_WITHDRAW)
+        {
+            mi->behaviour = BEH_SEEK;
+            mi->patrol_point = coord_def(0, 0);
+        }
         mi->foe = (allow_patrol && mi->is_patrolling() ? MHITNOT
                                                          : you.pet_target);
     }
@@ -915,7 +860,7 @@ static void _set_friendly_foes(bool allow_patrol = false)
 
 static void _set_allies_patrol_point(bool clear = false)
 {
-    for (monster_iterator mi(you.get_los()); mi; ++mi)
+    for (monster_near_iterator mi(you.pos()); mi; ++mi)
     {
         if (!_follows_orders(*mi))
             continue;
@@ -933,9 +878,11 @@ static void _set_allies_withdraw(const coord_def &target)
     float mult = float(LOS_RADIUS * 2) / (float)max(abs(delta.x), abs(delta.y));
     coord_def rally_point = clamp_in_bounds(coord_def(delta.x * mult, delta.y * mult) + you.pos());
 
-    for (monster_iterator mi(you.get_los()); mi; ++mi)
+    for (monster_near_iterator mi(you.pos()); mi; ++mi)
     {
         if (!_follows_orders(*mi))
+            continue;
+        if (mons_class_flag(mi->type, M_STATIONARY))
             continue;
         mi->behaviour = BEH_WITHDRAW;
         mi->target = target;
@@ -1016,12 +963,15 @@ void yell(bool force)
 
     if (force)
     {
-        mprf("A %s rips itself from your throat!", shout_verb.c_str());
+        if (you.duration[DUR_RECITE])
+            mpr("You feel yourself shouting your recitation.");
+        else
+            mprf("A %s rips itself from your throat!", shout_verb.c_str());
         noisy(noise_level, you.pos());
         return;
     }
 
-    mpr("What do you say?", MSGCH_PROMPT);
+    mprf(MSGCH_PROMPT, "What do you say?");
     mprf(" t - %s!", cap_shout.c_str());
 
     if (!you.berserk())
@@ -1041,8 +991,7 @@ void yell(bool force)
         mpr("                   r - Retreat!             s - Stop attacking.");
         mpr("                   w - Wait here.           f - Follow me.");
     }
-    mprf(" Anything else - Stay silent%s.",
-         one_chance_in(20) ? " (and be thought a fool)" : "");
+    mpr(" Anything else - Stay silent.");
 
     int keyn = get_ch();
     mesclr();
@@ -1055,6 +1004,7 @@ void yell(bool force)
              shout_verb.c_str(),
              you.berserk() ? " wildly" : " for attention");
         noisy(noise_level, you.pos());
+        zin_recite_interrupt();
         you.turn_is_over = true;
         return;
 
@@ -1189,6 +1139,7 @@ void yell(bool force)
         return;
     }
 
+    zin_recite_interrupt();
     you.turn_is_over = true;
     you.pet_target = mons_targd;
     // Allow patrolling for "Stop fighting!" and "Wait here!"
@@ -1229,7 +1180,7 @@ bool vitrify_area(int radius)
         if (newgrid != grid)
         {
             grd(*ri) = newgrid;
-            set_terrain_changed(ri->x, ri->y);
+            set_terrain_changed(*ri);
             something_happened = true;
         }
     }
@@ -1238,7 +1189,7 @@ bool vitrify_area(int radius)
 
 static void _hell_effects()
 {
-    if ((you.religion == GOD_ZIN && x_chance_in_y(you.piety, MAX_PIETY))
+    if ((you_worship(GOD_ZIN) && x_chance_in_y(you.piety, MAX_PIETY))
         || is_sanctuary(you.pos()))
     {
         simple_god_message("'s power protects you from the chaos of Hell!");
@@ -1248,10 +1199,11 @@ static void _hell_effects()
     string msg = getMiscString("hell_effect");
     if (msg.empty())
         msg = "Something hellishly buggy happens.";
-    msg_channel_type chan = MSGCH_PLAIN;
-    strip_channel_prefix(msg, chan);
-    mpr(msg.c_str(), chan);
-    if (chan == MSGCH_SOUND)
+    bool loud = starts_with(msg, "SOUND:");
+    if (loud)
+        msg.erase(0, 6);
+    mprf(MSGCH_HELL_EFFECT, "%s", msg.c_str());
+    if (loud)
         noisy(15, you.pos());
 
     spschool_flag_type which_miscast = SPTYP_RANDOM;
@@ -1359,10 +1311,10 @@ static bool _feat_is_flanked_by_walls(const coord_def &p)
         if (!in_bounds(adjs[i]))
             return false;
 
-    return (feat_is_wall(grd(adjs[0])) && feat_is_wall(grd(adjs[1]))
-               && feat_has_solid_floor(grd(adjs[2])) && feat_has_solid_floor(grd(adjs[3]))
-            || feat_has_solid_floor(grd(adjs[0])) && feat_has_solid_floor(grd(adjs[1]))
-               && feat_is_wall(grd(adjs[2])) && feat_is_wall(grd(adjs[3])));
+    return feat_is_wall(grd(adjs[0])) && feat_is_wall(grd(adjs[1]))
+              && feat_has_solid_floor(grd(adjs[2])) && feat_has_solid_floor(grd(adjs[3]))
+           || feat_has_solid_floor(grd(adjs[0])) && feat_has_solid_floor(grd(adjs[1]))
+              && feat_is_wall(grd(adjs[2])) && feat_is_wall(grd(adjs[3]));
 }
 
 // Sometimes if a floor is turned into a wall, a dead-end will be created.
@@ -1575,13 +1527,13 @@ void change_labyrinth(bool msg)
              c1.x, c1.y, c2.x, c2.y);
 
         string path_str = "";
-        mpr("Here's the list of targets: ", MSGCH_DIAGNOSTICS);
+        mprf(MSGCH_DIAGNOSTICS, "Here's the list of targets: ");
         for (unsigned int i = 0; i < targets.size(); i++)
         {
             snprintf(info, INFO_SIZE, "(%d, %d)  ", targets[i].x, targets[i].y);
             path_str += info;
         }
-        mpr(path_str.c_str(), MSGCH_DIAGNOSTICS);
+        mprf(MSGCH_DIAGNOSTICS, "%s", path_str.c_str());
         mprf(MSGCH_DIAGNOSTICS, "-> #targets = %u", (unsigned int)targets.size());
     }
 
@@ -1597,7 +1549,7 @@ void change_labyrinth(bool msg)
                                          min((int) targets.size(), 45));
 
     // Shuffle the targets, then pick the max_targets first ones.
-    random_shuffle(targets.begin(), targets.end(), random2);
+    shuffle_array(targets);
 
     // For each of the chosen wall grids, calculate the path connecting the
     // two floor grids to either side, and block off one floor grid on this
@@ -1624,10 +1576,7 @@ void change_labyrinth(bool msg)
         if (!success)
         {
             if (msg)
-            {
-                mpr("Something went badly wrong - no path found!",
-                    MSGCH_DIAGNOSTICS);
-            }
+                mprf(MSGCH_DIAGNOSTICS, "Something went badly wrong - no path found!");
             continue;
         }
 
@@ -1641,7 +1590,7 @@ void change_labyrinth(bool msg)
         // special cases.
         dungeon_feature_type old_grid = grd(c);
         grd(c) = DNGN_FLOOR;
-        los_terrain_changed(c);
+        set_terrain_changed(c);
 
         // Add all floor grids meeting a couple of conditions to a vector
         // of potential switch points.
@@ -1677,7 +1626,7 @@ void change_labyrinth(bool msg)
         {
             // Take back the previous change.
             grd(c) = old_grid;
-            los_terrain_changed(c);
+            set_terrain_changed(c);
             continue;
         }
 
@@ -1747,7 +1696,7 @@ void change_labyrinth(bool msg)
             old_grid = grd[p.x+1][p.y];
         }
         grd(p) = old_grid;
-        los_terrain_changed(p);
+        set_terrain_changed(p);
 
         // Shift blood some of the time.
         if (is_bloodcovered(p))
@@ -1798,7 +1747,7 @@ void change_labyrinth(bool msg)
                  ri->x, ri->y);
         }
         // Search the eight possible directions in random order.
-        random_shuffle(dirs.begin(), dirs.end(), random2);
+        shuffle_array(dirs);
         for (unsigned int i = 0; i < dirs.size(); i++)
         {
             const coord_def p = *ri + dirs[i];
@@ -2066,11 +2015,108 @@ static void _rot_inventory_food(int time_delta)
     }
 }
 
+static void _handle_magic_contamination()
+{
+    int added_contamination = 0;
+
+    // Scale has been increased by a factor of 1000, but the effect now happens
+    // every turn instead of every 20 turns, so everything has been multiplied
+    // by 50 and scaled to you.time_taken.
+
+    if (you.duration[DUR_INVIS])
+        added_contamination += 30;
+
+    if (you.duration[DUR_HASTE])
+        added_contamination += 30;
+
+    // Is there a point to this? It's not even strong enough to cancel normal
+    // dissipation, so it only slows it down. Shouldn't it cancel dissipation
+    // like haste and invis do?
+    if (you.duration[DUR_FINESSE])
+        added_contamination += 20;
+
+    if (you.duration[DUR_REGENERATION] && you.species == SP_DJINNI)
+        added_contamination += 20;
+
+    // The Orb halves dissipation (well a bit more, I had to round it),
+    // but won't cause glow on its own -- otherwise it'd spam the player
+    // with messages about contamination oscillating near zero.
+    if (you.magic_contamination && orb_haloed(you.pos()))
+        added_contamination += 13;
+
+    // Normal dissipation
+    if (!you.duration[DUR_INVIS] && !you.duration[DUR_HASTE])
+        added_contamination -= 25;
+
+    // Scaling to turn length
+    added_contamination = div_rand_round(added_contamination * you.time_taken,
+                                         BASELINE_DELAY);
+
+    contaminate_player(added_contamination, false);
+}
+
+static void _magic_contamination_effects()
+{
+    // [ds] Move magic contamination effects closer to b26 again.
+    const bool glow_effect = get_contamination_level() > 1
+            && x_chance_in_y(you.magic_contamination, 12000);
+
+    if (glow_effect && is_sanctuary(you.pos()))
+    {
+        mprf(MSGCH_GOD, "Your body momentarily shudders from a surge of wild "
+                        "energies until Zin's power calms it.");
+    }
+    else if (glow_effect)
+    {
+        mprf(MSGCH_WARN, "Your body shudders with the violent release "
+                         "of wild energies!");
+
+        // For particularly violent releases, make a little boom.
+        if (you.magic_contamination > 10000 && coinflip())
+        {
+            bolt beam;
+
+            beam.flavour      = BEAM_RANDOM;
+            beam.glyph        = dchar_glyph(DCHAR_FIRED_BURST);
+            beam.damage       = dice_def(3,
+                                 div_rand_round(you.magic_contamination, 2000));
+            beam.target       = you.pos();
+            beam.name         = "magical storm";
+            beam.beam_source  = NON_MONSTER;
+            beam.aux_source   = "a magical explosion";
+            beam.ex_size      = max(1, min(9,
+                               div_rand_round(you.magic_contamination, 15000)));
+            beam.ench_power   = div_rand_round(you.magic_contamination, 200);
+            beam.is_explosion = true;
+
+            // Undead enjoy extra contamination explosion damage because
+            // the magical contamination has a harder time dissipating
+            // through non-living flesh. :-)
+            if (you.is_undead)
+                beam.damage.size *= 2;
+
+            beam.explode();
+        }
+
+        // We want to warp the player, not do good stuff!
+        mutate(one_chance_in(5) ? RANDOM_MUTATION : RANDOM_BAD_MUTATION,
+               "mutagenic glow", true,
+               coinflip(),
+               false, false, false, false,
+               you.species == SP_DJINNI);
+
+        // we're meaner now, what with explosions and whatnot, but
+        // we dial down the contamination a little faster if its actually
+        // mutating you.  -- GDL
+        contaminate_player(-(random2(you.magic_contamination / 4) + 1000));
+    }
+}
+
 // Get around C++ dividing integers towards 0.
 static int _div(int num, int denom)
 {
     div_t res = div(num, denom);
-    return (res.rem >= 0 ? res.quot : res.quot - 1);
+    return res.rem >= 0 ? res.quot : res.quot - 1;
 }
 
 // Do various time related actions...
@@ -2096,6 +2142,10 @@ void handle_time()
     // Labyrinth and Abyss maprot.
     if (player_in_branch(BRANCH_LABYRINTH) || player_in_branch(BRANCH_ABYSS))
         forget_map(true);
+
+    // Magic contamination from spells and Orb.
+    if (!crawl_state.game_is_arena())
+        _handle_magic_contamination();
 
     // Every 20 turns, a variety of other effects.
     if (! (_div(base_time, 200) > _div(old_time, 200)))
@@ -2151,113 +2201,24 @@ void handle_time()
         // If Cheibriados has slowed your biology, disease might
         // not actually do anything.
         if (one_chance_in(30)
-            && !(you.religion == GOD_CHEIBRIADOS
+            && !(you_worship(GOD_CHEIBRIADOS)
                  && you.piety >= piety_breakpoint(0)
                  && coinflip()))
         {
-            mpr("Your disease is taking its toll.", MSGCH_WARN);
+            mprf(MSGCH_WARN, "Your disease is taking its toll.");
             lose_stat(STAT_RANDOM, 1, false, "disease");
         }
     }
+
+    // Bad effects from magic contamination.
+    if (coinflip())
+        _magic_contamination_effects();
 
     // Adjust the player's stats if s/he has the deterioration mutation.
     if (player_mutation_level(MUT_DETERIORATION)
         && x_chance_in_y(player_mutation_level(MUT_DETERIORATION) * 5 - 1, 200))
     {
         lose_stat(STAT_RANDOM, 1, false, "deterioration mutation");
-    }
-
-    int added_contamination = 0;
-
-    // Account for mutagenic radiation.  Invis and haste will give the
-    // player about .1 points per turn, mutagenic randarts will give
-    // about 1.5 points on average, so they can corrupt the player
-    // quite quickly.  Wielding one for a short battle is OK, which is
-    // as things should be.   -- GDL
-    if (you.duration[DUR_INVIS] && x_chance_in_y(6, 10))
-        added_contamination++;
-
-    if (you.duration[DUR_HASTE] && x_chance_in_y(6, 10))
-        added_contamination++;
-
-    if (you.duration[DUR_FINESSE] && x_chance_in_y(4, 10))
-        added_contamination++;
-
-    if (you.duration[DUR_REGENERATION] && you.species == SP_DJINNI
-        && x_chance_in_y(6, 10))
-    {
-        added_contamination++;
-    }
-
-    // The Orb adds .25 points per turn (effectively halving dissipation),
-    // but won't cause glow on its own -- otherwise it'd spam the player
-    // with messages about contamination oscillating near zero.
-    if (you.magic_contamination && orb_haloed(you.pos()) && one_chance_in(4))
-        added_contamination++;
-
-    // We take off about .5 points per turn.
-    if (!you.duration[DUR_INVIS] && !you.duration[DUR_HASTE] && coinflip())
-        added_contamination--;
-
-    // Don't punish for this contamination.
-    // (Haste and invisibility already penalised earlier).
-    contaminate_player(added_contamination, false);
-
-    // Only check for badness once every other turn.
-    if (coinflip())
-    {
-        // [ds] Move magic contamination effects closer to b26 again.
-        const bool glow_effect = you.species == SP_DJINNI ?
-            get_contamination_level() > 2
-                && x_chance_in_y(you.magic_contamination, 24):
-            get_contamination_level() > 1
-                && x_chance_in_y(you.magic_contamination, 12);
-
-        if (glow_effect && is_sanctuary(you.pos()))
-        {
-            mpr("Your body momentarily shudders from a surge of wild "
-                "energies until Zin's power calms it.", MSGCH_GOD);
-        }
-        else if (glow_effect)
-        {
-            mpr("Your body shudders with the violent release "
-                "of wild energies!", MSGCH_WARN);
-
-            // For particularly violent releases, make a little boom.
-            // Undead enjoy extra contamination explosion damage because
-            // the magical contamination has a harder time dissipating
-            // through non-living flesh. :-)
-            if (you.magic_contamination > 10 && coinflip())
-            {
-                bolt beam;
-
-                beam.flavour      = BEAM_RANDOM;
-                beam.glyph        = dchar_glyph(DCHAR_FIRED_BURST);
-                beam.damage       = dice_def(3, you.magic_contamination
-                                             * (you.is_undead ? 4 : 2) / 4);
-                beam.target       = you.pos();
-                beam.name         = "magical storm";
-                beam.beam_source  = NON_MONSTER;
-                beam.aux_source   = "a magical explosion";
-                beam.ex_size      = max(1, min(9, you.magic_contamination / 15));
-                beam.ench_power   = you.magic_contamination * 5;
-                beam.is_explosion = true;
-
-                beam.explode();
-            }
-
-            // We want to warp the player, not do good stuff!
-            mutate(one_chance_in(5) ? RANDOM_MUTATION : RANDOM_BAD_MUTATION,
-                   "mutagenic glow", true,
-                   coinflip(),
-                   false, false, false, false,
-                   you.species == SP_DJINNI);
-
-            // we're meaner now, what with explosions and whatnot, but
-            // we dial down the contamination a little faster if its actually
-            // mutating you.  -- GDL
-            contaminate_player(-(random2(you.magic_contamination / 4) + 1));
-        }
     }
 
     // Check to see if an upset god wants to do something to the player.
@@ -2283,7 +2244,7 @@ void handle_time()
     {
         // Update the abyss speed. This place is unstable and the speed can
         // fluctuate. It's not a constant increase.
-        if (you.religion == GOD_CHEIBRIADOS && coinflip())
+        if (you_worship(GOD_CHEIBRIADOS) && coinflip())
             ; // Speed change less often for Chei.
         else if (coinflip() && you.abyss_speed < 100)
             ++you.abyss_speed;
@@ -2291,7 +2252,7 @@ void handle_time()
             --you.abyss_speed;
     }
 
-    if (you.religion == GOD_JIYVA && one_chance_in(10))
+    if (you_worship(GOD_JIYVA) && one_chance_in(10))
     {
         int total_jellies = 1 + random2(5);
         bool success = false;
@@ -2334,13 +2295,13 @@ void handle_time()
         }
     }
 
-    if (you.religion == GOD_JIYVA && x_chance_in_y(you.piety / 4, MAX_PIETY)
+    if (you_worship(GOD_JIYVA) && x_chance_in_y(you.piety / 4, MAX_PIETY)
         && !player_under_penance() && one_chance_in(4))
     {
         jiyva_stat_action();
     }
 
-    if (you.religion == GOD_JIYVA && one_chance_in(25))
+    if (you_worship(GOD_JIYVA) && one_chance_in(25))
         jiyva_eat_offlevel_items();
 
     if (int lev = player_mutation_level(MUT_EVOLUTION))
@@ -2365,9 +2326,6 @@ void handle_time()
             if (evol)
                 more();
         }
-
-    if (player_in_branch(BRANCH_SPIDER_NEST) && coinflip())
-        place_webs(random2(3 * you.depth), true);
 }
 
 // Move monsters around to fake them walking around while player was
@@ -2378,11 +2336,26 @@ static void _catchup_monster_moves(monster* mon, int turns)
     if (!mon->alive())
         return;
 
+    // Expire friendly summons
+    if (mon->friendly() && mon->is_summoned() && !mon->is_perm_summoned())
+    {
+        // You might still see them disappear if you were quick
+        if (turns > 2)
+            monster_die(mon, KILL_DISMISSED, NON_MONSTER);
+        else
+        {
+            mon_enchant abj  = mon->get_ench(ENCH_ABJ);
+            abj.duration = 0;
+            mon->update_ench(abj);
+        }
+        return;
+    }
+
     // Don't move non-land or stationary monsters around.
     if (mons_primary_habitat(mon) != HT_LAND
         || mons_is_zombified(mon)
            && mons_class_primary_habitat(mon->base_monster) != HT_LAND
-        || mons_is_stationary(mon))
+        || mon->is_stationary())
     {
         return;
     }
@@ -2437,7 +2410,7 @@ static void _catchup_monster_moves(monster* mon, int turns)
     }
 
     bool changed = false;
-    for  (int i = 0; i < range/x; i++)
+    for (int i = 0; i < range/x; i++)
     {
         if (mon->behaviour == BEH_SLEEP)
             break;
@@ -2513,7 +2486,7 @@ static void _catchup_monster_moves(monster* mon, int turns)
         coord_def inc(mon->target - pos);
         inc = coord_def(sgn(inc.x), sgn(inc.y));
 
-        if (mons_is_retreating(mon))
+        if (mons_is_retreating(mon) || mons_is_cornered(mon))
             inc *= -1;
 
         // Bounds check: don't let shifting monsters try to run off the
@@ -2612,22 +2585,7 @@ void update_level(int elapsedTime)
         // XXX: Allow some spellcasting (like Healing and Teleport)? - bwr
         // const bool healthy = (mi->hit_points * 2 > mi->max_hit_points);
 
-        // This is the monster healing code, moved here from tag.cc:
-        if (mons_can_regenerate(*mi))
-        {
-            if (monster_descriptor(mi->type, MDSC_REGENERATES)
-                || mi->type == MONS_PLAYER_GHOST)
-            {
-                mi->heal(turns);
-            }
-            else
-            {
-                // Set a lower ceiling of 0.1 on the regen rate.
-                const int regen_rate = max(mons_natural_regen_rate(*mi) * 2, 5);
-
-                mi->heal(div_rand_round(turns * regen_rate, 50));
-            }
-        }
+        mi->heal(div_rand_round(turns * mons_off_level_regen_rate(*mi), 100));
 
         // Handle nets specially to remove the trapping property of the net.
         if (mi->caught())
@@ -2658,7 +2616,7 @@ struct greater_second
     // here.
     bool operator()(const T & left, const T & right)
     {
-        return (left.second > right.second);
+        return left.second > right.second;
     }
 };
 
@@ -2691,7 +2649,7 @@ int place_ring(vector<coord_def> &ring_points,
                int arc_occupancy,
                int &seen_count)
 {
-    random_shuffle(ring_points.begin(), ring_points.end());
+    shuffle_array(ring_points);
 
     int target_amount = ring_points.size();
     int spawned_count = 0;
@@ -2723,7 +2681,7 @@ int place_ring(vector<coord_def> &ring_points,
 // Collect lists of points that are within LOS (under the given env map),
 // unoccupied, and not solid (walls/statues).
 void collect_radius_points(vector<vector<coord_def> > &radius_points,
-                           const coord_def &origin, const los_base* los)
+                           const coord_def &origin, los_type los)
 {
     radius_points.clear();
     radius_points.resize(LOS_RADIUS);
@@ -2756,7 +2714,6 @@ void collect_radius_points(vector<vector<coord_def> > &radius_points,
 
         fringe.pop();
 
-
         int idx = current.first.x + current.first.y * X_WIDTH;
         if (!visited_indices.insert(idx).second)
             continue;
@@ -2778,7 +2735,7 @@ void collect_radius_points(vector<vector<coord_def> > &radius_points,
             coord_dist temp(*i, current.second);
 
             // If the grid is out of LOS, skip it.
-            if (!los->see_cell(temp.first))
+            if (!cell_see_cell(origin, temp.first, los))
                 continue;
 
             coord_def local = temp.first - origin;
@@ -2787,7 +2744,7 @@ void collect_radius_points(vector<vector<coord_def> > &radius_points,
 
             idx = temp.first.x + temp.first.y * X_WIDTH;
 
-            if (visited_indices.find(idx) == visited_indices.end()
+            if (!visited_indices.count(idx)
                 && in_bounds(temp.first)
                 && !cell_is_solid(temp.first))
             {
@@ -2811,9 +2768,7 @@ static int _mushroom_ring(item_def &corpse, int & seen_count,
 
     vector<vector<coord_def> > radius_points;
 
-    los_def los(corpse.pos, opc_solid);
-
-    collect_radius_points(radius_points, corpse.pos, &los);
+    collect_radius_points(radius_points, corpse.pos, LOS_SOLID);
 
     // So what we have done so far is collect the set of points at each radius
     // reachable from the origin with (somewhat constrained) 8 connectivity,
@@ -2924,7 +2879,7 @@ int spawn_corpse_mushrooms(item_def& corpse,
 
         // Is this square occupied by a non mushroom?
         if (mons && mons->mons_species() != MONS_TOADSTOOL
-            || player_occupant && you.religion != GOD_FEDHAS
+            || player_occupant && !you_worship(GOD_FEDHAS)
             || !can_spawn_mushrooms(current))
         {
             continue;
@@ -2972,7 +2927,8 @@ int spawn_corpse_mushrooms(item_def& corpse,
                 placed_targets++;
                 if (current == you.pos())
                 {
-                    mprf("A toadstool grows at your feet.");
+                    mprf("A toadstool grows %s.",
+                         player_has_feet() ? "at your feet" : "before you");
                     current = mushroom->pos();
                 }
                 else if (you.see_cell(current))
@@ -2987,7 +2943,7 @@ int spawn_corpse_mushrooms(item_def& corpse,
             break;
 
         // Wish adjacent_iterator had a random traversal.
-        random_shuffle(permutation, permutation+c_size);
+        shuffle_array(permutation, c_size);
 
         for (int count = 0; count < c_size; ++count)
         {
@@ -2995,7 +2951,7 @@ int spawn_corpse_mushrooms(item_def& corpse,
 
             int index = temp.x + temp.y * X_WIDTH;
 
-            if (visited_indices.find(index) == visited_indices.end()
+            if (!visited_indices.count(index)
                 && in_bounds(temp)
                 && mons_class_can_pass(MONS_TOADSTOOL, grd(temp)))
             {
@@ -3038,20 +2994,18 @@ int mushroom_prob(item_def & corpse)
 
 bool mushroom_spawn_message(int seen_targets, int seen_corpses)
 {
-    if (seen_targets > 0)
-    {
-        string what  = seen_targets  > 1 ? "Some toadstools"
-                                         : "A toadstool";
-        string where = seen_corpses  > 1 ? "nearby corpses" :
-                       seen_corpses == 1 ? "a nearby corpse"
-                                         : "the ground";
-        mprf("%s grow%s from %s.",
-             what.c_str(), seen_targets > 1 ? "" : "s", where.c_str());
+    if (seen_targets <= 0)
+        return false;
 
-        return true;
-    }
+    string what  = seen_targets  > 1 ? "Some toadstools"
+                                     : "A toadstool";
+    string where = seen_corpses  > 1 ? "nearby corpses" :
+                   seen_corpses == 1 ? "a nearby corpse"
+                                     : "the ground";
+    mprf("%s grow%s from %s.",
+         what.c_str(), seen_targets > 1 ? "" : "s", where.c_str());
 
-    return false;
+    return true;
 }
 
 //---------------------------------------------------------------
@@ -3116,7 +3070,9 @@ static void _recharge_rod(item_def &rod, int aut, bool in_inv)
 
     int rate = 4 + rod.special;
 
-    rate *= 10 * aut + skill_bump(SK_EVOCATIONS, aut);
+    rate *= 10 * aut;
+    if (in_inv)
+        rate += skill_bump(SK_EVOCATIONS, aut);
     rate = div_rand_round(rate, 100);
 
     if (rate > rod.plus2 - rod.plus) // Prevent overflow
@@ -3167,14 +3123,14 @@ void slime_wall_damage(actor* act, int delay)
     if (!walls)
         return;
 
-    const int depth = player_in_branch(BRANCH_SLIME_PITS) ? you.depth : 1;
+    const int depth = player_in_branch(BRANCH_SLIME) ? you.depth : 1;
 
     // Up to 1d6 damage per wall per slot.
     const int strength = div_rand_round(depth * walls * delay, BASELINE_DELAY);
 
     if (act->is_player())
     {
-        if (you.religion != GOD_JIYVA || you.penance[GOD_JIYVA])
+        if (!you_worship(GOD_JIYVA) || you.penance[GOD_JIYVA])
         {
             splash_with_acid(strength, NON_MONSTER, false,
                              (walls > 1) ? "The walls burn you!"
@@ -3202,21 +3158,33 @@ void slime_wall_damage(actor* act, int delay)
 
 void recharge_elemental_evokers(int exp)
 {
-    vector<item_def*> evokers;
-    for (int item = 0; item < ENDOFPACK; ++item)
+    FixedVector<item_def*, NUM_MISCELLANY> evokers(nullptr);
+    for (int i = 0; i < ENDOFPACK; ++i)
     {
-        if (is_elemental_evoker(you.inv[item]) && you.inv[item].plus2 > 0)
-            evokers.push_back(&you.inv[item]);
+        item_def& item(you.inv[i]);
+        if (is_elemental_evoker(item) && item.plus2 > 0)
+        {
+            // Only recharge one of each type of evoker at a time.
+            if (evokers[item.sub_type]
+                && evokers[item.sub_type]->plus2 <= item.plus2)
+            {
+                continue;
+            }
+
+            evokers[item.sub_type] = &item;
+        }
     }
 
     int xp_factor = max(min((int)exp_needed(you.experience_level+1, 0) * 2 / 7,
                              you.experience_level * 425),
                         you.experience_level*4 + 30)
-                    / (3 + you.skill_rdiv(SK_EVOCATIONS, 2, 7));
+                    / (3 + you.skill_rdiv(SK_EVOCATIONS, 2, 13));
 
-    for (unsigned int i = 0; i < evokers.size(); ++i)
+    for (int i = 0; i < NUM_MISCELLANY; ++i)
     {
         item_def* evoker = evokers[i];
+        if (!evoker)
+            continue;
         evoker->plus2 -= div_rand_round(exp, xp_factor);
         if (evoker->plus2 <= 0)
         {

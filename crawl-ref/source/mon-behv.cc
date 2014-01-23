@@ -8,7 +8,8 @@
 
 #include "externs.h"
 
-#include "abl-show.h"
+#include "ability.h"
+#include "act-iter.h"
 #include "areas.h"
 #include "coord.h"
 #include "coordit.h"
@@ -21,13 +22,14 @@
 #include "macro.h"
 #include "mon-act.h"
 #include "mon-death.h"
-#include "mon-iter.h"
 #include "mon-movetarget.h"
 #include "mon-pathfind.h"
 #include "mon-speak.h"
 #include "mon-stuff.h"
 #include "ouch.h"
 #include "random.h"
+#include "religion.h"
+#include "spl-summoning.h"
 #include "state.h"
 #include "terrain.h"
 #include "traps.h"
@@ -46,9 +48,7 @@ static void _guess_invis_foe_pos(monster* mon)
 
     // NOTE: This depends on ignoring clouds, so that cells hidden by
     // opaque clouds are included as a possibility for the foe's location.
-    los_def los(mon->pos(), opc_fullyopaque, circle_def(guess_radius, C_ROUND));
-    los.update();
-    for (radius_iterator ri(&los); ri; ++ri)
+    for (radius_iterator ri(mon->pos(), guess_radius, C_ROUND, LOS_SOLID); ri; ++ri)
     {
         if (foe->is_habitable(*ri))
             possibilities.push_back(*ri);
@@ -62,6 +62,11 @@ static void _guess_invis_foe_pos(monster* mon)
 
 static void _mon_check_foe_invalid(monster* mon)
 {
+    // Assume a spectral weapon has a valid target
+    // Ideally this is not outside special cased like this
+    if (mon->type == MONS_SPECTRAL_WEAPON)
+        return;
+
     if (mon->foe != MHITNOT && mon->foe != MHITYOU)
     {
         if (actor *foe = mon->get_foe())
@@ -94,8 +99,8 @@ static bool _mon_tries_regain_los(monster* mon)
     }
 
     // Randomize it a bit to make it less predictable.
-    return (mons_intel(mon) == I_NORMAL && !one_chance_in(10)
-            || mons_intel(mon) == I_HIGH && !one_chance_in(20));
+    return mons_intel(mon) == I_NORMAL && !one_chance_in(10)
+           || mons_intel(mon) == I_HIGH && !one_chance_in(20);
 }
 
 // Monster tries to get into a firing position. Among the cells which have
@@ -114,14 +119,13 @@ static void _set_firing_pos(monster* mon, coord_def target)
     int best_distance_to_ideal_range = INT_MAX;
     coord_def best_pos(0, 0);
 
-    const los_base *los = mon->get_los();
     for (distance_iterator di(mon->pos(), true, true, LOS_RADIUS);
          di; ++di)
     {
         const coord_def p(*di);
         const int range = p.distance_from(target);
 
-        if (!los->see_cell(*di))
+        if (!mon->see_cell(*di))
             continue;
 
         if (!in_bounds(p) || range > max_range
@@ -144,6 +148,123 @@ static void _set_firing_pos(monster* mon, coord_def target)
     }
 
     mon->firing_pos = best_pos;
+}
+
+struct dist2_sorter
+{
+    coord_def pos;
+    bool operator()(const coord_def a, const coord_def b)
+    {
+        return distance2(a, pos) < distance2(b, pos);
+    }
+};
+
+static bool _can_traverse_unseen(const monster* mon, const coord_def& target)
+{
+    if (mon->pos() == target)
+        return true;
+
+    ray_def ray;
+    if (!find_ray(mon->pos(), target, ray, opc_immob))
+        return false;
+
+    while (ray.pos() != target && ray.advance())
+        if (!mon_can_move_to_pos(mon, ray.pos() - mon->pos()))
+            return false;
+
+    return true;
+}
+
+// Attempt to find the furthest position from a given target which still has
+// line of sight to it, and which the monster can move to (without pathfinding)
+static coord_def _furthest_aim_spot(monster* mon, coord_def target)
+{
+    int best_distance = 0;
+    coord_def best_pos(0, 0);
+
+    for (distance_iterator di(mon->pos(), false, false, LOS_RADIUS);
+         di; ++di)
+    {
+        const coord_def p(*di);
+        const int range = p.distance_from(target);
+
+        if (!cell_see_cell(mon->pos(), *di, LOS_NO_TRANS))
+            continue;
+
+        if (!in_bounds(p) || range > LOS_RADIUS - 1
+            || !cell_see_cell(p, target, LOS_NO_TRANS)
+            || !mon_can_move_to_pos(mon, p - mon->pos(), true))
+        {
+            continue;
+        }
+
+        const int distance = p.distance_from(target);
+        if (distance > best_distance)
+        {
+            if (_can_traverse_unseen(mon, p))
+            {
+                best_pos = p;
+                best_distance = distance;
+            }
+        }
+    }
+
+    return best_pos;
+}
+
+// Tries to find and set an optimal spot for the curse skull to lurk, just
+// outside player's line of sight. We consider this to be the spot the furthest
+// from the player which still has line of sight to where the player will move
+// if they are approaching us. (This keeps it from lurking immediately around
+// corners, where the player can enter melee range of it the first turn it comes
+// into sight)
+//
+// The answer given is not always strictly optimal, since no actual pathfinding
+// is done, and sometimes the best lurking position crosses spots visible to
+// the player unless a more circuitous route is taken, but generally it is
+// pretty good, and eliminates the most obvious cases of players luring them
+// into easy kill.
+static void _set_curse_skull_lurk_pos(monster* mon)
+{
+    // If we're already moving somewhere that we can actually reach, don't
+    // search for a new spot.
+    if (!mon->firing_pos.origin() && _can_traverse_unseen(mon, mon->firing_pos))
+        return;
+
+    // Examine spots adjacent to our target, starting with those closest to us
+    vector<coord_def> spots;
+    for (adjacent_iterator ai(you.pos()); ai; ++ai)
+    {
+        if (!cell_is_solid(*ai) || feat_is_door(grd(*ai)))
+            spots.push_back(*ai);
+    }
+
+    dist2_sorter sorter = {mon->pos()};
+    sort(spots.begin(), spots.end(), sorter);
+
+    coord_def lurk_pos(0, 0);
+    for (unsigned int i = 0; i < spots.size(); ++i)
+    {
+        lurk_pos = _furthest_aim_spot(mon, spots[i]);
+
+        // Consider the first position found to be good enough
+        if (!lurk_pos.origin())
+        {
+            mon->firing_pos = lurk_pos;
+            return;
+        }
+    }
+}
+
+static bool _stabber_keep_distance(const monster* mon, const actor* foe)
+{
+    return mons_class_flag(mon->type, M_STABBER)
+           && !mon->berserk_or_insane()
+           && (mons_has_incapacitating_ranged_attack(mon, foe)
+               || mons_has_incapacitating_spell(mon, foe))
+           && !foe->incapacitated()
+           && !adjacent(mon->pos(), foe->pos())
+           && !mons_aligned(mon, foe);
 }
 
 //---------------------------------------------------------------
@@ -181,17 +302,15 @@ void handle_behaviour(monster* mon)
     bool changed = true;
     bool isFriendly = mon->friendly();
     bool isNeutral  = mon->neutral();
-    bool wontAttack = mon->wont_attack();
+    bool wontAttack = mon->wont_attack() && !mon->has_ench(ENCH_INSANE);
 
     // Whether the player position is in LOS of the monster.
     bool proxPlayer = !crawl_state.game_is_arena() && mon->see_cell(you.pos());
 
-#ifdef WIZARD
-    // If stealth is greater than actually possible (wizmode level)
-    // pretend the player isn't there, but only for hostile monsters.
-    if (proxPlayer && you.skills[SK_STEALTH] > 27 && !mon->wont_attack())
+    // If set, pretend the player isn't there, but only for hostile monsters.
+    if (proxPlayer && crawl_state.disables[DIS_MON_SIGHT] && !mon->wont_attack())
         proxPlayer = false;
-#endif
+
     bool proxFoe;
     bool isHealthy  = (mon->hit_points > mon->max_hit_points / 2);
     bool isSmart    = (mons_intel(mon) > I_ANIMAL);
@@ -210,8 +329,7 @@ void handle_behaviour(monster* mon)
             const int loss = div_rand_round(10, mon->speed);
             if (loss)
             {
-                mpr("Your flesh rots away as the Orb of Zot is desecrated.",
-                    MSGCH_DANGER);
+                mprf(MSGCH_DANGER, "Your flesh rots away as the Orb of Zot is desecrated.");
 
                 // If the rot would reduce us to <= 0 max HP, attribute the
                 // kill to the monster.
@@ -241,21 +359,51 @@ void handle_behaviour(monster* mon)
         return;
     }
 
-    // Make sure monsters are not targetting the player in arena mode.
-    ASSERT(!(crawl_state.game_is_arena() && mon->foe == MHITYOU));
-
-    if (mons_wall_shielded(mon) && cell_is_solid(mon->pos()))
-    {
-        // Monster is safe, so its behaviour can be simplified to fleeing.
-        if (mon->behaviour == BEH_CORNERED || mon->behaviour == BEH_PANIC
-            || isScared)
-        {
-            mon->behaviour = BEH_FLEE;
-        }
-    }
+    // Make sure monsters are not targeting the player in arena mode.
+    ASSERT(!crawl_state.game_is_arena() || mon->foe != MHITYOU);
 
     // Validate current target exists.
     _mon_check_foe_invalid(mon);
+
+    // The target and foe set here for a spectral weapon should never change
+    if (mon->type == MONS_SPECTRAL_WEAPON)
+    {
+        // Do nothing if we're still being placed
+        if (!mon->summoner)
+            return;
+
+        actor *owner = actor_by_mid(mon->summoner);
+
+        if (!owner || !owner->alive())
+        {
+            end_spectral_weapon(mon, false);
+            return;
+        }
+
+        mon->target = owner->pos();
+        mon->foe = MHITNOT;
+        // Try to move towards any monsters the owner is attacking
+        if (mon->props.exists(SW_TARGET_MID))
+        {
+            actor *atarget = actor_by_mid(mon->props[SW_TARGET_MID].get_int());
+
+            // Only go after the target if it's still near the owner,
+            // and so are we.
+            // The weapon is restricted to a leash range of 2,
+            // and things reachable within that leash range [qoala]
+            const int leash = 2;
+            if (atarget && atarget->alive()
+                && (grid_distance(owner->pos(), atarget->pos())
+                    <= ((mon->reach_range() == REACH_TWO) ? leash + 2 : leash + 1))
+                && (grid_distance(owner->pos(), mon->pos()) <= leash))
+            {
+                mon->target = atarget->pos();
+                mon->foe = atarget->mindex();
+            }
+            else
+                reset_spectral_weapon(mon);
+        }
+    }
 
     // Change proxPlayer depending on invisibility and standing
     // in shallow water.
@@ -281,14 +429,14 @@ void handle_behaviour(monster* mon)
 
         // Ash penance makes monsters very likely to target you through
         // invisibility, depending on their intelligence.
-        if (you.penance[GOD_ASHENZARI] && x_chance_in_y(intel, 6))
+        if (player_under_penance(GOD_ASHENZARI) && x_chance_in_y(intel, 7))
             proxPlayer = true;
     }
 
     // Zotdef: immobile allies forget targets that are out of sight
     if (crawl_state.game_is_zotdef())
     {
-        if (isFriendly && mons_is_stationary(mon)
+        if (isFriendly && mon->is_stationary()
             && (mon->foe != MHITNOT && mon->foe != MHITYOU)
             && !mon->can_see(&menv[mon->foe]))
         {
@@ -302,15 +450,19 @@ void handle_behaviour(monster* mon)
     // Berserking allies ignore your commands!
     if (isFriendly
         && (mon->foe == MHITNOT || mon->foe == MHITYOU)
-        && !mon->berserk()
+        && !mon->berserk_or_insane()
         && mon->behaviour != BEH_WITHDRAW
         && mon->type != MONS_GIANT_SPORE
-        && mon->type != MONS_BATTLESPHERE)
+        && mon->type != MONS_BALL_LIGHTNING
+        && mon->type != MONS_BATTLESPHERE
+        && mon->type != MONS_SPECTRAL_WEAPON)
     {
-        if  (!crawl_state.game_is_zotdef())
+        if (!crawl_state.game_is_zotdef())
         {
             if (you.pet_target != MHITNOT)
                 mon->foe = you.pet_target;
+            else if (mons_class_is_stationary(mon->type))
+                _set_nearest_monster_foe(mon);
         }
         else    // Zotdef only
         {
@@ -323,8 +475,8 @@ void handle_behaviour(monster* mon)
             }
             else
             {
-               // Zotdef - this is all new, for out-of-sight friendlies to do
-               // something useful.  If no current target, get the closest one.
+                // Zotdef - this is all new, for out-of-sight friendlies to do
+                // something useful.  If no current target, get the closest one.
                 _set_nearest_monster_foe(mon);
             }
         }
@@ -332,13 +484,22 @@ void handle_behaviour(monster* mon)
 
     // Instead, berserkers attack nearest monsters.
     if (mon->behaviour != BEH_SLEEP
-        && (mon->berserk() || mon->type == MONS_GIANT_SPORE)
-        && (mon->foe == MHITNOT || isFriendly && mon->foe == MHITYOU))
+        && (mon->has_ench(ENCH_INSANE)
+            || ((mon->berserk()
+                 || mon->type == MONS_GIANT_SPORE
+                 || mon->type == MONS_BALL_LIGHTNING)
+                && (mon->foe == MHITNOT
+                    || isFriendly && mon->foe == MHITYOU))))
     {
         // Intelligent monsters prefer to attack the player,
         // even when berserking.
-        if (!isFriendly && proxPlayer && mons_intel(mon) >= I_NORMAL)
+        if (!isFriendly
+            && !mon->has_ench(ENCH_INSANE)
+            && proxPlayer
+            && mons_intel(mon) >= I_NORMAL)
+        {
             mon->foe = MHITYOU;
+        }
         else
             _set_nearest_monster_foe(mon);
     }
@@ -357,7 +518,8 @@ void handle_behaviour(monster* mon)
     }
 
     // Friendly summons will come back to the player if they go out of sight.
-    if (!summon_can_attack(mon))
+    // Spectral weapon should keep its target even though it can't attack it
+    if (!summon_can_attack(mon) && mon->type!=MONS_SPECTRAL_WEAPON)
         mon->target = you.pos();
 
     // Monsters do not attack themselves. {dlb}
@@ -373,7 +535,9 @@ void handle_behaviour(monster* mon)
     }
 
     // Neutral monsters prefer not to attack players, or other neutrals.
-    if (isNeutral && mon->foe != MHITNOT
+    if (isNeutral
+        && !mon->has_ench(ENCH_INSANE)
+        && mon->foe != MHITNOT
         && (mon->foe == MHITYOU || menv[mon->foe].neutral()))
     {
         mon->foe = MHITNOT;
@@ -381,10 +545,11 @@ void handle_behaviour(monster* mon)
 
     // Unfriendly monsters fighting other monsters will usually
     // target the player, if they're healthy.
-    // Zotdef: 2/3 chance of retargetting changed to 1/4
+    // Zotdef: 2/3 chance of retargeting changed to 1/4
     if (!isFriendly && !isNeutral
         && mon->foe != MHITYOU && mon->foe != MHITNOT
-        && proxPlayer && !mon->berserk() && isHealthy
+        && proxPlayer && !mon->berserk_or_insane()
+        && isHealthy
         && (crawl_state.game_is_zotdef() ? one_chance_in(4)
                                          : !one_chance_in(3)))
     {
@@ -458,8 +623,10 @@ void handle_behaviour(monster* mon)
             {
                 if (crawl_state.game_is_arena()
                     || !proxPlayer && !isFriendly
-                    || isNeutral || patrolling
-                    || mon->type == MONS_GIANT_SPORE)
+                    || isNeutral && !mon->has_ench(ENCH_INSANE)
+                    || patrolling
+                    || mon->type == MONS_GIANT_SPORE
+                    || mon->type == MONS_BALL_LIGHTNING)
                 {
                     if (mon->behaviour != BEH_LURK)
                         new_beh = BEH_WANDER;
@@ -563,11 +730,16 @@ void handle_behaviour(monster* mon)
                     }
                 }
 
-
                 if (mon->foe_memory <= 0
                     && !(mon->friendly() && mon->foe == MHITYOU))
                 {
                     new_beh = BEH_WANDER;
+                }
+                else if ((mon->type == MONS_CURSE_SKULL
+                          && mon->foe == MHITYOU
+                          && grid_distance(mon->pos(), you.pos()) <= LOS_RADIUS))
+                {
+                    _set_curse_skull_lurk_pos(mon);
                 }
                 // If the player walk out of the LOS of a monster with a ranged
                 // attack, we assume it sees in which direction the player went
@@ -611,18 +783,21 @@ void handle_behaviour(monster* mon)
             if (mon->foe == MHITYOU)
             {
                 // The foe is the player.
-
-                if ((mons_class_flag(mon->type, M_MAINTAIN_RANGE)
-                     || (mons_class_flag(mon->type, M_STABBER)
-                         && (mons_has_ranged_attack(mon)
-                             || mons_has_ranged_spell(mon, false, true))
-                         && you.can_see(mon)
-                         && !you.incapacitated()
-                         && !adjacent(mon->pos(), you.pos())))
-                    && !mon->berserk())
+                if (mons_class_flag(mon->type, M_MAINTAIN_RANGE)
+                    && !mon->berserk_or_insane())
                 {
                     if (mon->attitude != ATT_FRIENDLY)
                         // Get to firing range even if we are close.
+                        _set_firing_pos(mon, you.pos());
+                }
+                else if (_stabber_keep_distance(mon, &you))
+                {
+                    if (mon->pos().distance_from(you.pos()) < 4
+                        && !one_chance_in(7))
+                    {
+                        mon->firing_pos = mon->pos();
+                    }
+                    else
                         _set_firing_pos(mon, you.pos());
                 }
                 else if (!mon->firing_pos.zero()
@@ -664,16 +839,20 @@ void handle_behaviour(monster* mon)
                 monster* target = &menv[mon->foe];
                 mon->target = target->pos();
 
-                if ((mons_class_flag(mon->type, M_MAINTAIN_RANGE)
-                     || (mons_class_flag(mon->type, M_STABBER)
-                         && (mons_has_ranged_attack(mon)
-                             || mons_has_ranged_spell(mon, false, true))
-                         && target->can_see(mon)
-                         && !target->incapacitated()
-                         && !adjacent(mon->pos(), target->pos())))
-                    && !mon->berserk())
+                if (mons_class_flag(mon->type, M_MAINTAIN_RANGE)
+                    && !mon->berserk_or_insane())
                 {
                     _set_firing_pos(mon, mon->target);
+                }
+                else if (target && _stabber_keep_distance(mon, target))
+                {
+                    if (mon->pos().distance_from(target->pos()) < 4
+                        && !one_chance_in(7))
+                    {
+                        mon->firing_pos = mon->pos();
+                    }
+                    else
+                        _set_firing_pos(mon, target->pos());
                 }
 
             }
@@ -719,7 +898,7 @@ void handle_behaviour(monster* mon)
             }
 
             if (mon->strict_neutral() && mons_is_slime(mon)
-                && you.religion == GOD_JIYVA)
+                && you_worship(GOD_JIYVA))
             {
                 set_random_slime_target(mon);
             }
@@ -737,7 +916,8 @@ void handle_behaviour(monster* mon)
             // Creatures not currently pursuing another foe are
             // alerted by a sentinel's mark
             if (mon->foe == MHITNOT && you.duration[DUR_SENTINEL_MARK]
-                && !isFriendly && !isNeutral && !isPacified)
+                && (!isFriendly && !isNeutral && !isPacified
+                    || mon->has_ench(ENCH_INSANE)))
             {
                 new_foe = MHITYOU;
                 new_beh = BEH_SEEK;
@@ -803,8 +983,6 @@ void handle_behaviour(monster* mon)
                 if (mon->foe == MHITYOU)
                     mon->target = you.pos();
             }
-            else if (mons_wall_shielded(mon) && find_wall_target(mon))
-                ; // Wall target found.
             else if (proxFoe)
             {
                 // Special-cased below so that it will flee *from* the
@@ -814,20 +992,20 @@ void handle_behaviour(monster* mon)
             break;
 
         case BEH_CORNERED:
-            // Plants and nonliving monsters cannot fight back.
-            if (mon->holiness() == MH_PLANT
-                || mon->holiness() == MH_NONLIVING)
-            {
-                break;
-            }
 
-            if (isHealthy)
-                new_beh = BEH_SEEK;
+            // If we were able to move since becoming cornered, resume fleeing
+            if (mon->pos() != mon->props["last_pos"].get_coord())
+            {
+                new_beh = BEH_FLEE;
+                mon->props.erase("last_pos");
+            }
 
             // Foe gone out of LOS?
             if (!proxFoe)
             {
-                if ((isFriendly || proxPlayer) && !isNeutral && !patrolling
+                if ((isFriendly || proxPlayer)
+                    && (!isNeutral || mon->has_ench(ENCH_INSANE))
+                    && !patrolling
                     && !crawl_state.game_is_arena())
                 {
                     new_foe = MHITYOU;
@@ -938,16 +1116,6 @@ void handle_behaviour(monster* mon)
 
         mon->foe = new_foe;
     }
-
-    if (mon->travel_target == MTRAV_WALL && cell_is_solid(mon->pos()))
-    {
-        if (mon->behaviour == BEH_FLEE)
-        {
-            // Monster is safe, so stay put.
-            mon->target = mon->pos();
-            mon->foe = MHITNOT;
-        }
-    }
 }
 
 static bool _mons_check_foe(monster* mon, const coord_def& p,
@@ -960,7 +1128,8 @@ static bool _mons_check_foe(monster* mon, const coord_def& p,
 
     monster* foe = monster_at(p);
     if (foe && foe != mon
-        && (foe->friendly() != friendly
+        && (mon->has_ench(ENCH_INSANE)
+            || foe->friendly() != friendly
             || neutral && !foe->neutral())
         && mon->can_see(foe)
         && !foe->is_projectile()
@@ -971,6 +1140,10 @@ static bool _mons_check_foe(monster* mon, const coord_def& p,
     {
         return true;
     }
+
+    if (mon->has_ench(ENCH_INSANE) && p == you.pos())
+        return true;
+
     return false;
 }
 
@@ -981,8 +1154,11 @@ static void _set_nearest_monster_foe(monster* mon)
     if (mon->good_neutral() || mon->strict_neutral()
             || mon->behaviour == BEH_WITHDRAW
             || mon->type == MONS_BATTLESPHERE
+            || mon->type == MONS_SPECTRAL_WEAPON
             || mon->has_ench(ENCH_HAUNTING))
+    {
         return;
+    }
 
     const bool friendly = mon->friendly();
     const bool neutral  = mon->neutral();
@@ -1081,64 +1257,76 @@ void behaviour_event(monster* mon, mon_event_type event, const actor *src,
 
     case ME_WHACK:
     case ME_ANNOY:
-
         // Orders to withdraw take precedence over interruptions
-        if (mon->behaviour == BEH_WITHDRAW)
+        if (mon->behaviour == BEH_WITHDRAW && src != &you)
             break;
 
         // Will turn monster against <src>, unless they
         // are BOTH friendly or good neutral AND stupid,
         // or else fleeing anyway.  Hitting someone over
         // the head, of course, always triggers this code.
-        if (event == ME_WHACK
-            || ((wontAttack != sourceWontAttack || (mons_intel(mon) > I_PLANT))
-                && (!mons_is_fleeing(mon) && !mons_class_flag(mon->type, M_FLEEING))
-                && !mons_is_panicking(mon)))
+        if (event != ME_WHACK
+            && !mon->has_ench(ENCH_INSANE)
+            && (wontAttack == sourceWontAttack && mons_intel(mon) <= I_PLANT
+                || mons_is_fleeing(mon)))
         {
-            // Monster types that you can't gain experience from cannot
-            // fight back, so don't bother having them do so.  If you
-            // worship Fedhas, create a ring of friendly plants, and try
-            // to break out of the ring by killing a plant, you'll get
-            // a warning prompt and penance only once.  Without the
-            // hostility check, the plant will remain friendly until it
-            // dies, and you'll get a warning prompt and penance once
-            // *per hit*.  This may not be the best way to address the
-            // issue, though. -cao
-            if (mons_class_flag(mon->type, M_NO_EXP_GAIN)
-                && mon->attitude != ATT_FRIENDLY
-                && mon->attitude != ATT_GOOD_NEUTRAL)
-            {
-                return;
-            }
-
-            mon->foe = src_idx;
-
-            if (mon->asleep() && mons_near(mon))
-                remove_auto_exclude(mon, true);
-
-            // If the monster can't reach its target and can't attack it
-            // either, retreat.
-            try_pathfind(mon);
-            if (mons_intel(mon) > I_REPTILE && !mons_can_attack(mon)
-                && target_is_unreachable(mon))
-            {
-                mon->behaviour = BEH_RETREAT;
-            }
-            else if (!mons_is_cornered(mon) && (mon->hit_points > fleeThreshold))
-                mon->behaviour = BEH_SEEK;
-            else if (mon->asleep())
-                mon->behaviour = BEH_SEEK;
-
-            if (src == &you && mon->type != MONS_BATTLESPHERE)
-            {
-                mon->attitude = ATT_HOSTILE;
-                breakCharm    = true;
-            }
-
-            // XXX: Somewhat hacky, this being here.
-            if (mons_is_elven_twin(mon))
-                elven_twins_unpacify(mon);
+            break;
         }
+
+        // Monster types that you can't gain experience from cannot
+        // fight back, so don't bother having them do so.  If you
+        // worship Fedhas, create a ring of friendly plants, and try
+        // to break out of the ring by killing a plant, you'll get
+        // a warning prompt and penance only once.  Without the
+        // hostility check, the plant will remain friendly until it
+        // dies, and you'll get a warning prompt and penance once
+        // *per hit*.  This may not be the best way to address the
+        // issue, though. -cao
+        if (mons_class_flag(mon->type, M_NO_EXP_GAIN)
+            && mon->attitude != ATT_FRIENDLY
+            && mon->attitude != ATT_GOOD_NEUTRAL)
+        {
+            return;
+        }
+
+        mon->foe = src_idx;
+
+        if (mon->asleep() && mons_near(mon))
+            remove_auto_exclude(mon, true);
+
+        // If the monster can't reach its target and can't attack it
+        // either, retreat.
+        try_pathfind(mon);
+        if (mons_intel(mon) > I_REPTILE && !mons_can_attack(mon)
+            && target_is_unreachable(mon))
+        {
+            mon->behaviour = BEH_RETREAT;
+        }
+        else if (mon->has_ench(ENCH_FEAR))
+        {
+            if (you.can_see(mon))
+            {
+                mprf("%s attack snaps %s out of its fear.",
+                        src->name(DESC_ITS).c_str(),
+                        mon->name(DESC_THE).c_str());
+            }
+            mon->del_ench(ENCH_FEAR, true);
+        }
+        else if (!mons_is_fleeing(mon))
+            mon->behaviour = BEH_SEEK;
+
+        if (src == &you
+            && !mon->has_ench(ENCH_INSANE)
+            && mon->type != MONS_BATTLESPHERE
+            && mon->type != MONS_SPECTRAL_WEAPON)
+        {
+            mon->attitude = ATT_HOSTILE;
+            breakCharm    = true;
+        }
+
+        // XXX: Somewhat hacky, this being here.
+        if (mons_is_elven_twin(mon))
+            elven_twins_unpacify(mon);
 
         // Now set target so that monster can whack back (once) at an
         // invisible foe.
@@ -1160,15 +1348,19 @@ void behaviour_event(monster* mon, mon_event_type event, const actor *src,
         if (mon->behaviour == BEH_WITHDRAW)
             break;
 
-        // Avoid moving friendly giant spores out of BEH_WANDER.
-        if (mon->friendly() && mon->type == MONS_GIANT_SPORE)
+        // Avoid moving friendly explodey things out of BEH_WANDER.
+        if (mon->friendly()
+            && (mon->type == MONS_GIANT_SPORE
+                || mon->type == MONS_BALL_LIGHTNING))
+        {
             break;
+        }
 
         // [ds] Neutral monsters don't react to your presence.
         // XXX: Neutral monsters are a tangled mess of arbitrary logic.
         // It's not even clear any more what behaviours are intended for
         // neutral monsters and what are merely accidents of the code.
-        if (mon->neutral())
+        if (mon->neutral() && !mon->has_ench(ENCH_INSANE))
         {
             if (mon->asleep())
                 mon->behaviour = BEH_WANDER;
@@ -1181,13 +1373,8 @@ void behaviour_event(monster* mon, mon_event_type event, const actor *src,
         // Will alert monster to <src> and turn them
         // against them, unless they have a current foe.
         // It won't turn friends hostile either.
-        if ((!mons_is_fleeing(mon) || mons_class_flag(mon->type, M_FLEEING))
-            && !mons_is_retreating(mon)
-            && !mons_is_panicking(mon)
-            && !mons_is_cornered(mon))
-        {
+        if (!mons_is_retreating(mon))
             mon->behaviour = BEH_SEEK;
-        }
 
         if (mon->foe == MHITNOT)
             mon->foe = src_idx;
@@ -1213,7 +1400,7 @@ void behaviour_event(monster* mon, mon_event_type event, const actor *src,
     case ME_SCARE:
         // Stationary monsters can't flee, and berserking monsters
         // are too enraged.
-        if (mons_is_stationary(mon) || mon->berserk())
+        if (mon->is_stationary() || mon->berserk_or_insane())
         {
             mon->del_ench(ENCH_FEAR, true, true);
             break;
@@ -1235,20 +1422,7 @@ void behaviour_event(monster* mon, mon_event_type event, const actor *src,
         mon->foe       = src_idx;
         mon->target    = src_pos;
         if (src == &you)
-        {
-            // Friendly monsters don't become hostile if you read a
-            // scroll of fear, but enslaved ones will.
-            // Send friendlies off to a random target so they don't cling
-            // to you in fear.
-            if (mon->friendly())
-            {
-                breakCharm = true;
-                mon->foe   = MHITNOT;
-                set_random_target(mon);
-            }
-            else
                 setTarget = true;
-        }
         else if (mon->friendly() && !crawl_state.game_is_arena())
             mon->foe = MHITYOU;
 
@@ -1258,16 +1432,18 @@ void behaviour_event(monster* mon, mon_event_type event, const actor *src,
         break;
 
     case ME_CORNERED:
-        // Some monsters can't flee.
-        if (!mons_is_retreating(mon) && !mon->has_ench(ENCH_FEAR))
+        // We only care about this event if we were actually running away
+        if (!mons_is_retreating(mon))
             break;
 
         // Pacified monsters shouldn't change their behaviour.
         if (mon->pacified())
             break;
 
-        // Just set behaviour... foe doesn't change.
-        if (!mons_is_cornered(mon) && !mon->has_ench(ENCH_WITHDRAWN))
+        // If we were already cornered last turn, give up on trying to flee
+        // and turn to fight instead. Otherwise, pause a turn in hope that
+        // an escape route will open up.
+        if (mons_is_cornered(mon))
         {
             if (mon->friendly() && !crawl_state.game_is_arena())
             {
@@ -1278,11 +1454,20 @@ void behaviour_event(monster* mon, mon_event_type event, const actor *src,
             {
                 msg = getSpeakString(mon->name(DESC_PLAIN) + " cornered");
                 if (msg.empty())
-                    msg = "PLAIN:@The_monster@ turns to fight!";
+                    msg = "PLAIN:Cornered, @The_monster@ turns to fight!";
             }
+            mon->del_ench(ENCH_FEAR, true);
+            mon->behaviour = BEH_SEEK;
         }
-
-        mon->behaviour = BEH_CORNERED;
+        else if (mons_is_fleeing(mon))
+        {
+            // Save their current position so we know if they manage to move
+            // on the following turn (and thus resume BEH_FLEE)
+            mon->props["last_pos"].get_coord() = mon->pos();
+            mon->behaviour = BEH_CORNERED;
+        }
+        else
+            mon->behaviour = BEH_SEEK;
         break;
 
     case ME_HURT:
@@ -1298,8 +1483,7 @@ void behaviour_event(monster* mon, mon_event_type event, const actor *src,
         //   at 10 hp: 50% chance of fleeing
         //   (chance increases by 5% for every hp lost.)
         if (mons_class_flag(mon->type, M_FLEES)
-            && !mons_is_cornered(mon)
-            && !mon->berserk()
+            && !mon->berserk_or_insane()
             && x_chance_in_y(fleeThreshold - mon->hit_points, fleeThreshold))
         {
             mon->behaviour = BEH_FLEE;
@@ -1313,7 +1497,10 @@ void behaviour_event(monster* mon, mon_event_type event, const actor *src,
     if (setTarget && src)
     {
         mon->target = src_pos;
-        if (src->is_player() && mon->type != MONS_BATTLESPHERE)
+        if (src->is_player()
+            && !mon->has_ench(ENCH_INSANE)
+            && mon->type != MONS_BATTLESPHERE
+            && mon->type != MONS_SPECTRAL_WEAPON)
         {
             // Why only attacks by the player change attitude? -- 1KB
             mon->attitude = ATT_HOSTILE;

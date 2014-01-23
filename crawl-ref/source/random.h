@@ -1,10 +1,12 @@
 #ifndef RANDOM_H
 #define RANDOM_H
 
-#include "rng.h"
-
 #include <map>
 #include <vector>
+#include "hash.h"
+
+void seed_rng();
+void seed_rng(uint32_t seed);
 
 bool coinflip();
 int div_rand_round(int num, int den);
@@ -17,15 +19,22 @@ int maybe_random_div(int nom, int denom, bool random_factor);
 int maybe_roll_dice(int num, int size, bool random);
 int random_range(int low, int high);
 int random_range(int low, int high, int nrolls);
+uint32_t random_int();
 double random_real();
+double random_real_inc();
+double random_real_avg(int rolls);
+double random_range_real(double low, double high, int nrolls = 1);
 
 int random2avg(int max, int rolls);
 int bestroll(int max, int rolls);
+int biased_random2(int max, int n);
 int random2limit(int max, int limit);
 int binomial_generator(unsigned n_trials, unsigned trial_prob);
 bool bernoulli(double n_trials, double trial_prob);
 int fuzz_value(int val, int lowfuzz, int highfuzz, int naverage = 2);
 int roll_dice(int num, int size);
+
+int ui_random(int max);
 
 /**
  * Chooses one of the numbers passed in at random. The list of numbers
@@ -83,25 +92,41 @@ T random_choose_weighted(int weight, T first, ...)
     return chosen;
 }
 
+const char* random_choose_weighted(int weight, const char* first, ...);
+
 struct dice_def
 {
     int num;
     int size;
 
-    dice_def(int n = 0, int s = 0) : num(n), size(s) {}
+    dice_def() : num(0), size(0) {}
+    dice_def(int n, int s) : num(n), size(s) {}
     int roll() const;
 };
 
 dice_def calc_dice(int num_dice, int max_damage);
 void scale_dice(dice_def &dice, int threshold = 24);
 
-class rng_save_excursion
+template <typename T>
+void shuffle_array(T* arr, int n)
 {
-public:
-    rng_save_excursion(uint32_t seed) { push_rng_state(); seed_rng(seed); }
-    rng_save_excursion()          { push_rng_state(); }
-    ~rng_save_excursion()         { pop_rng_state(); }
-};
+    while (n > 1)
+    {
+        int i = random2(n);
+        n--;
+        T tmp = arr[i];
+        arr[i] = arr[n];
+        arr[n] = tmp;
+    }
+}
+
+template <typename T>
+void shuffle_array(vector<T> &vec)
+{
+    // &vec[0] is undefined behaviour, and vec.data() is C++11-only.
+    if (!vec.empty())
+        shuffle_array(&vec[0], vec.size());
+}
 
 /**
  * A defer_rand object represents an infinite tree of random values, allowing

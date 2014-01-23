@@ -52,45 +52,6 @@ Xom single summon
 
 Xom otwiera przejście.
 %%%%
-Xom single holy summon
-
-„Służ śmiertelnemu, moje zmylone dziecko!”
-
-„Służ mej zabawce, me wygnane dziecko!”
-
-Xom wzywa zaciekawionego sługę innego boga.
-
-Xom przynęca kogoś na ten świat.
-
-„Zabawka dla zabawki!”
-
-„Ciekawe która zabawka dłużej wytrzyma.”
-
-Xom otwiera przejście.
-%%%%
-# higher demonic being
-Xom single major demon summon
-
-Xom daje ci demonicznego asystenta.
-
-Xom daje ci demonicznego sługę.
-
-Xom otwiera przejście.
-%%%%
-Xom single major holy summon
-
-Xom daje ci asystenta wziętego innemu bogu.
-
-Xom przekabaca sługę innego boga, aby ci służył.
-
-„A skąd to przyszło? Dobrze, dobrze.”
-
-Ciekawe skąd Xom wziął tą istotę.
-
-Wygląda że Xomowi udało się znowu zmylić jakiegoś innego boga.
-
-Xom otwiera przejście.
-%%%%
 # several demons
 Xom multiple summons
 
@@ -99,33 +60,6 @@ Xom multiple summons
 Xom daje ci tymczasową pomoc.
 
 Xom na chwilę otwiera przejście.
-%%%%
-# holy beings and demons at the same time
-Xom multiple mixed summons
-
-Xom wzywa mieszane towarzystwo.
-
-„Służcie zabawce, moja zbieranino!”
-
-Xom przyzywa pomieszaną pomoc.
-
-„O, jaki fajny plac zabaw!”
-
-Xom sprowadza kilka różnych istot na ten świat.
-
-Xom na chwilę otwiera kilka przejść.
-%%%%
-Xom multiple holy summons
-
-Xom miesza wśród sług innych bogów.
-
-Xom wzywa marnotrawne sługi innych bogów.
-
-Xom mąci innym bogom, wzywając ich sługi.
-
-„Inny bóg, inna zabawka.”
-
-Xom otwiera przejście.
 %%%%
 # changing the scenery
 Xom scenery
@@ -185,16 +119,6 @@ Xom dziko chichocze.
 
 w:1
 „Zróbmy trochę crash testów na tej zabawce.”
-%%%%
-Xom lose stats
-
-„Cierp!”
-
-Czujesz na sobie złośliwy wzrok Xoma.
-
-Moc Xoma cię dotyka.
-
-Słyszysz szalony śmiech Xoma.
 %%%%
 Xom rearrange the pieces
 
@@ -266,7 +190,7 @@ Xom rzuca cię w Otchłań!
 
 Świat wiruje, a w uszach dzwoni ci śmiechem Xoma.
 %%%%
-Xom revert banishment
+Xom revert own banishment
 
 w:30
 „Żartowałem!”
@@ -274,6 +198,14 @@ w:30
 „A w zasadzie, ...”
 
 „Nie, jednak nie.”
+
+Xom wciąga cię z powrotem.
+%%%%
+Xom revert other banishment
+
+„Hej, wracaj!”
+
+„A ty gdzie się wybierasz?”
 
 Xom wciąga cię z powrotem.
 %%%%
@@ -285,6 +217,23 @@ Moc Xoma dotyka pobliskiej broni.
 „Poczuj smak chaosu.”
 
 Xom rechocze.
+%%%%
+Xom noise
+
+Xom hałasuje! Słyszysz @weapon_noise@
+
+w:1
+Xom bębni sobie.
+%%%%
+Xom blink monsters
+
+„Ty tu, ty tam.”
+
+„A może ustawimy ich... tak.”
+
+„Zabawimy się w przestawiankę.”
+
+Xom przestawia publikę.
 %%%%
 #####################
 # other effects
@@ -419,6 +368,14 @@ Xom dotyka @staircase@.
 
 „Berek!”
 %%%%
+Xom good enchant monster
+
+@Xom good monster polymorph@
+%%%%
+Xom bad enchant monster
+
+@Xom good enchant monster@
+%%%%
 Xom life saving general
 
 „Jak? Poczekaj, nie!”
@@ -495,8 +452,8 @@ Beogh szepcze: „Będziesz cierpiał za tą sprawkę.”
 
 Beogh się gniewa: „Oko za oko, ząb za ząb.”
 %%%%
-# an unbelieving hill orc has destroyed an idol
-Beogh idol hill orc
+# an unbelieving orc has destroyed an idol
+Beogh idol orc
 
 Beogh grzmi: „Giń, heretyku!”
 
@@ -604,10 +561,6 @@ kapciem
 ######################################
 # Welcome messages on game restoration
 ######################################
-Ashenzari penance
-
-@Ashenzari welcome@
-%%%%
 Ashenzari welcome
 
 Ashenzari rzecze: Weź udział w mej wizji. Weź udział w mym przekleństwie.
@@ -619,10 +572,6 @@ Beogh rzecze: Ośmiel się okazać litość nie-orkom i każę cię zgładzić.
 Beogh welcome
 
 Beogh rzecze: Utop niewiernych w morzu krwi!
-%%%%
-Beogh newgame
-
-@Beogh welcome@
 %%%%
 Cheibriados penance
 
@@ -640,10 +589,6 @@ Elyvilon welcome
 
 Elyvilon mówi: Idź i pomóż cierpiącym!
 %%%%
-Elyvilon newgame
-
-@Elyvilon welcome@
-%%%%
 Fedhas penance
 
 Fedhas protestuje przeciw twemu psuciu środowiska.
@@ -652,25 +597,13 @@ Fedhas welcome
 
 Fedhas rzecze: Nieś życie i śmierć.
 %%%%
-Jiyva penance
-
-@Jiyva welcome@
-%%%%
 Jiyva welcome
 
 Śluz dla boga śluzu!
 %%%%
-Kikubaaqudgha penance
-
-@Kikubaaqudgha welcome@
-%%%%
 Kikubaaqudgha welcome
 
 Kikubaaqudgha rzecze: Szerz ciemność i męczarnie bez końca!
-%%%%
-Lugonu penance
-
-@Lugonu welcome@
 %%%%
 Lugonu welcome
 
@@ -680,17 +613,9 @@ Lugonu newgame
 
 Lugonu mówi: Przejdź przez tą bramę, lub wezmij mnie, by sprowadzić cię na świat!
 %%%%
-Makhleb penance
-
-@Makhleb welcome@
-%%%%
 Makhleb welcome
 
 Krew i dusze dla Makhleba!
-%%%%
-Nemelex Xobeh penance
-
-@Nemelex Xobeh welcome@
 %%%%
 Nemelex Xobeh welcome
 
@@ -728,14 +653,6 @@ Trog welcome
 
 Trog woła: Zabij ich wszystkich!
 %%%%
-Trog newgame
-
-@Trog welcome@
-%%%%
-Vehumet penance
-
-@Vehumet welcome@
-%%%%
 Vehumet welcome
 
 Vehumet woła: Niech wszystko spłonie!
@@ -746,13 +663,13 @@ Xom ziewa.
 
 „Ciekawe co dzieje się gdzie indziej...”
 
-@Xom generic@
+@Xom welcome@
 %%%%
 Xom newgame
 
 Xom woła: Nowa zabawka!
 %%%%
-Xom generic
+Xom welcome
 
 Xom chichocze.
 %%%%
@@ -764,10 +681,6 @@ Yredelemnul welcome
 
 Yredelemnul rzecze: Nieś czarną pochodnię! Podnieś bezczynnych zmarłych!
 %%%%
-Yredelemnul newgame
-
-@Yredelemnul welcome@
-%%%%
 Zin penance
 
 Zin potępia cię za nieposłuszeństwo prawu.
@@ -777,8 +690,4 @@ Zin stanowczo wyjaśnia powagę @_important_subject_@
 Zin welcome
 
 Zin rzecze: Nieś światło, me dziecię.
-%%%%
-Zin newgame
-
-@Zin welcome@
 %%%%

@@ -85,9 +85,10 @@ Some examples of search strings:
 <w>D:[2-4]</w>       finds everything on Dungeon levels 2-4. Regexes are allowed!
               Note that D:[3-10] will not work as intended, since [x-y] is a
               regex character range.
-<w>\+3</w>           finds all items with a +3 enchantment
-<w>rC\+\+</w>        finds all items with an rC++ resistance. Note with these that
-              the + symbol had to be escaped as \+ due to Regex syntax.
+<w>rPois</w>         finds all items with an rPois resistance.
+<w>rC\+\+</w>        finds all items with an rC++ resistance.
+<w>\+3</w>           finds all items with a +3 enchantment. Note with these that
+              the + symbol had to be escaped as \+ due to regex syntax.
 <w>Lair.*axe</w> and <w>axe && Lair</w> both show all axes in the Lair.
 
 Some shortcuts:
@@ -105,25 +106,24 @@ The stash search string is case-insensitive.
 
 <h>Searching by item properties:</h>
 
-You can search for spell names (such as <w>Ignite Poison</w>) to find spellbooks
-or rods that contain the spell.
+You can search for spell names (such as <w>Ignite Poison</w>) to find spellbooks or
+rods that contain the spell.
 
 You can search for artefact item properties (such as <w>prevents.*teleport</w>)
 to find artefacts that have the property.
 
-You can also search by some additional item properties: <w>artefact</w> or
-<w>artifact</w> will find identified artefacts, <w>ego</w> or <w>branded</w> will
-find non-artefacts with a brand and unidentified items which may be
-branded, <w>throwable</w> will find things you can throw, <w>stick</w> will
-find items that can be used with Sticks to Snakes, and <w>dropped</w> will
-find items you have dropped.
+You can search by some additional item properties: <w>artefact</w> or <w>artifact</w> will
+find identified artefacts, <w>ego</w> or <w>branded</w> will find non-artefacts with a
+brand and unidentified items which may be branded, <w>throwable</w> will find things
+you can throw, <w>stick</w> will find items that can be used with Sticks to Snakes,
+and <w>dropped</w> will find items you have dropped.
 
-Skill names (such as <w>Polearms</w> or <w>Long Blades</w>) will find all
-weapons that train that skill.
+Skill names (such as <w>Polearms</w> or <w>Long Blades</w>) will find all weapons that
+train that skill. You can also look for <w>melee weapon</w> and <w>ranged weapon</w>.
 
-You can also search by item types such as <w>book</w> or <w>jewellery</w>. For
-armour slots, you can use <w>helmet</w> (all head gear), <w>gloves</w>,
-<w>shield</w>, and <w>body</w>.
+You can also search by item types such as <w>book</w> or <w>manual</w> or <w>jewellery</w>.
+For armour slots, use <w>helmet</w> (all head gear), <w>gloves</w>, <w>shield</w>, and <w>body</w>.
+Use <w>armour && !!body</w> to list all armour pieces except for body armour.
 
 <h>Finding Dungeon Features:</h>
 
@@ -143,40 +143,41 @@ For instance, to find rings (jewellery) but not ring mail you could use:
 level-map
 
 <h>Level Map ('<w>X</w>' in the main screen):</h>
-<w>Esc</w>    : Leave level map (also <w>Space</w> or any unused key).
-<w>Dir.</w>   : Move the cursor.
+<w>Esc</w>        : Leave level map (also <w>Space</w> or any unused key).
+<w>Dir.</w>       : Move the cursor.
 <w>Shift-Dir.</w> : Move the cursor in larger steps (7 by default).
-<w>-</w> or <w>+</w> : Scroll level map 20 grids up or down.
-<w>.</w>      : Start travel (also <w>Enter</w> and <w>,</w> and <w>;</w>).
-         (Moves cursor to the last travel destination if still on @.)
-<w>[</w> or <w>]</w> : Examine the next higher or lower level
-<w>G</w>      : Go to another level by branch and depth
+<w>-</w> or <w>+</w>     : Scroll level map 20 grids up or down.
+<w>.</w>          : Start travel (also <w>Enter</w> and <w>,</w> and <w>;</w>).
+             (Moves cursor to the last travel destination if still on @.)
+<w>[</w> or <w>]</w>     : Examine the next higher or lower level
+<w>G</w>          : Go to another level by branch and depth
 
 <h>Travel exclusions</h>
-<w>e</w>      : Create a travel exclusion, change its radius, or remove it.
-<w>E</w>      : Cycle through travel exclusions.
-<w>Ctrl-E</w> : Erase all travel exclusions on the level.
+<w>e</w>          : Create a travel exclusion, change its radius, or remove it.
+<w>E</w>          : Cycle through travel exclusions.
+<w>Ctrl-E</w>     : Erase all travel exclusions on the level.
 
 <h>Waypoints</h>
-<w>Ctrl-W</w> : Set waypoint to current position.
-<w>W</w>      : Cycle through all waypoints on the level.
+<w>Ctrl-W</w>     : Set waypoint to current position.
+<w>W</w>          : Cycle through all waypoints on the level.
 
 <h>Cycle through features</h>
-<w><<</w> or <w>></w> : Cycle through up or down stairs.
-<w>^</w>      : Cycle through traps.
-<w>Tab</w>    : Cycle through shops and portals.
-<w>I</w>      : Cycle forward through all items.
-<w>O</w>      : Cycle backward through all items.
-<w>_</w>      : Cycle through altars.
+<w><<</w> or <w>></w>     : Cycle through up or down stairs.
+<w>^</w>          : Cycle through traps.
+<w>\</w> or <w>Tab</w>   : Cycle through shops and portals.
+<w>I</w>          : Cycle forward through all items.
+<w>O</w>          : Cycle backward through all items.
+<w>_</w>          : Cycle through altars.
 
 <h>Other</h>
-<w>!</w>      : Annotate level.
-<w>Ctrl-C</w> : Clear item and monster memory.
-<w>Ctrl-F</w> : Forget level map.{{
+<w>!</w>          : Annotate level.
+<w>Ctrl-C</w>     : Clear item and monster memory.
+<w>Ctrl-F</w>     : Forget level map.
+<w>Ctrl-U</w>     : Restore forgotten level map.{{
 if you.wizard() then
     return "\n\n"
           .. "<h>Wizard commands</h>\n"
-          .. "<w>T</w>      : Teleport to cursor."
+          .. "<w>T</w>          : Teleport to cursor."
 end }}
 %%%%
 interlevel-travel.branch.prompt
@@ -258,9 +259,10 @@ How fast you train a skill is governed by the following factors:
       The aptitude penalty is indicated in <red>red</red>.
 
 On top of that, there are some effects which directly modify a skill, for
-example god powers. These skill modifiers are shown in <blue>blue</blue>.
-The training percentage (in <brown>brown</brown>) shows the relative amount of experience
-which will be used to train this skill.
+example draining or some god powers. Reduced skills are shown in <magenta>magenta</magenta>, and
+enhanced skills in <blue>blue</blue>.
+The training percentage (in <brown>brown</brown>) shows the relative
+amount of experience which will be used to train this skill.
 
 Apart from (de)selecting skills, you also have the following toggles:
 <w>/</w> :   Switch between automatic and manual training.
@@ -269,12 +271,11 @@ Apart from (de)selecting skills, you also have the following toggles:
 <w>_</w> :   Shows/hides skill modifiers, e.g. from god powers.
 
                                <h>Training restrictions</h>
-Fighting, Throwing, Dodging, Stealth, Traps, Unarmed Combat,
-and Spellcasting can always be trained. For the rest:
+Fighting, Throwing, Armour, Dodging, Stealth, Unarmed Combat, and Spellcasting
+can always be trained. For the rest:
 * Weapon skills require carrying a weapon of the appropriate type.
-* Armour requires wearing an armour with an evasion penalty.
 * Shields requires that you either be wearing a shield, or have the capacity
-      to obtain one through magical or divine means.
+      to obtain one through divine means.
 * Evocations requires carrying an evocable item, or having a Nemelex ability.
 * Spell schools require knowing a spell of the school.
 * Necromancy can also be trained when having a Kikubaaqudgha ability.

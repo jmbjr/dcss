@@ -11,8 +11,6 @@ zap_type spell_to_zap(spell_type spell)
     {
     case SPELL_MAGIC_DART:
         return ZAP_MAGIC_DART;
-    case SPELL_STRIKING:
-        return ZAP_STRIKING;
     case SPELL_FORCE_LANCE:
         return ZAP_FORCE_LANCE;
     case SPELL_THROW_FLAME:
@@ -118,7 +116,7 @@ int spell_zap_power(spell_type spell, int pow)
     switch (spell)
     {
     case SPELL_CORONA:
-        return (pow + 10);
+        return pow + 10;
     case SPELL_HIBERNATION:
         return stepdown_value(pow * 9 / 10, 5, 35, 45, 50);
     default:

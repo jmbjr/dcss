@@ -10,16 +10,9 @@
 -- upvalues cannot (yet) be saved.
 ------------------------------------------------------------------------------
 
-require("dlua/lm_toll.lua")
-
--- Deepest you can go in a ziggurat - at this point it's beyond
--- obvious that we're not challenging the player, and one could hope
--- she has enough loot by now.
-ZIGGURAT_MAX = 27
-
 function zig()
   if not dgn.persist.ziggurat then
-    dgn.persist.ziggurat = { entry_fee = 0 }
+    dgn.persist.ziggurat = { }
     -- Initialise here to handle ziggurats accessed directly by &P.
     initialise_ziggurat(dgn.persist.ziggurat)
   end
@@ -35,10 +28,6 @@ function ziggurat_wall_colour()
 end
 
 function initialise_ziggurat(z, portal)
-  if portal then
-    z.entry_fee = portal.props.amount
-  end
-
   -- Any given ziggurat will use the same builder for all its levels,
   -- and the same colours for outer walls. Before choosing the builder,
   -- we specify a global excentricity. If zig_exc=0, then the ellipses
@@ -54,43 +43,6 @@ end
 function callback.ziggurat_initialiser(portal)
   dgn.persist.ziggurat = { }
   initialise_ziggurat(dgn.persist.ziggurat, portal)
-end
-
--- Common setup for ziggurat entry vaults.
-function ziggurat_portal(e, spawnrange)
-  local d = crawl.roll_dice
-  local entry_fee =
-    10 * math.floor(200 + d(3,200) / 3 + d(10) * d(10) * d(10))
-
-  local function stair()
-    return toll_stair {
-      amount = entry_fee,
-      toll_desc = "to enter a ziggurat",
-      desc = "gateway to a ziggurat",
-      overview = "Ziggurat",
-      overview_note = "" .. entry_fee .. " gp",
-      dst = "Zig:1",
-      dstname = "ziggurat",
-      floor = "stone_arch",
-      feat_tile = "dngn_portal_ziggurat_gone",
-      onclimb = "callback.ziggurat_initialiser"
-    }
-  end
-
-  if spawnrange == "shallow" then
-    e.tags("chance_shallow_zig extra")
-    e.chance("1%")
-  elseif spawnrange == "deep" then
-    e.tags("chance_zig extra allow_dup luniq_zig")
-    e.chance("5%")
-  elseif spawnrange == "pan" then
-    e.tags("chance_pan_zig extra allow_dup")
-    e.chance("8%")
-  end
-
-  e.lua_marker("O", stair)
-  e.kfeat("O = enter_portal_vault")
-  e.tile("O = dngn_portal_ziggurat")
 end
 
 -- Common setup for ziggurat levels.
@@ -248,21 +200,18 @@ local function mset_if(condition, ...)
   mset(unpack(util.map(util.curry(spec_if, condition), { ... })))
 end
 
-mset(with_props("place:Slime:$", { jelly_protect = true }),
-     "place:Snake:$ w:90 / greater naga w:5 / guardian serpent w:5",
-     with_props("place:Lair:$ w:85 / catoblepas w:6 / dire elephant w:6 / " ..
+mset(with_props("place:Lair:$ w:85 / catoblepas w:6 / dire elephant w:6 / " ..
                 "hellephant w:3", { weight = 5 }),
-     "place:Spider:$ w:110 / ghost moth w:15 / red wasp / " ..
-                "orb spider / moth of suppression w:5",
-     "place:Crypt:$ w:180 / vampire knight w:14 / lich w:3 / " ..
-                "unborn deep dwarf w:2 / curse toe w:1",
+     with_props("place:Shoals:$ w:125 / merfolk aquamancer /  " ..
+                "merfolk impaler w:5 / merfolk javelineer", { weight = 5 }),
+     "place:Spider:$ w:115 / ghost moth w:15 / red wasp / " ..
+                "orb spider",
+     "place:Crypt:$ w:250 / curse skull w:5 / profane servitor w:5 / " ..
+                "bone dragon / ancient lich / revenant",
      "place:Forest:$ w:180 / satyr / tengu reaver w:5 / " ..
                 "spriggan defender w:5",
-     "place:Abyss",
-     "place:Swamp:$ w:120 / hydra / swamp dragon / " ..
-                "green death w:6 / death drake w:4",
-     "place:Shoals:$ w:125 / merfolk aquamancer w:15 / merfolk impaler w:4 / " ..
-                "merfolk javelineer w:4 / siren w:2",
+     "place:Abyss:$",
+     with_props("place:Slime:$", { jelly_protect = true }),
      with_props("place:Coc:$ w:460 / Ice Fiend / " ..
                  "blizzard demon w:30", { weight = 5 }),
      with_props("place:Geh:$ w:460 / Brimstone Fiend / " ..
@@ -272,37 +221,63 @@ mset(with_props("place:Slime:$", { jelly_protect = true }),
      with_props("place:Tar:$ w:460 / Shadow Fiend / " ..
                  "curse toe / shadow demon w:20", { weight = 5 }),
      with_props("daeva / angel / cherub / pearl dragon / shedu band / ophan / " ..
-                "apis / paladin / w:5 phoenix / w:5 silver star", { weight = 2 }),
+                "apis / w:5 phoenix / w:5 silver star", { weight = 2 }),
      with_props("hill giant / cyclops / stone giant / fire giant / " ..
                 "frost giant / ettin / titan", { weight = 2 }),
      with_props("fire elemental / fire drake / hell hound / efreet / " ..
-                "dragon / fire giant / orb of fire", { weight = 2 }),
-     with_props("ice beast / polar bear / freezing wraith / ice dragon / " ..
+                "fire dragon / fire giant / orb of fire", { weight = 2 }),
+     with_props("ice beast / freezing wraith / ice dragon / " ..
                 "frost giant / ice devil / ice fiend / simulacrum w:20 / " ..
                 "blizzard demon", { weight = 2 }),
-     with_props("insubstantial wisp / air elemental / vapour / titan / " ..
+     with_props("insubstantial wisp / air elemental / titan / raiju / " ..
                 "storm dragon / electric golem / spriggan air mage", { weight = 2 }),
-     with_props("swamp drake / fire drake / death drake / steam dragon / " ..
-                "swamp dragon / dragon / ice dragon / storm dragon / " ..
+     with_props("swamp drake / fire drake / wind drake w:2 / death drake / " ..
+                "wyvern / hydra / steam dragon / mottled dragon / " ..
+                "swamp dragon / fire dragon / ice dragon / storm dragon / " ..
                 "iron dragon / shadow dragon / quicksilver dragon / " ..
-                "golden dragon / mottled dragon / wyvern / hydra", { weight = 2 }),
+                "golden dragon", { weight = 2 }),
      with_props("centaur / yaktaur / centaur warrior / yaktaur captain / " ..
-                "cyclops / stone giant / merfolk javelineer / " ..
-                "deep elf master archer", { weight = 2 }))
+                "cyclops / stone giant / faun w:1 / satyr w:2 / thorn hunter w:2 / " ..
+                "merfolk javelineer / deep elf master archer", { weight = 2 }))
 
 -- spec_fn can be used to wrap a function that returns a monster spec.
 -- This is useful if you want to adjust monster weights in the spec
--- wrt to depth in the ziggurat. At level-generation time, the spec
--- returned by this function will also be used to init the monster
--- population (with dgn.set_random_mon_list). As an example:
+-- wrt to depth in the ziggurat.
 mset(spec_fn(function ()
-               local d = math.max(0, you.depth() - 12)
-               return "place:Vaults:$ w:60 / ancient lich w:" .. d
+               local d = 290 - 10 * you.depth()
+               local e = math.max(0, you.depth() - 20)
+               return "place:Orc:$ w:" .. d .. " / orc warlord / " ..
+                 "orc high priest band / orc sorcerer w:5 / stone giant / " ..
+                 "iron troll w:5 / moth of wrath w:" .. e
              end))
 
 mset(spec_fn(function ()
-               local d = math.max(0, you.depth() - 5)
-               return "place:Pan w:45 / pandemonium lord w:" .. d
+               local d = 300 - 10 * you.depth()
+               return "place:Elf:$ w:" .. d .. " / deep elf high priest / " ..
+                 "deep elf blademaster / deep elf master archer / " ..
+                 "deep elf annihilator / deep elf demonologist"
+             end))
+
+mset(spec_fn(function ()
+               local d = math.max(3, you.depth() - 1)
+               local e = math.max(1, you.depth() - 20)
+               return "place:Snake:$ w:65 / guardian serpent w:5 / " ..
+                 "greater naga w:" .. d .. " / quicksilver dragon w:" .. e
+             end))
+
+mset(spec_fn(function ()
+               local d = math.max(120, 280 - 10 * you.depth())
+               local e = math.max(1, you.depth() - 9)
+               return "place:Swamp:$ w:" .. d .. " / hydra / " ..
+                 "swamp dragon / green death w:6 / death drake w:1 / " ..
+                 "golden dragon w:1 / tentacled monstrosity w:" .. e
+             end))
+
+mset(spec_fn(function ()
+               local d = math.max(1, you.depth() - 11)
+               return "place:Vaults:$ 9 w:30 / place:Vaults:$ w:60 / " ..
+                 "titan w:" .. d .. " / golden dragon w:" .. d ..
+                 " / ancient lich w:" .. d
              end))
 
 mset(spec_fn(function ()
@@ -311,43 +286,41 @@ mset(spec_fn(function ()
              end))
 
 mset(spec_fn(function ()
-               local d = 300 - 10 * you.depth()
-               return "place:Elf:$ w:" .. d .. " / deep elf sorcerer / " ..
-                 "deep elf blademaster / deep elf master archer / " ..
-                 "deep elf annihilator / deep elf demonologist"
+               local d = math.max(2, math.floor((32 - you.depth()) / 5))
+               local e = math.min(8, math.floor((you.depth()) / 5) + 4)
+               local f = math.max(1, you.depth() - 5)
+               return "chaos spawn w:" .. d .. " / ugly thing w:" .. d ..
+                 " / very ugly thing w:5 / apocalypse crab w:5 / " ..
+                 "shapeshifter hd:16 w:" ..e .. " / glowing shapeshifter w:" .. e ..
+                 " / killer klown / pandemonium lord w:" .. f
              end))
 
 mset(spec_fn(function ()
-               local d = 310 - 10 * you.depth()
-               local e = math.max(0, you.depth() - 20)
-               return "place:Orc:$ w:" .. d .. " / orc warlord / orc knight / " ..
-                 "orc high priest w:5 / orc sorcerer w:5 / stone giant / " ..
-                 "moth of wrath w:" .. e
+               local d = 41 - you.depth()
+               return "base draconian w:" .. d .. " / nonbase draconian w:40"
              end))
 
-
-local drac_creator = zig_monster_fn("random draconian")
-local function mons_drac_gen(x, y, nth)
-  if nth == 1 then
-    dgn.set_random_mon_list("random draconian")
-  end
-  return drac_creator(x, y)
-end
-
 local pan_lord_fn = zig_monster_fn("pandemonium lord")
-local pan_critter_fn = zig_monster_fn("place:Pan")
+local pan_critter_fn = zig_monster_fn("place:Pan / greater demon w:5")
 
 local function mons_panlord_gen(x, y, nth)
   if nth == 1 then
-    dgn.set_random_mon_list("place:Pan")
+    local d = math.max(1, you.depth() - 11)
+    dgn.set_random_mon_list("place:Pan / greater demon w:5")
     return pan_lord_fn(x, y)
   else
     return pan_critter_fn(x, y)
   end
 end
 
-mset_if(depth_ge(6), mons_drac_gen)
 mset_if(depth_ge(8), mons_panlord_gen)
+mset_if(depth_ge(14), with_props("place:Snake:$ w:14 / place:Swamp:$ w:14 / " ..
+                      "place:Shoals:$ w:14 / place:Spider:$ w:14 / " ..
+                      "greater naga w:12 / guardian serpent w:8 / hydra w:5 / " ..
+                      "swamp dragon w:5 / tentacled monstrosity / " ..
+                      "merfolk aquamancer w:6 / merfolk javelineer w:8 / " ..
+                      "alligator snapping turtle w:6 / ghost moth w:8 / " ..
+                      "emperor scorpion w:8 / moth of wrath w:4", { weight = 5 }))
 
 function ziggurat_monster_creators()
   return util.map(monster_creator_fn, mons_populations)
@@ -389,8 +362,7 @@ end
 local dgn_passable = dgn.passable_excluding("closed_door")
 
 local function ziggurat_create_monsters(p, mfn)
-  local hd_pool = you.depth() * (you.depth() + 8)
--- (was depth * (depth + 8) before and too easy)
+  local hd_pool = you.depth() * (you.depth() + 8) + 10
 
   local nth = 1
 
@@ -428,7 +400,7 @@ local function ziggurat_create_loot_at(c)
   -- affects the loot randomly (separatedly on each stage).
   local depth = you.depth()
   local nloot = depth
-  nloot = nloot + crawl.random2(math.floor(nloot * zig().entry_fee / 10000))
+  local nloot = depth + crawl.random2(math.floor(nloot * 0.5))
 
   local function find_free_space(nspaces)
     local spaces = { }
@@ -630,12 +602,12 @@ end
 local function ziggurat_stairs(entry, exit)
   zigstair(entry.x, entry.y, "stone_arch", "stone_stairs_up_i")
 
-  if you.depth() < ZIGGURAT_MAX then
+  if you.depth() < dgn.br_depth(you.branch()) then
     zigstair(exit.x, exit.y, "stone_stairs_down_i")
   end
 
-  zigstair(exit.x, exit.y + 1, "exit_portal_vault")
-  zigstair(exit.x, exit.y - 1, "exit_portal_vault")
+  zigstair(exit.x, exit.y + 1, "exit_ziggurat")
+  zigstair(exit.x, exit.y - 1, "exit_ziggurat")
 end
 
 local function ziggurat_furnish(centre, entry, exit)

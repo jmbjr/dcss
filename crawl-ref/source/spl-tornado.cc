@@ -12,7 +12,6 @@
 #include "godconduct.h"
 #include "libutil.h"
 #include "los.h"
-#include "losglobal.h"
 #include "misc.h"
 #include "mon-behv.h"
 #include "ouch.h"
@@ -156,7 +155,7 @@ spret_type cast_tornado(int powc, bool fail)
 static bool _mons_is_unmovable(const monster *mons)
 {
     // hard to explain uprooted oklobs surviving
-    if (mons_is_stationary(mons))
+    if (mons->is_stationary())
         return true;
     // we'd have to rotate everything
     if (mons_is_tentacle_or_tentacle_segment(mons->type)
@@ -349,21 +348,27 @@ void tornado_damage(actor *caster, int dur)
                         if (standing)
                             float_player();
                     }
-                    int dmg = victim->apply_ac(
-                                div_rand_round(roll_dice(9, rpow), 15),
-                                0, AC_PROPORTIONAL);
-                    if (dur < 0)
-                        dmg = 0;
-                    dprf("damage done: %d", dmg);
-                    if (victim->is_player())
-                        ouch(dmg, caster->mindex(), KILLED_BY_BEAM, "tornado");
-                    else
-                        victim->hurt(caster, dmg);
+
+                    if (dur > 0)
+                    {
+                        int dmg = victim->apply_ac(
+                                    div_rand_round(roll_dice(9, rpow), 15),
+                                    0, AC_PROPORTIONAL);
+                        dprf("damage done: %d", dmg);
+                        if (victim->is_player())
+                            ouch(dmg, caster->mindex(), KILLED_BY_BEAM, "tornado");
+                        else
+                            victim->hurt(caster, dmg);
+                    }
                 }
 
                 if (victim->alive() && !leda && dur > 0)
                     move_act.push_back(victim);
             }
+
+            if (cell_is_solid(*dam_i))
+                continue;
+
             if ((env.cgrid(*dam_i) == EMPTY_CLOUD
                 || env.cloud[env.cgrid(*dam_i)].type == CLOUD_TORNADO)
                 && x_chance_in_y(rpow, 20))
@@ -373,7 +378,7 @@ void tornado_damage(actor *caster, int dur)
             clouds.push_back(*dam_i);
             swap_clouds(clouds[random2(clouds.size())], *dam_i);
 
-            if (!leda && !feat_is_solid(grd(*dam_i)))
+            if (!leda)
                 move_avail.push_back(*dam_i);
         }
     }

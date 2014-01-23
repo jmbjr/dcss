@@ -26,7 +26,6 @@
 #include "dgn-height.h"
 #include "exclude.h"
 #include "files.h"
-#include "ghost.h"
 #include "initfile.h"
 #include "invent.h"
 #include "l_defs.h"
@@ -47,10 +46,12 @@
 #include "stuff.h"
 #include "env.h"
 #include "tags.h"
+#include "terrain.h"
 #include "tiledef-dngn.h"
 #include "tiledef-player.h"
 
-static const char *map_section_names[] = {
+static const char *map_section_names[] =
+{
     "",
     "north",
     "south",
@@ -93,7 +94,7 @@ static int find_weight(string &s, int defweight = TAG_UNFOUND)
     int weight = strip_number_tag(s, "weight:");
     if (weight == TAG_UNFOUND)
         weight = strip_number_tag(s, "w:");
-    return (weight == TAG_UNFOUND? defweight : weight);
+    return weight == TAG_UNFOUND ? defweight : weight;
 }
 
 void clear_subvault_stack(void)
@@ -111,11 +112,11 @@ void map_register_flag(const string &flag)
 
 static bool _map_tag_is_selectable(const string &tag)
 {
-    return (Map_Flag_Names.find(tag) == Map_Flag_Names.end()
-            && tag.find("luniq_") != 0
-            && tag.find("uniq_") != 0
-            && tag.find("ruin_") != 0
-            && tag.find("chance_") != 0);
+    return !Map_Flag_Names.count(tag)
+           && tag.find("luniq_") != 0
+           && tag.find("uniq_") != 0
+           && tag.find("ruin_") != 0
+           && tag.find("chance_") != 0;
 }
 
 string mapdef_split_key_item(const string &s, string *key, int *separator,
@@ -209,7 +210,6 @@ void subvault_place::set_subvault(const map_def &_subvault)
     subvault.reset(new map_def(_subvault));
 }
 
-
 ///////////////////////////////////////////////
 // level_range
 //
@@ -251,7 +251,7 @@ string level_range::str_depth_range() const
         return ":$";
 
     if (deepest == BRANCH_END)
-        return (shallowest == 1? "" : make_stringf("%d-", shallowest));
+        return shallowest == 1? "" : make_stringf("%d-", shallowest);
 
     if (shallowest == deepest)
         return make_stringf(":%d", shallowest);
@@ -263,7 +263,7 @@ string level_range::describe() const
 {
     return make_stringf("%s%s%s",
                         deny? "!" : "",
-                        branch == NUM_BRANCHES? "Any" :
+                        branch == NUM_BRANCHES ? "Any" :
                         branches[branch].abbrevname,
                         str_depth_range().c_str());
 }
@@ -398,30 +398,32 @@ bool level_range::matches(const level_id &lid) const
     if (branch == NUM_BRANCHES)
         return matches(absdungeon_depth(lid.branch, lid.depth));
     else
-        return (branch == lid.branch
-                && (lid.depth >= shallowest
-                    || shallowest == BRANCH_END && lid.depth == brdepth[branch])
-                && lid.depth <= deepest);
+    {
+        return branch == lid.branch
+               && (lid.depth >= shallowest
+                   || shallowest == BRANCH_END && lid.depth == brdepth[branch])
+               && lid.depth <= deepest;
+    }
 }
 
 bool level_range::matches(int x) const
 {
     // [ds] The level ranges used by the game are zero-based, adjust for that.
     ++x;
-    return (x >= shallowest && x <= deepest);
+    return x >= shallowest && x <= deepest;
 }
 
 bool level_range::operator == (const level_range &lr) const
 {
-    return (deny == lr.deny
-            && (shallowest == lr.shallowest
-                && deepest == lr.deepest
-                && branch == lr.branch));
+    return deny == lr.deny
+           && shallowest == lr.shallowest
+           && deepest == lr.deepest
+           && branch == lr.branch;
 }
 
 bool level_range::valid() const
 {
-    return (shallowest > 0 && deepest >= shallowest);
+    return shallowest > 0 && deepest >= shallowest;
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -469,32 +471,32 @@ rectangle_iterator map_lines::get_iter() const
 
 char map_lines::operator () (const coord_def &c) const
 {
-    return (lines[c.y][c.x]);
+    return lines[c.y][c.x];
 }
 
 char& map_lines::operator () (const coord_def &c)
 {
-    return (lines[c.y][c.x]);
+    return lines[c.y][c.x];
 }
 
 char map_lines::operator () (int x, int y) const
 {
-    return (lines[y][x]);
+    return lines[y][x];
 }
 
 char& map_lines::operator () (int x, int y)
 {
-    return (lines[y][x]);
+    return lines[y][x];
 }
 
 bool map_lines::in_bounds(const coord_def &c) const
 {
-    return (c.x >= 0 && c.y >= 0 && c.x < width() && c.y < height());
+    return c.x >= 0 && c.y >= 0 && c.x < width() && c.y < height();
 }
 
 bool map_lines::in_map(const coord_def &c) const
 {
-    return (in_bounds(c) && lines[c.y][c.x] != ' ');
+    return in_bounds(c) && lines[c.y][c.x] != ' ';
 }
 
 map_lines &map_lines::operator = (const map_lines &map)
@@ -986,8 +988,8 @@ string map_lines::add_nsubst(const string &s)
         err = parse_nsubst_spec(ns, spec);
         if (!err.empty())
         {
-            return (make_stringf("Bad NSUBST spec: %s (%s)",
-                                 s.c_str(), err.c_str()));
+            return make_stringf("Bad NSUBST spec: %s (%s)",
+                                s.c_str(), err.c_str());
         }
         substs.push_back(spec);
     }
@@ -1089,8 +1091,8 @@ int map_lines::glyph(const coord_def &c) const
 
 bool map_lines::is_solid(int gly) const
 {
-    return (gly == 'x' || gly == 'c' || gly == 'b' || gly == 'v' || gly == 't'
-         || gly == 'X');
+    return gly == 'x' || gly == 'c' || gly == 'b' || gly == 'v' || gly == 't'
+           || gly == 'X';
 }
 
 void map_lines::check_borders()
@@ -1451,7 +1453,7 @@ void map_lines::nsubst(nsubst_spec &spec)
         while ((pos = lines[y].find_first_of(spec.key, pos)) != string::npos)
             positions.push_back(coord_def(pos++, y));
     }
-    random_shuffle(positions.begin(), positions.end(), random2);
+    shuffle_array(positions);
 
     int pcount = 0;
     const int psize = positions.size();
@@ -1483,8 +1485,8 @@ int map_lines::apply_nsubst(vector<coord_def> &pos, int start, int nsub,
 string map_lines::block_shuffle(const string &s)
 {
     vector<string> segs = split_string("/", s);
-    random_shuffle(segs.begin(), segs.end(), random2);
-    return (comma_separated_line(segs.begin(), segs.end(), "/", "/"));
+    shuffle_array(segs);
+    return comma_separated_line(segs.begin(), segs.end(), "/", "/");
 }
 
 string map_lines::shuffle(string s)
@@ -1864,7 +1866,7 @@ bool map_lines::find_bounds(int gly, coord_def &tl, coord_def &br) const
         br.y = max(br.y, mc.y);
     }
 
-    return (br.x >= 0);
+    return br.x >= 0;
 }
 
 bool map_lines::find_bounds(const char *str, coord_def &tl, coord_def &br) const
@@ -1893,7 +1895,7 @@ bool map_lines::find_bounds(const char *str, coord_def &tl, coord_def &br) const
         }
     }
 
-    return (br.x >= 0);
+    return br.x >= 0;
 }
 
 bool map_lines::fill_zone(travel_distance_grid_t &tpd, const coord_def &start,
@@ -2064,7 +2066,7 @@ void map_lines::iterator::advance()
 
 map_lines::iterator::operator bool() const
 {
-    return (p.y < maplines.height());
+    return p.y < maplines.height();
 }
 
 coord_def map_lines::iterator::operator *() const
@@ -2189,7 +2191,7 @@ void depth_ranges::add_depths(const depth_ranges &other_depths)
 
 string depth_ranges::describe() const
 {
-    return (comma_separated_line(depths.begin(), depths.end(), ", ", ", "));
+    return comma_separated_line(depths.begin(), depths.end(), ", ", ", ");
 }
 
 ///////////////////////////////////////////////
@@ -2198,8 +2200,9 @@ string depth_ranges::describe() const
 
 const int DEFAULT_MAP_WEIGHT = 10;
 map_def::map_def()
-    : name(), description(), tags(), place(), depths(), orient(), _chance(),
-      _weight(DEFAULT_MAP_WEIGHT), map(), mons(), items(), random_mons(),
+    : name(), description(), order(INT_MAX), tags(), place(), depths(),
+      orient(), _chance(), _weight(DEFAULT_MAP_WEIGHT),
+      map(), mons(), items(), random_mons(),
       prelude("dlprelude"), mapchunk("dlmapchunk"), main("dlmain"),
       validate("dlvalidate"), veto("dlveto"), epilogue("dlepilogue"),
       rock_colour(BLACK), floor_colour(BLACK), rock_tile(""),
@@ -2214,6 +2217,7 @@ void map_def::init()
     orient = MAP_NONE;
     name.clear();
     description.clear();
+    order = INT_MAX;
     tags.clear();
     place.clear();
     depths.clear();
@@ -2234,6 +2238,7 @@ void map_def::init()
 void map_def::reinit()
 {
     description.clear();
+    order = INT_MAX;
     items.clear();
     random_mons.clear();
     level_flags.clear();
@@ -2267,44 +2272,44 @@ void map_def::reinit()
 
 bool map_def::map_already_used() const
 {
-    return (you.uniq_map_names.find(name) != you.uniq_map_names.end()
-            || (env.level_uniq_maps.find(name) !=
-                env.level_uniq_maps.end())
-            || (env.new_used_subvault_names.find(name) !=
-                env.new_used_subvault_names.end())
-            || has_any_tag(you.uniq_map_tags.begin(),
-                           you.uniq_map_tags.end())
-            || has_any_tag(env.level_uniq_map_tags.begin(),
-                           env.level_uniq_map_tags.end())
-            || has_any_tag(env.new_used_subvault_tags.begin(),
-                           env.new_used_subvault_tags.end()));
+    return you.uniq_map_names.count(name)
+           || env.level_uniq_maps.find(name) !=
+               env.level_uniq_maps.end()
+           || env.new_used_subvault_names.find(name) !=
+               env.new_used_subvault_names.end()
+           || has_any_tag(you.uniq_map_tags.begin(),
+                          you.uniq_map_tags.end())
+           || has_any_tag(env.level_uniq_map_tags.begin(),
+                          env.level_uniq_map_tags.end())
+           || has_any_tag(env.new_used_subvault_tags.begin(),
+                          env.new_used_subvault_tags.end());
 }
 
 bool map_def::valid_item_array_glyph(int gly)
 {
-    return (gly >= 'd' && gly <= 'k');
+    return gly >= 'd' && gly <= 'k';
 }
 
 int map_def::item_array_glyph_to_slot(int gly)
 {
     ASSERT(map_def::valid_item_array_glyph(gly));
-    return (gly - 'd');
+    return gly - 'd';
 }
 
 bool map_def::valid_monster_glyph(int gly)
 {
-    return (gly >= '0' && gly <= '9');
+    return gly >= '0' && gly <= '9';
 }
 
 bool map_def::valid_monster_array_glyph(int gly)
 {
-    return (gly >= '1' && gly <= '7');
+    return gly >= '1' && gly <= '7';
 }
 
 int map_def::monster_array_glyph_to_slot(int gly)
 {
     ASSERT(map_def::valid_monster_array_glyph(gly));
-    return (gly - '1');
+    return gly - '1';
 }
 
 bool map_def::in_map(const coord_def &c) const
@@ -2337,7 +2342,7 @@ string map_def::name_at(const coord_def &c) const
 
 string map_def::desc_or_name() const
 {
-    return (description.empty()? name : description);
+    return description.empty()? name : description;
 }
 
 void map_def::write_full(writer& outf) const
@@ -2710,32 +2715,23 @@ string map_def::validate_temple_map()
         if (temple_tag.empty())
             return "Malformed temple_overflow_ tag";
 
-        int num = 0;
-        parse_int(temple_tag.c_str(), num);
-
-        if (num == 0)
+        if (starts_with(temple_tag, "generic_"))
         {
-            temple_tag = replace_all(temple_tag, "_", " ");
+            temple_tag = strip_tag_prefix(temple_tag, "generic_");
 
-            god_type god = str_to_god(temple_tag);
+            int num = 0;
+            parse_int(temple_tag.c_str(), num);
 
-            if (god == GOD_NO_GOD)
-            {
-                return make_stringf("Invalid god name '%s'",
-                                    temple_tag.c_str());
-            }
-
-            // Assume that specialized single-god temples are set up
-            // properly.
-            return "";
-        }
-        else
-        {
             if (((unsigned long) num) != altars.size())
             {
                 return make_stringf("Temple should contain %u altars, but "
                                     "has %d.", (unsigned int)altars.size(), num);
             }
+        }
+        else
+        {
+            // Assume specialised altar vaults are set up correctly.
+            return "";
         }
     }
 
@@ -2779,10 +2775,10 @@ string map_def::validate_map_placeable()
         }
     }
 
-    return (has_selectable_tag? "" :
-            make_stringf("Map '%s' has no DEPTH, no PLACE and no "
-                         "selectable tag in '%s'",
-                         name.c_str(), tags.c_str()));
+    return has_selectable_tag? "" :
+           make_stringf("Map '%s' has no DEPTH, no PLACE and no "
+                        "selectable tag in '%s'",
+                        name.c_str(), tags.c_str());
 }
 
 string map_def::validate_map_def(const depth_ranges &default_depths)
@@ -2801,7 +2797,7 @@ string map_def::validate_map_def(const depth_ranges &default_depths)
     if (!has_depth() && !lc_default_depths.empty())
         depths.add_depths(lc_default_depths);
 
-    if (place.is_usable_in(level_id(BRANCH_ECUMENICAL_TEMPLE))
+    if (place.is_usable_in(level_id(BRANCH_TEMPLE))
         || has_tag_prefix("temple_overflow_"))
     {
         err = validate_temple_map();
@@ -3164,7 +3160,8 @@ void map_def::rotate(bool clock)
         map.rotate(clock);
 
         // Orientation shifts for clockwise rotation:
-        const map_section_type clockrotate_orients[][2] = {
+        const map_section_type clockrotate_orients[][2] =
+        {
             { MAP_NORTH,        MAP_EAST        },
             { MAP_NORTHEAST,    MAP_SOUTHEAST   },
             { MAP_EAST,         MAP_SOUTH       },
@@ -3235,8 +3232,16 @@ void map_def::fixup()
 
 bool map_def::has_tag(const string &tagwanted) const
 {
-    return !tags.empty() && !tagwanted.empty()
-        && tags.find(" " + tagwanted + " ") != string::npos;
+    if (tags.empty() || tagwanted.empty())
+        return false;
+
+    vector<string> wanted_tags = split_string(" ", tagwanted);
+
+    for (unsigned int i = 0; i < wanted_tags.size(); i++)
+        if (tags.find(" " + wanted_tags[i] + " ") == string::npos)
+            return false;
+
+    return true;
 }
 
 bool map_def::has_tag_prefix(const string &prefix) const
@@ -3369,7 +3374,7 @@ string map_def::apply_subvault(string_spec &spec)
 
         const map_def *orig = random_map_for_tag(tag, true);
         if (!orig)
-            return (make_stringf("No vault found for tag '%s'", tag.c_str()));
+            return make_stringf("No vault found for tag '%s'", tag.c_str());
 
         map_def vault = *orig;
 
@@ -3403,13 +3408,13 @@ string map_def::apply_subvault(string_spec &spec)
     // Failure, drop subvault registrations.
     _reset_subvault_stack(reg_stack);
 
-    return (make_stringf("Could not fit '%s' in (%d,%d) to (%d, %d).",
-                         tag.c_str(), tl.x, tl.y, br.x, br.y));
+    return make_stringf("Could not fit '%s' in (%d,%d) to (%d, %d).",
+                        tag.c_str(), tl.x, tl.y, br.x, br.y);
 }
 
 bool map_def::is_subvault() const
 {
-    return (svmask != NULL);
+    return svmask != NULL;
 }
 
 void map_def::apply_subvault_mask()
@@ -3538,7 +3543,7 @@ mons_spec mons_list::get_monster(int slot_index, int list_index) const
     if (list_index < 0 || list_index >= (int)list.size())
         return mons_spec(RANDOM_MONSTER);
 
-    return (list[list_index]);
+    return list[list_index];
 }
 
 void mons_list::clear()
@@ -3763,7 +3768,7 @@ mons_list::mons_spec_slot mons_list::parse_mons_spec(string spec)
             }
         }
 
-        // place:Elf:7 to choose monsters appropriate for that level,
+        // place:Elf:$ to choose monsters appropriate for that level,
         // for example.
         const string place = strip_tag_prefix(mon_str, "place:");
         if (!place.empty())
@@ -3992,6 +3997,17 @@ mons_list::mons_spec_slot mons_list::parse_mons_spec(string spec)
                     mspec.monbase = static_cast<monster_type>(nspec.type);
                 }
             }
+            // Now check for chimera
+            const mons_spec cspec = mons_by_name("rat-rat-rat " + mon_str);
+            if (cspec.type != MONS_PROGRAM_BUG)
+            {
+                // Is this a modified monster?
+                if (cspec.monbase != MONS_PROGRAM_BUG
+                    && mons_class_is_chimeric(static_cast<monster_type>(cspec.type)))
+                {
+                    mspec.monbase = static_cast<monster_type>(cspec.type);
+                }
+            }
         }
         else if (mon_str != "0")
         {
@@ -4014,6 +4030,7 @@ mons_list::mons_spec_slot mons_list::parse_mons_spec(string spec)
             mspec.type    = nspec.type;
             mspec.monbase = nspec.monbase;
             mspec.number  = nspec.number;
+            mspec.chimera_mons = nspec.chimera_mons;
             if (nspec.colour && !mspec.colour)
                 mspec.colour = nspec.colour;
         }
@@ -4033,11 +4050,12 @@ mons_list::mons_spec_slot mons_list::parse_mons_spec(string spec)
                 error = "Can't give spec items to a random monster.";
                 return slot;
             }
-            else if (mons_class_itemuse(type) < MONUSE_STARTING_EQUIPMENT)
+            else if (mons_class_itemuse(type) < MONUSE_STARTING_EQUIPMENT
+                     && (!mons_class_is_animated_weapon(type)
+                         || mspec.items.size() > 1))
             {
-                if (type != MONS_DANCING_WEAPON || mspec.items.size() > 1)
-                    error = make_stringf("Monster '%s' can't use items.",
-                                         mon_str.c_str());
+                error = make_stringf("Monster '%s' can't use items.",
+                    mon_str.c_str());
             }
         }
 
@@ -4071,7 +4089,7 @@ string mons_list::set_mons(int index, const string &s)
     error.clear();
 
     if (index < 0)
-        return (error = make_stringf("Index out of range: %d", index));
+        return error = make_stringf("Index out of range: %d", index);
 
     mons_spec_slot slotmons = parse_mons_spec(s);
     if (!error.empty())
@@ -4285,8 +4303,6 @@ mons_spec mons_list::drac_monspec(string name) const
 
 mons_spec mons_list::mons_by_name(string name) const
 {
-    lowercase(name);
-
     name = replace_all_of(name, "_", " ");
     name = replace_all(name, "random", "any");
 
@@ -4330,6 +4346,25 @@ mons_spec mons_list::mons_by_name(string name) const
     if (ends_with(name, " slime creature"))
         return get_slime_spec(name);
 
+    mons_spec spec;
+    if (ends_with(name, " chimera"))
+    {
+        const string chimera_spec = name.substr(0, name.length() - 8);
+        vector<string> components = split_string("-", chimera_spec);
+        if (components.size() != 3)
+            return MONS_PROGRAM_BUG;
+
+        spec = MONS_CHIMERA;
+        for (unsigned int i = 0; i < components.size(); i++)
+        {
+            monster_type monstype = get_monster_by_name(components[i]);
+            if (monstype == MONS_PROGRAM_BUG)
+                return MONS_PROGRAM_BUG;
+            spec.chimera_mons.push_back(monstype);
+        }
+        return spec;
+    }
+
     if (name.find(" ugly thing") != string::npos)
     {
         const string::size_type wordend = name.find(' ');
@@ -4338,13 +4373,12 @@ mons_spec mons_list::mons_by_name(string name) const
         const int colour = str_to_ugly_thing_colour(first_word);
         if (colour)
         {
-            mons_spec spec = mons_by_name(name.substr(wordend + 1));
+            spec = mons_by_name(name.substr(wordend + 1));
             spec.colour = colour;
             return spec;
         }
     }
 
-    mons_spec spec;
     get_zombie_type(name, spec);
     if (spec.type != MONS_PROGRAM_BUG)
         return spec;
@@ -4403,9 +4437,9 @@ void item_spec::release_corpse_monster_spec()
 
 bool item_spec::corpselike() const
 {
-    return ((base_type == OBJ_CORPSES && (sub_type == CORPSE_BODY
-                                          || sub_type == CORPSE_SKELETON))
-            || (base_type == OBJ_FOOD && sub_type == FOOD_CHUNK));
+    return base_type == OBJ_CORPSES && (sub_type == CORPSE_BODY
+                                        || sub_type == CORPSE_SKELETON)
+           || base_type == OBJ_FOOD && sub_type == FOOD_CHUNK;
 }
 
 const mons_spec &item_spec::corpse_monster_spec() const
@@ -4430,13 +4464,13 @@ void item_list::clear()
 
 item_spec item_list::random_item()
 {
-    if (items.size() <= 0)
+    if (items.empty())
     {
         const item_spec none;
         return none;
     }
 
-    return (get_item(random2(size())));
+    return get_item(random2(size()));
 }
 
 typedef pair<item_spec, int> item_pair;
@@ -4515,7 +4549,7 @@ string item_list::set_item(int index, const string &spec)
 {
     error.clear();
     if (index < 0)
-        return (error = make_stringf("Index %d out of range", index));
+        return error = make_stringf("Index %d out of range", index);
 
     item_spec_slot sp = parse_item_spec(spec);
     if (error.empty())
@@ -4543,7 +4577,7 @@ void item_list::set_from_slot(const item_list &list, int slot_index)
     items.push_back(list.items[slot_index]);
 }
 
-// TODO: More checking for innapropriate combinations, like the holy
+// TODO: More checking for inappropriate combinations, like the holy
 // wrath brand on a demonic weapon or the running ego on a helmet.
 // NOTE: Be sure to update the reference in syntax.txt if this gets moved!
 static int _str_to_ego(item_spec &spec, string ego_str)
@@ -4571,6 +4605,7 @@ static int _str_to_ego(item_spec &spec, string ego_str)
         "reflection",
         "spirit_shield",
         "archery",
+        "jumping",
         NULL
     };
     COMPILE_CHECK(ARRAYSZ(armour_egos) == NUM_REAL_SPECIAL_ARMOURS);
@@ -4581,7 +4616,9 @@ static int _str_to_ego(item_spec &spec, string ego_str)
         "freezing",
         "holy_wrath",
         "electrocution",
+#if TAG_MAJOR_VERSION == 34
         "orc_slaying",
+#endif
         "dragon_slaying",
         "venom",
         "protection",
@@ -4594,8 +4631,10 @@ static int _str_to_ego(item_spec &spec, string ego_str)
         "pain",
         "anti-magic",
         "distortion",
+#if TAG_MAJOR_VERSION == 34
         "reaching",
         "returning",
+#endif
         "chaos",
         "evasion",
 #if TAG_MAJOR_VERSION == 34
@@ -4610,7 +4649,7 @@ static int _str_to_ego(item_spec &spec, string ego_str)
     const char* missile_brands[] =
     {
         "flame",
-        "ice",
+        "frost",
         "poisoned",
         "curare",
         "returning",
@@ -4627,7 +4666,7 @@ static int _str_to_ego(item_spec &spec, string ego_str)
 #if TAG_MAJOR_VERSION == 34
         "sickness",
 #endif
-        "wrath",
+        "frenzy",
         NULL
     };
     COMPILE_CHECK(ARRAYSZ(missile_brands) == NUM_REAL_SPECIAL_MISSILES);
@@ -4664,10 +4703,10 @@ static int _str_to_ego(item_spec &spec, string ego_str)
     for (int i = 0; allowed[i] != NULL; i++)
     {
         if (ego_str == allowed[i])
-            return (i + 1);
+            return i + 1;
     }
 
-    // Incompatible or non-existant ego type
+    // Incompatible or non-existent ego type
     for (int i = 1; i <= 2; i++)
     {
         const char** list = name_lists[order[i]];
@@ -4678,7 +4717,7 @@ static int _str_to_ego(item_spec &spec, string ego_str)
                 return -1;
     }
 
-    // Non-existant ego
+    // Non-existent ego
     return 0;
 }
 
@@ -4729,16 +4768,19 @@ bool item_list::monster_corpse_is_valid(monster_type *mons,
 item_spec item_list::parse_corpse_spec(item_spec &result, string s)
 {
     const bool never_decay = strip_tag(s, "never_decay");
+    const bool rotting = strip_tag(s, "rotting");
 
     if (never_decay)
         result.props[CORPSE_NEVER_DECAYS].get_bool() = true;
+    if (rotting)
+        result.item_special = ROTTING_CORPSE;
 
     const bool corpse = strip_suffix(s, "corpse");
     const bool skeleton = !corpse && strip_suffix(s, "skeleton");
     const bool chunk = !corpse && !skeleton && strip_suffix(s, "chunk");
 
-    result.base_type = chunk? OBJ_FOOD : OBJ_CORPSES;
-    result.sub_type  = (chunk  ? static_cast<int>(FOOD_CHUNK) :
+    result.base_type = chunk ? OBJ_FOOD : OBJ_CORPSES;
+    result.sub_type  = (chunk ? static_cast<int>(FOOD_CHUNK) :
                         static_cast<int>(corpse ? CORPSE_BODY :
                                          CORPSE_SKELETON));
 
@@ -4946,8 +4988,6 @@ item_spec item_list::parse_single_spec(string s)
 
     string ego_str  = strip_tag_prefix(s, "ego:");
     string race_str = strip_tag_prefix(s, "race:");
-    lowercase(ego_str);
-    lowercase(race_str);
 
     if (race_str == "elven")
         result.race = MAKE_ITEM_ELVEN;
@@ -4964,7 +5004,6 @@ item_spec item_list::parse_single_spec(string s)
     }
 
     string id_str = strip_tag_prefix(s, "ident:");
-    lowercase(id_str);
     if (id_str == "all")
         result.props["ident"].get_int() = ISFLAG_IDENT_MASK;
     else if (!id_str.empty())

@@ -10,7 +10,9 @@
     <script>
       require({
           baseUrl: '/static/scripts',
-          priority: ['jquery'],
+          shim: {
+            'client': ['jquery']
+          },
           paths: {
               'jquery': '/static/scripts/contrib/jquery'
           }
@@ -22,19 +24,22 @@
     <noscript>Please enable javascript!</noscript>
 
     <div id="lobby" style="display: none;">
-      <div id="login">
-        <span id="login_message"></span>
-        <form action="" id="login_form">
-          <label for="username">User:</label>
-          <input class="text" type="text" name="username" id="username"></input>
-          <label for="password">Pass:</label>
-          <input class="text" type="password" name="password" id="password"></input>
-          <input class="button" type="submit" name="submit" id="submit" value="Login"></input>
-        </form>
-        <input type="checkbox" name="remember_me" id="remember_me">Stay logged in</input>
-        |
-        <a id="reg_link" href="javascript:">Register</a>
-        <a id="logout_link" href="javascript:" style="display: none;">Logout</a>
+      <div class="login_placeholder">
+        <div id="login">
+          <span id="login_message"></span>
+          <form action="" id="login_form">
+            <label for="username">User:</label>
+            <input class="text" type="text" name="username" id="username"></input>
+            <label for="password">Pass:</label>
+            <input class="text" type="password" name="password" id="password"></input>
+            <input class="button" type="submit" name="submit" id="submit" value="Login"></input>
+          </form>
+          <input type="checkbox" name="remember_me" id="remember_me"></input>
+          <label for="remember_me">Stay logged in</label>
+          <span class="extra_links">|
+          <a id="reg_link" href="javascript:">Register</a>
+          <a id="logout_link" href="javascript:" style="display: none;">Logout</a></span>
+        </div>
       </div>
 
       <div id="register" class="floating_dialog" style="display: none;">
@@ -132,13 +137,21 @@
     <div id="loader">
       <div id="loader_center">
         <span id="loader_text">Loading...</span><br>
+
         <img style="display:none;" src="{{ static_url("title_denzi_dragon.png") }}">
+        <img style="display:none;" src="{{ static_url("title_denzi_evil_mage.png") }}">
+        <img style="display:none;" src="{{ static_url("title_denzi_invasion.png") }}">
         <img style="display:none;" src="{{ static_url("title_denzi_kitchen_duty.png") }}">
         <img style="display:none;" src="{{ static_url("title_denzi_summoner.png") }}">
         <img style="display:none;" src="{{ static_url("title_denzi_undead_warrior.png") }}">
-        <img style="display:none;" src="{{ static_url("title_omndra_zot_demon.png") }}">
         <img style="display:none;" src="{{ static_url("title_firemage.png") }}">
+        <img style="display:none;" src="{{ static_url("title_omndra_zot_demon.png") }}">
+        <img style="display:none;" src="{{ static_url("title_pooryurik_knight.png") }}">
+        <img style="display:none;" src="{{ static_url("title_psiweapon_kiku.png") }}">
+        <img style="display:none;" src="{{ static_url("title_psiweapon_roxanne.png") }}">
         <img style="display:none;" src="{{ static_url("title_shadyamish_octm.png") }}">
+        <img style="display:none;" src="{{ static_url("title_white_noise_entering_the_dungeon.png") }}">
+        <img style="display:none;" src="{{ static_url("title_white_noise_grabbing_the_orb.png") }}">
       </div>
 
       <div id="stale_processes_message" class="floating_dialog"
@@ -182,8 +195,21 @@
         </div>
 
         <input class="text" type="text" name="chat_input"
-               id="chat_input"></input>
+               id="chat_input" style="display: none"></input>
+        <div id="chat_login_text">
+          <a id="chat_login_link" href="javascript:">Login</a> to chat
+        </div>
       </div>
+    </div>
+
+    <div id="prompt" style="display: none;">
+      <div>
+          <div id="prompt_title"></div>
+
+          <div class="login_placeholder"></div>
+
+          <div id="prompt_footer"></div>
+       </div>
     </div>
   </body>
 </html>

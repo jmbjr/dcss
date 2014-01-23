@@ -111,7 +111,6 @@
 		7B09F5471133D63E004F149D /* l_feat.cc in Sources */ = {isa = PBXBuildFile; fileRef = 7B09F5411133D63E004F149D /* l_feat.cc */; };
 		7B09F5481133D63E004F149D /* l_spells.cc in Sources */ = {isa = PBXBuildFile; fileRef = 7B09F5421133D63E004F149D /* l_spells.cc */; };
 		7B09F5601133D66C004F149D /* mgen_data.cc in Sources */ = {isa = PBXBuildFile; fileRef = 7B09F54D1133D66C004F149D /* mgen_data.cc */; };
-		7B09F5611133D66C004F149D /* mislead.cc in Sources */ = {isa = PBXBuildFile; fileRef = 7B09F5501133D66C004F149D /* mislead.cc */; };
 		7B09F5621133D66C004F149D /* mon_resist_def.cc in Sources */ = {isa = PBXBuildFile; fileRef = 7B09F5521133D66C004F149D /* mon_resist_def.cc */; };
 		7B09F5631133D66C004F149D /* mon-clone.cc in Sources */ = {isa = PBXBuildFile; fileRef = 7B09F5541133D66C004F149D /* mon-clone.cc */; };
 		7B09F5641133D66C004F149D /* mon-death.cc in Sources */ = {isa = PBXBuildFile; fileRef = 7B09F5561133D66C004F149D /* mon-death.cc */; };
@@ -212,7 +211,6 @@
 		7B09F5CE1133D6AB004F149D /* message.cc in Sources */ = {isa = PBXBuildFile; fileRef = E5D6402010BD494400A99626 /* message.cc */; };
 		7B09F5CF1133D6AB004F149D /* mgen_data.cc in Sources */ = {isa = PBXBuildFile; fileRef = 7B09F54D1133D66C004F149D /* mgen_data.cc */; };
 		7B09F5D01133D6AB004F149D /* misc.cc in Sources */ = {isa = PBXBuildFile; fileRef = E5D6402210BD494400A99626 /* misc.cc */; };
-		7B09F5D11133D6AB004F149D /* mislead.cc in Sources */ = {isa = PBXBuildFile; fileRef = 7B09F5501133D66C004F149D /* mislead.cc */; };
 		7B09F5D21133D6AB004F149D /* mon-abil.cc in Sources */ = {isa = PBXBuildFile; fileRef = E5D6402410BD494400A99626 /* mon-abil.cc */; };
 		7B09F5D31133D6AB004F149D /* mon-act.cc in Sources */ = {isa = PBXBuildFile; fileRef = E5D6402610BD494400A99626 /* mon-act.cc */; };
 		7B09F5D41133D6AB004F149D /* mon-behv.cc in Sources */ = {isa = PBXBuildFile; fileRef = E5D6402810BD494400A99626 /* mon-behv.cc */; };
@@ -222,7 +220,6 @@
 		7B09F5D81133D6AB004F149D /* mon-gear.cc in Sources */ = {isa = PBXBuildFile; fileRef = E5D6402D10BD494400A99626 /* mon-gear.cc */; };
 		7B09F5D91133D6AB004F149D /* mon-grow.cc in Sources */ = {isa = PBXBuildFile; fileRef = E5D6402F10BD494400A99626 /* mon-grow.cc */; };
 		7B09F5DA1133D6AB004F149D /* mon-info.cc in Sources */ = {isa = PBXBuildFile; fileRef = E5D6403110BD494400A99626 /* mon-info.cc */; };
-		7B09F5DB1133D6AB004F149D /* mon-iter.cc in Sources */ = {isa = PBXBuildFile; fileRef = E5D6403310BD494400A99626 /* mon-iter.cc */; };
 		7B09F5DC1133D6AB004F149D /* mon-movetarget.cc in Sources */ = {isa = PBXBuildFile; fileRef = E5D6403510BD494400A99626 /* mon-movetarget.cc */; };
 		7B09F5DD1133D6AB004F149D /* mon-pathfind.cc in Sources */ = {isa = PBXBuildFile; fileRef = E5D6403710BD494400A99626 /* mon-pathfind.cc */; };
 		7B09F5DE1133D6AB004F149D /* mon-pick.cc in Sources */ = {isa = PBXBuildFile; fileRef = E5D6403910BD494400A99626 /* mon-pick.cc */; };
@@ -402,7 +399,7 @@
 		7BBC4A080B0F783C00F27D45 /* levcomp.ypp in Sources */ = {isa = PBXBuildFile; fileRef = 7B352ED20B001B9E00CABB32 /* levcomp.ypp */; };
 		7BDE8444116D247D00974D63 /* player-equip.cc in Sources */ = {isa = PBXBuildFile; fileRef = 7BDE8442116D247D00974D63 /* player-equip.cc */; };
 		7BDE8445116D247D00974D63 /* player-equip.cc in Sources */ = {isa = PBXBuildFile; fileRef = 7BDE8442116D247D00974D63 /* player-equip.cc */; };
-		7BDE8447116D24B300974D63 /* abl-show.cc in Sources */ = {isa = PBXBuildFile; fileRef = E5D63F5D10BD494300A99626 /* abl-show.cc */; };
+		7BDE8447116D24B300974D63 /* ability.cc in Sources */ = {isa = PBXBuildFile; fileRef = E5D63F5D10BD494300A99626 /* ability.cc */; };
 		7BDE8448116D24B300974D63 /* abyss.cc in Sources */ = {isa = PBXBuildFile; fileRef = E5D63F5F10BD494300A99626 /* abyss.cc */; };
 		7BDE8449116D24B300974D63 /* actor-los.cc in Sources */ = {isa = PBXBuildFile; fileRef = E5D63F6110BD494300A99626 /* actor-los.cc */; };
 		7BDE844A116D24B300974D63 /* actor.cc in Sources */ = {isa = PBXBuildFile; fileRef = E5D63F6210BD494300A99626 /* actor.cc */; };
@@ -473,7 +470,7 @@
 		D2A696BD0DA29D4E00FDDE82 /* Crawl.icns in Resources */ = {isa = PBXBuildFile; fileRef = D2A696BC0DA29D4E00FDDE82 /* Crawl.icns */; };
 		D2F272350DA1C5AD00445FE9 /* dat in Resources */ = {isa = PBXBuildFile; fileRef = D2F271FE0DA1C5AD00445FE9 /* dat */; };
 		D2F2725B0DA1C61600445FE9 /* docs in Resources */ = {isa = PBXBuildFile; fileRef = D2F2723F0DA1C61600445FE9 /* docs */; };
-		E5D640BE10BD494500A99626 /* abl-show.cc in Sources */ = {isa = PBXBuildFile; fileRef = E5D63F5D10BD494300A99626 /* abl-show.cc */; };
+		E5D640BE10BD494500A99626 /* ability.cc in Sources */ = {isa = PBXBuildFile; fileRef = E5D63F5D10BD494300A99626 /* ability.cc */; };
 		E5D640BF10BD494500A99626 /* abyss.cc in Sources */ = {isa = PBXBuildFile; fileRef = E5D63F5F10BD494300A99626 /* abyss.cc */; };
 		E5D640C010BD494500A99626 /* actor-los.cc in Sources */ = {isa = PBXBuildFile; fileRef = E5D63F6110BD494300A99626 /* actor-los.cc */; };
 		E5D640C110BD494500A99626 /* actor.cc in Sources */ = {isa = PBXBuildFile; fileRef = E5D63F6210BD494300A99626 /* actor.cc */; };
@@ -577,7 +574,6 @@
 		E5D6412C10BD494500A99626 /* mon-gear.cc in Sources */ = {isa = PBXBuildFile; fileRef = E5D6402D10BD494400A99626 /* mon-gear.cc */; };
 		E5D6412D10BD494500A99626 /* mon-grow.cc in Sources */ = {isa = PBXBuildFile; fileRef = E5D6402F10BD494400A99626 /* mon-grow.cc */; };
 		E5D6412E10BD494500A99626 /* mon-info.cc in Sources */ = {isa = PBXBuildFile; fileRef = E5D6403110BD494400A99626 /* mon-info.cc */; };
-		E5D6412F10BD494500A99626 /* mon-iter.cc in Sources */ = {isa = PBXBuildFile; fileRef = E5D6403310BD494400A99626 /* mon-iter.cc */; };
 		E5D6413010BD494500A99626 /* mon-movetarget.cc in Sources */ = {isa = PBXBuildFile; fileRef = E5D6403510BD494400A99626 /* mon-movetarget.cc */; };
 		E5D6413110BD494500A99626 /* mon-pathfind.cc in Sources */ = {isa = PBXBuildFile; fileRef = E5D6403710BD494400A99626 /* mon-pathfind.cc */; };
 		E5D6413210BD494500A99626 /* mon-pick.cc in Sources */ = {isa = PBXBuildFile; fileRef = E5D6403910BD494400A99626 /* mon-pick.cc */; };
@@ -1032,8 +1028,6 @@
 		7B09F54D1133D66C004F149D /* mgen_data.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = mgen_data.cc; sourceTree = "<group>"; };
 		7B09F54E1133D66C004F149D /* mgen_data.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = mgen_data.h; sourceTree = "<group>"; };
 		7B09F54F1133D66C004F149D /* mgen_enum.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = mgen_enum.h; sourceTree = "<group>"; };
-		7B09F5501133D66C004F149D /* mislead.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = mislead.cc; sourceTree = "<group>"; };
-		7B09F5511133D66C004F149D /* mislead.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = mislead.h; sourceTree = "<group>"; };
 		7B09F5521133D66C004F149D /* mon_resist_def.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = mon_resist_def.cc; sourceTree = "<group>"; };
 		7B09F5531133D66C004F149D /* mon_resist_def.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = mon_resist_def.h; sourceTree = "<group>"; };
 		7B09F5541133D66C004F149D /* mon-clone.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = "mon-clone.cc"; sourceTree = "<group>"; };
@@ -1263,8 +1257,8 @@
 		D2F271F60DA1C58C00445FE9 /* Dungeon Crawl Stone Soup - ASCII.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Dungeon Crawl Stone Soup - ASCII.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		D2F271FE0DA1C5AD00445FE9 /* dat */ = {isa = PBXFileReference; lastKnownFileType = folder; path = dat; sourceTree = "<group>"; };
 		D2F2723F0DA1C61600445FE9 /* docs */ = {isa = PBXFileReference; lastKnownFileType = folder; name = docs; path = ../docs; sourceTree = SOURCE_ROOT; };
-		E5D63F5D10BD494300A99626 /* abl-show.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = "abl-show.cc"; sourceTree = "<group>"; };
-		E5D63F5E10BD494300A99626 /* abl-show.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "abl-show.h"; sourceTree = "<group>"; };
+		E5D63F5D10BD494300A99626 /* ability.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = "ability.cc"; sourceTree = "<group>"; };
+		E5D63F5E10BD494300A99626 /* ability.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "ability.h"; sourceTree = "<group>"; };
 		E5D63F5F10BD494300A99626 /* abyss.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = abyss.cc; sourceTree = "<group>"; };
 		E5D63F6010BD494300A99626 /* abyss.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = abyss.h; sourceTree = "<group>"; };
 		E5D63F6110BD494300A99626 /* actor-los.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = "actor-los.cc"; sourceTree = "<group>"; };
@@ -1460,8 +1454,6 @@
 		E5D6403010BD494400A99626 /* mon-grow.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "mon-grow.h"; sourceTree = "<group>"; };
 		E5D6403110BD494400A99626 /* mon-info.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = "mon-info.cc"; sourceTree = "<group>"; };
 		E5D6403210BD494400A99626 /* mon-info.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "mon-info.h"; sourceTree = "<group>"; };
-		E5D6403310BD494400A99626 /* mon-iter.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = "mon-iter.cc"; sourceTree = "<group>"; };
-		E5D6403410BD494400A99626 /* mon-iter.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "mon-iter.h"; sourceTree = "<group>"; };
 		E5D6403510BD494400A99626 /* mon-movetarget.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = "mon-movetarget.cc"; sourceTree = "<group>"; };
 		E5D6403610BD494400A99626 /* mon-movetarget.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "mon-movetarget.h"; sourceTree = "<group>"; };
 		E5D6403710BD494400A99626 /* mon-pathfind.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = "mon-pathfind.cc"; sourceTree = "<group>"; };
@@ -1759,8 +1751,8 @@
 		7B352EF00B001F5B00CABB32 /* Crawl */ = {
 			isa = PBXGroup;
 			children = (
-				E5D63F5D10BD494300A99626 /* abl-show.cc */,
-				E5D63F5E10BD494300A99626 /* abl-show.h */,
+				E5D63F5D10BD494300A99626 /* ability.cc */,
+				E5D63F5E10BD494300A99626 /* ability.h */,
 				E5D63F5F10BD494300A99626 /* abyss.cc */,
 				E5D63F6010BD494300A99626 /* abyss.h */,
 				1F909ABD148B23BC00084E83 /* acquire.cc */,
@@ -2019,8 +2011,6 @@
 				7B09F54F1133D66C004F149D /* mgen_enum.h */,
 				E5D6402210BD494400A99626 /* misc.cc */,
 				E5D6402310BD494400A99626 /* misc.h */,
-				7B09F5501133D66C004F149D /* mislead.cc */,
-				7B09F5511133D66C004F149D /* mislead.h */,
 				E5D6402410BD494400A99626 /* mon-abil.cc */,
 				E5D6402510BD494400A99626 /* mon-abil.h */,
 				E5D6402610BD494400A99626 /* mon-act.cc */,
@@ -2044,8 +2034,6 @@
 				E5D6403010BD494400A99626 /* mon-grow.h */,
 				E5D6403110BD494400A99626 /* mon-info.cc */,
 				E5D6403210BD494400A99626 /* mon-info.h */,
-				E5D6403310BD494400A99626 /* mon-iter.cc */,
-				E5D6403410BD494400A99626 /* mon-iter.h */,
 				E5D6403510BD494400A99626 /* mon-movetarget.cc */,
 				E5D6403610BD494400A99626 /* mon-movetarget.h */,
 				1F909B38148B244F00084E83 /* mon-mst.h */,
@@ -2928,7 +2916,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				7BDE8447116D24B300974D63 /* abl-show.cc in Sources */,
+				7BDE8447116D24B300974D63 /* ability.cc in Sources */,
 				7BDE8448116D24B300974D63 /* abyss.cc in Sources */,
 				1F909C24148B466700084E83 /* acquire.cc in Sources */,
 				7B51659511859CFA005B23ED /* act-iter.cc in Sources */,
@@ -3061,7 +3049,6 @@
 				7B09F5CE1133D6AB004F149D /* message.cc in Sources */,
 				7B09F5CF1133D6AB004F149D /* mgen_data.cc in Sources */,
 				7B09F5D01133D6AB004F149D /* misc.cc in Sources */,
-				7B09F5D11133D6AB004F149D /* mislead.cc in Sources */,
 				7B09F5D21133D6AB004F149D /* mon-abil.cc in Sources */,
 				7B09F5D31133D6AB004F149D /* mon-act.cc in Sources */,
 				7B09F5D41133D6AB004F149D /* mon-behv.cc in Sources */,
@@ -3072,7 +3059,6 @@
 				7B09F5D81133D6AB004F149D /* mon-gear.cc in Sources */,
 				7B09F5D91133D6AB004F149D /* mon-grow.cc in Sources */,
 				7B09F5DA1133D6AB004F149D /* mon-info.cc in Sources */,
-				7B09F5DB1133D6AB004F149D /* mon-iter.cc in Sources */,
 				7B09F5DC1133D6AB004F149D /* mon-movetarget.cc in Sources */,
 				7B09F5DD1133D6AB004F149D /* mon-pathfind.cc in Sources */,
 				7B09F5DE1133D6AB004F149D /* mon-pick.cc in Sources */,
@@ -3173,7 +3159,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				E5D640BE10BD494500A99626 /* abl-show.cc in Sources */,
+				E5D640BE10BD494500A99626 /* ability.cc in Sources */,
 				E5D640BF10BD494500A99626 /* abyss.cc in Sources */,
 				1F909AE1148B23BC00084E83 /* acquire.cc in Sources */,
 				7B51659411859CFA005B23ED /* act-iter.cc in Sources */,
@@ -3309,7 +3295,6 @@
 				E5D6412610BD494500A99626 /* message.cc in Sources */,
 				7B09F5601133D66C004F149D /* mgen_data.cc in Sources */,
 				E5D6412710BD494500A99626 /* misc.cc in Sources */,
-				7B09F5611133D66C004F149D /* mislead.cc in Sources */,
 				E5D6412810BD494500A99626 /* mon-abil.cc in Sources */,
 				E5D6412910BD494500A99626 /* mon-act.cc in Sources */,
 				E5D6412A10BD494500A99626 /* mon-behv.cc in Sources */,
@@ -3320,7 +3305,6 @@
 				E5D6412C10BD494500A99626 /* mon-gear.cc in Sources */,
 				E5D6412D10BD494500A99626 /* mon-grow.cc in Sources */,
 				E5D6412E10BD494500A99626 /* mon-info.cc in Sources */,
-				E5D6412F10BD494500A99626 /* mon-iter.cc in Sources */,
 				E5D6413010BD494500A99626 /* mon-movetarget.cc in Sources */,
 				E5D6413110BD494500A99626 /* mon-pathfind.cc in Sources */,
 				E5D6413210BD494500A99626 /* mon-pick.cc in Sources */,

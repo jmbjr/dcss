@@ -25,12 +25,10 @@ class monster;
 
 #include "tags.h"
 
-typedef uint8_t hash_size;
-typedef uint8_t vec_size;
+typedef uint16_t vec_size;
 typedef uint8_t store_flags;
 
-#define VEC_MAX_SIZE  255
-#define HASH_MAX_SIZE 255
+#define VEC_MAX_SIZE  0xFFFF
 
 // NOTE: Changing the ordering of these enums will break savefile
 // compatibility.
@@ -63,9 +61,6 @@ enum store_flag_type
     SFLAG_NO_ERASE   = (1 << 3),
 };
 
-
-// Can't just cast everything into a void pointer, since a float might
-// not fit into a pointer on all systems.
 typedef union StoreUnion StoreUnion;
 union StoreUnion
 {
@@ -77,7 +72,6 @@ union StoreUnion
     int64_t _int64;
     void* ptr;
 };
-
 
 class CrawlStoreValue
 {
@@ -108,8 +102,10 @@ public:
     CrawlStoreValue &operator = (const CrawlStoreValue &other);
 
 protected:
-    store_val_type type;
+    // These first two fields need to match those in CrawlVector
+    store_val_type type:8;
     store_flags    flags;
+
     StoreUnion     val;
 
 public:
@@ -247,19 +243,10 @@ protected:
     friend class CrawlVector;
 };
 
-
-// A hash table can have a maximum of 255 key/value pairs.  If you
-// want more than that you can use nested hash tables.
-//
 // By default a hash table's value data types are heterogeneous.  To
 // make it homogeneous (which causes dynamic type checking) you have
 // to give a type to the hash table constructor; once it's been
 // created its type (or lack of type) is immutable.
-//
-// An empty hash table will take up only 1 byte in the savefile.  A
-// non-empty hash table will have an overhead of 3 bytes for the hash
-// table overall and 2 bytes per key/value pair, over and above the
-// number of bytes needed to store the keys and values themselves.
 class CrawlHashTable
 {
 public:
@@ -316,7 +303,7 @@ public:
     { return get_value(string(key)); }
 
     // std::map style interface
-    hash_size size() const;
+    unsigned int size() const;
     bool      empty() const;
 
     void      erase(const string key);
@@ -349,8 +336,10 @@ public:
     typedef vector_type::const_iterator const_iterator;
 
 protected:
-    store_val_type type;
+    // These first two fields need to match those in CrawlStoreValue
+    store_val_type type:8;
     store_flags    default_flags;
+
     vec_size       max_size;
     vector_type    vec;
 

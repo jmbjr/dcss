@@ -65,6 +65,7 @@ struct player_info
     int gold;
     int zot_points;
     int elapsed_time;
+    int num_turns;
     int lives, deaths;
 
     string place;
@@ -131,10 +132,11 @@ public:
     void pop_menu();
     void close_all_menus();
 
+    string get_message();
     void write_message(PRINTF(1, ));
     void finish_message();
     void send_message(PRINTF(1, ));
-    void flush_messages(bool joining_only=false);
+    void flush_messages();
 
     bool has_receivers() { return !m_dest_addrs.empty(); }
     bool is_controlled_from_web() { return m_controlled_from_web; }
@@ -233,6 +235,7 @@ protected:
     coord_def m_origin;
 
     bool m_view_loaded;
+    bool m_player_on_level;
 
     FixedArray<screen_cell_t, GXM, GYM> m_current_view;
     coord_def m_current_gc;
@@ -275,8 +278,12 @@ protected:
     player_info m_current_player_info;
 
     void _send_version();
+    void _send_options();
 
     void _send_everything();
+
+    bool m_mcache_ref_done;
+    void _mcache_ref(bool inc);
 
     void _send_cursor(cursor_type type);
     void _send_map(bool force_full = false);

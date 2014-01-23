@@ -9,7 +9,6 @@
 #include "coord.h"
 #include "coordit.h"
 #include "defines.h"
-#include "describe.h"
 #include "env.h"
 #include "files.h"
 #include "food.h"
@@ -26,22 +25,22 @@
 #include "skills2.h"
 #include "state.h"
 
-int che_stat_boost(int piety)
+int chei_stat_boost(int piety)
 {
-    if (you.religion != GOD_CHEIBRIADOS || you.penance[GOD_CHEIBRIADOS])
+    if (!you_worship(GOD_CHEIBRIADOS) || you.penance[GOD_CHEIBRIADOS])
         return 0;
-    if (piety < 30)  // Since you've already begun to slow down.
+    if (piety < piety_breakpoint(0))  // Since you've already begun to slow down.
         return 1;
-    if (piety > 160) // Fudging this slightly to agree with ****** piety.
+    if (piety >= piety_breakpoint(5))
         return 15;
-    return min((piety - 10) / 10, 14);
+    return (piety - 10) / 10;
 }
 
 // Eat from one random off-level item stack.
 void jiyva_eat_offlevel_items()
 {
     // For wizard mode 'J' command
-    if (you.religion != GOD_JIYVA)
+    if (!you_worship(GOD_JIYVA))
         return;
 
     if (crawl_state.game_is_sprint())
@@ -55,10 +54,10 @@ void jiyva_eat_offlevel_items()
         const int branch = random2(NUM_BRANCHES);
         int js = JS_NONE;
 
-        // Choose level based on main dungeon depth so that levels short branches
-        // aren't picked more often.
+        // Choose level based on main dungeon depth so that levels of
+        // short branches aren't picked more often.
         ASSERT(brdepth[branch] <= MAX_BRANCH_DEPTH);
-        const int level  = random2(MAX_BRANCH_DEPTH) + 1;
+        const int level = random2(MAX_BRANCH_DEPTH) + 1;
 
         const level_id lid(static_cast<branch_type>(branch), level);
 
@@ -105,12 +104,12 @@ void jiyva_eat_offlevel_items()
 
 void jiyva_slurp_bonus(int item_value, int *js)
 {
-    if (you.penance[GOD_JIYVA])
+    if (player_under_penance(GOD_JIYVA))
         return;
 
     if (you.piety >= piety_breakpoint(1)
         && x_chance_in_y(you.piety, MAX_PIETY)
-        && you.is_undead != US_UNDEAD)
+        && !you_foodless())
     {
         //same as a sultana
         lessen_hunger(70, true);
@@ -161,13 +160,13 @@ static bool _two_handed()
     if (!wpn)
         return false;
 
-    hands_reqd_type wep_type = hands_reqd(*wpn, you.body_size());
+    hands_reqd_type wep_type = you.hands_reqd(*wpn);
     return wep_type == HANDS_TWO;
 }
 
 void ash_check_bondage(bool msg)
 {
-    if (you.religion != GOD_ASHENZARI)
+    if (!you_worship(GOD_ASHENZARI))
         return;
 
     int cursed[NUM_ET] = {0}, slots[NUM_ET] = {0};
@@ -276,7 +275,7 @@ void ash_check_bondage(bool msg)
     {
         string desc = ash_describe_bondage(flags, you.bondage_level != old_level);
         if (!desc.empty())
-            mpr(desc, MSGCH_GOD);
+            mprf(MSGCH_GOD, "%s", desc.c_str());
     }
 }
 
@@ -373,7 +372,7 @@ static bool _jewel_auto_id(const item_def& item)
     switch (item.sub_type)
     {
     case RING_REGENERATION:
-        return (player_mutation_level(MUT_SLOW_HEALING) < 3);
+        return player_mutation_level(MUT_SLOW_HEALING) < 3;
     case RING_PROTECTION:
     case RING_EVASION:
     case RING_STRENGTH:
@@ -381,10 +380,10 @@ static bool _jewel_auto_id(const item_def& item)
     case RING_INTELLIGENCE:
         return !!item.plus;
     case AMU_FAITH:
-        return (you.religion != GOD_NO_GOD);
+        return !you_worship(GOD_NO_GOD);
     case AMU_THE_GOURMAND:
-        return (you.species != SP_MUMMY
-                && player_mutation_level(MUT_HERBIVOROUS) < 3);
+        return you.species != SP_MUMMY
+               && player_mutation_level(MUT_HERBIVOROUS) < 3;
     case RING_INVISIBILITY:
     case RING_TELEPORTATION:
     case RING_TELEPORT_CONTROL:
@@ -406,7 +405,7 @@ bool god_id_item(item_def& item, bool silent)
     iflags_t old_ided = item.flags & ISFLAG_IDENT_MASK;
     iflags_t ided = 0;
 
-    if (you.religion == GOD_ASHENZARI)
+    if (you_worship(GOD_ASHENZARI))
     {
         // Don't identify runes or the orb, since this has no gameplay purpose
         // and might mess up other things.
@@ -425,7 +424,7 @@ bool god_id_item(item_def& item, bool silent)
             ided |= ISFLAG_KNOW_PROPERTIES | ISFLAG_KNOW_TYPE;
 
         if (_jewel_auto_id(item))
-            ided |= ISFLAG_EQ_JEWELLERY_MASK;
+            ided |= ISFLAG_IDENT_MASK;
 
         if (item.base_type == OBJ_ARMOUR
             && you.piety >= piety_breakpoint(0)
@@ -449,7 +448,7 @@ bool god_id_item(item_def& item, bool silent)
                  (_is_slot_cursed(EQ_LEFT_RING) && _is_slot_cursed(EQ_RIGHT_RING))
              ))
         {
-            ided |= ISFLAG_EQ_JEWELLERY_MASK;
+            ided |= ISFLAG_IDENT_MASK;
         }
         else if (you.species == SP_OCTOPODE && item.base_type == OBJ_JEWELLERY
             && you.piety >= piety_breakpoint(1)
@@ -461,10 +460,10 @@ bool god_id_item(item_def& item, bool silent)
                   _is_slot_cursed(EQ_RING_SEVEN) && _is_slot_cursed(EQ_RING_EIGHT))
              ))
         {
-            ided |= ISFLAG_EQ_JEWELLERY_MASK;
+            ided |= ISFLAG_IDENT_MASK;
         }
     }
-    else if (you.religion == GOD_ELYVILON)
+    else if (you_worship(GOD_ELYVILON))
     {
         if ((item.base_type == OBJ_STAVES || item.base_type == OBJ_RODS)
             && (is_evil_item(item) || is_unholy_item(item)))
@@ -498,7 +497,7 @@ bool god_id_item(item_def& item, bool silent)
             you.wield_change = true;
 
         if (!silent)
-            mpr_nocap(item.name(DESC_INVENTORY_EQUIP).c_str());
+            mprf_nocap("%s", item.name(DESC_INVENTORY_EQUIP).c_str());
 
         seen_item(item);
         return true;
@@ -510,7 +509,7 @@ bool god_id_item(item_def& item, bool silent)
 
 void ash_id_monster_equipment(monster* mon)
 {
-    if (you.religion != GOD_ASHENZARI)
+    if (!you_worship(GOD_ASHENZARI))
         return;
 
     bool id = false;
@@ -547,6 +546,8 @@ void ash_id_monster_equipment(monster* mon)
 
 static bool is_ash_portal(dungeon_feature_type feat)
 {
+    if (feat >= DNGN_ENTER_FIRST_PORTAL && feat <= DNGN_ENTER_LAST_PORTAL)
+        return true;
     switch (feat)
     {
     case DNGN_ENTER_HELL:
@@ -557,7 +558,9 @@ static bool is_ash_portal(dungeon_feature_type feat)
     case DNGN_ENTER_PANDEMONIUM:
     case DNGN_EXIT_PANDEMONIUM:
     // DNGN_TRANSIT_PANDEMONIUM is too mundane
+#if TAG_MAJOR_VERSION == 34
     case DNGN_ENTER_PORTAL_VAULT:
+#endif
         return true;
     default:
         return false;
@@ -585,7 +588,7 @@ static bool _check_portal(coord_def where)
 
 int ash_detect_portals(bool all)
 {
-    if (you.religion != GOD_ASHENZARI)
+    if (!you_worship(GOD_ASHENZARI))
         return 0;
 
     int portals_found = 0;
@@ -707,7 +710,7 @@ int ash_skill_boost(skill_type sk, int scale)
 
     unsigned int skill_points = you.skill_points[sk];
     skill_points += (you.skill_boost[sk] * 2 + 1) * piety_rank()
-                    * you.skill(sk, 10, true) * species_apt_factor(sk);
+                    * max(you.skill(sk, 10, true), 1) * species_apt_factor(sk);
 
     int level = you.skills[sk];
     while (level < 27 && skill_points >= skill_exp_needed(level + 1, sk))

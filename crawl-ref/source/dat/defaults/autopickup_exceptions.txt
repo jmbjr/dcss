@@ -8,9 +8,8 @@ ae := autopickup_exceptions
 
 ### exclusions ###
 
-# Exclude items useless in general (?paper, bad potions unless you know
-# Evaporate) or for your current character (such as inedible food or
-# armour you can't wear).
+# Exclude items useless in general or for your current character (such as
+# inedible food or armour you can't wear).
 ae += useless_item
 
 # Exclude potentially useful items of high risk, like ?torment or
@@ -25,8 +24,8 @@ ae += forbidden
 # Some items may already be excluded as bad_item, e.g. inaccuracy.
 ae += amulet of (inaccuracy|the gourmand|warding)
 ae += amulet of (resist .*|clarity|rage|conservation|guardian spirit|faith|stasis)
-# Rings of teleportation are not redundant -- double *TELE is pretty good in
-# the Abyss.  Still, they're more in line with bone lanterns, so you can
+# Rings of teleportation are not redundant -- double *Tele is pretty good in
+# the Abyss. Still, they're more in line with lanterns of shadow, so you can
 # pick up the second one by hand.
 ae += ring of (see invisible|flight|poison resistance|teleportation)
 ae += ring of (invisibility|teleport control)

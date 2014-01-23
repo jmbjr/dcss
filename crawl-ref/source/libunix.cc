@@ -3,7 +3,7 @@
  * @brief Functions for unix and curses support
 **/
 
-/* Some replacement routines missing in gcc
+/* Emulation of ancient Borland conio.
    Some of these are inspired by/stolen from the Linux-conio package
    by Mental EXPlotion. Hope you guys don't mind.
    The colour exchange system is perhaps a little overkill, but I wanted
@@ -57,6 +57,7 @@ static struct termios game_term;
     #ifndef _XOPEN_SOURCE_EXTENDED
     #define _XOPEN_SOURCE_EXTENDED
     #endif
+
     #include <curses.h>
 #else
     #include CURSES_INCLUDE_FILE
@@ -140,7 +141,7 @@ static void setup_colour_pairs(void)
     for (i = 0; i < 8; i++)
         for (j = 0; j < 8; j++)
         {
-            if ((i > 0) || (j > 0))
+            if (i > 0 || j > 0)
                 init_pair(i * 8 + j, j, i);
         }
 
@@ -173,7 +174,7 @@ static void termio_init()
 void set_mouse_enabled(bool enabled)
 {
 #ifdef NCURSES_MOUSE_VERSION
-    const int mask = enabled? ALL_MOUSE_EVENTS | REPORT_MOUSE_POSITION : 0;
+    const int mask = enabled ? ALL_MOUSE_EVENTS | REPORT_MOUSE_POSITION : 0;
     mmask_t oldmask = 0;
     mousemask(mask, &oldmask);
 #endif
@@ -220,9 +221,11 @@ static int pending = 0;
 
 int getchk()
 {
+#ifdef WATCHDOG
     // If we have (or wait for) actual keyboard input, it's not an infinite
     // loop.
     watchdog();
+#endif
 
     if (pending)
     {
@@ -239,7 +242,7 @@ int getchk()
     tiles.redraw();
     tiles.await_input(c, true);
 
-    if (c > 0)
+    if (c != 0)
         return c;
 #endif
 
@@ -674,7 +677,7 @@ static int curs_fg_attr(int col)
     // figure out which colour pair we want
     const int pair = (fg == 0 && bg == 0) ? 63 : (bg * 8 + fg);
 
-    return (COLOR_PAIR(pair) | flags);
+    return COLOR_PAIR(pair) | flags;
 }
 
 void textcolor(int col)
@@ -736,7 +739,7 @@ static int curs_bg_attr(int col)
     // figure out which colour pair we want
     const int pair = (fg == 0 && bg == 0) ? 63 : (bg * 8 + fg);
 
-    return (COLOR_PAIR(pair) | flags);
+    return COLOR_PAIR(pair) | flags;
 }
 
 void textbackground(int col)
@@ -748,7 +751,6 @@ void textbackground(int col)
 #endif
 }
 
-
 void gotoxy_sys(int x, int y)
 {
     move(y - 1, x - 1);
@@ -757,7 +759,7 @@ void gotoxy_sys(int x, int y)
 typedef cchar_t char_info;
 static inline bool operator == (const cchar_t &a, const cchar_t &b)
 {
-    return (a.attr == b.attr && *a.chars == *b.chars);
+    return a.attr == b.attr && *a.chars == *b.chars;
 }
 
 static inline char_info character_at(int y, int x)
@@ -825,7 +827,6 @@ int wherex()
     return getcurx(stdscr) + 1;
 }
 
-
 int wherey()
 {
     return getcury(stdscr) + 1;
@@ -876,7 +877,7 @@ bool kbhit()
 #else
     bool result = tiles.await_input(c, false);
 
-    if (result && (c != 0))
+    if (result && c != 0)
         pending = c;
 
     return result;

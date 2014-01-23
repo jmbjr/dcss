@@ -66,7 +66,7 @@ and summon monsters with the Shadow Creatures spell:
     crawl -arena "test spawner v test spawner"
 
 If you want a *specific* set of monsters to fight each other endlessly,
-you can use the "respawn" tag, which will cause the initally placed
+you can use the "respawn" tag, which will cause the initially placed
 monsters to be replaced when they die. For example,
 
     crawl -arena "respawn rat v rat"
@@ -116,8 +116,8 @@ string which specifies the monsters:
 The parameters include:
 
 * "arena:name" lets you pick the name of the arena to place the monsters
-      in (defaults to "arena:default"). See source/dat/arena.des for
-      a list.
+      in (defaults to "arena:default"). See source/dat/des/builder/arena.des
+      for a list.
 
 * no_force_ai: The monsters in the arena are somewhat smarter than they are
       than when they're facing the player. This parameter removes that

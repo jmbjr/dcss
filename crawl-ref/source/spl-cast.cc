@@ -14,6 +14,7 @@
 #include "options.h"
 
 #include "areas.h"
+#include "art-enum.h"
 #include "beam.h"
 #include "cloud.h"
 #include "colour.h"
@@ -28,8 +29,6 @@
 #include "godconduct.h"
 #include "goditem.h"
 #include "hints.h"
-#include "item_use.h"
-#include "items.h"
 #include "libutil.h"
 #include "macro.h"
 #include "menu.h"
@@ -61,6 +60,7 @@
 #include "state.h"
 #include "stuff.h"
 #include "target.h"
+#include "terrain.h"
 #ifdef USE_TILE
  #include "tilepick.h"
 #endif
@@ -149,7 +149,7 @@ static string _spell_extra_description(spell_type spell, bool viewing)
 // to certain criteria. Currently used for Tiles to distinguish
 // spells targeted on player vs. spells targeted on monsters.
 int list_spells(bool toggle_with_I, bool viewing, bool allow_preselect,
-                spell_selector selector)
+                const string &title, spell_selector selector)
 {
     if (toggle_with_I && get_spell_by_letter('I') != SPELL_NO_SPELL)
         toggle_with_I = false;
@@ -163,15 +163,17 @@ int list_spells(bool toggle_with_I, bool viewing, bool allow_preselect,
     ToggleableMenu spell_menu(MF_SINGLESELECT | MF_ANYPRINTABLE
                               | MF_ALWAYS_SHOW_MORE | MF_ALLOW_FORMATTING,
                               text_only);
+    string titlestring = make_stringf("%-25.25s", title.c_str());
+    string hungerstring = you.species == SP_DJINNI ? "Glow  " : "Hunger";
 #ifdef USE_TILE_LOCAL
     {
         // [enne] - Hack.  Make title an item so that it's aligned.
         ToggleableMenuEntry* me =
             new ToggleableMenuEntry(
-                " Your Spells                       Type          "
+                " " + titlestring + "         Type          "
                 "                Failure   Level",
-                " Your Spells                       Power         "
-                "Range           Hunger    Level",
+                " " + titlestring + "         Power         "
+                "Range           " + hungerstring + "    Level",
                 MEL_ITEM);
         me->colour = BLUE;
         spell_menu.add_entry(me);
@@ -179,26 +181,26 @@ int list_spells(bool toggle_with_I, bool viewing, bool allow_preselect,
 #else
     spell_menu.set_title(
         new ToggleableMenuEntry(
-            " Your Spells                       Type          "
+            " " + titlestring + "         Type          "
             "                Failure   Level",
-            " Your Spells                       Power         "
-            "Range           Hunger    Level",
+            " " + titlestring + "         Power         "
+            "Range           " + hungerstring + "    Level",
             MEL_TITLE));
 #endif
     spell_menu.set_highlighter(NULL);
     spell_menu.set_tag("spell");
     spell_menu.add_toggle_key('!');
 
-    string more_str = "Press '!' ";
+    string more_str = "Press '<w>!</w>' ";
     if (toggle_with_I)
     {
         spell_menu.add_toggle_key('I');
-        more_str += "or 'I' ";
+        more_str += "or '<w>I</w>' ";
     }
     if (!viewing)
         spell_menu.menu_action = Menu::ACT_EXECUTE;
     more_str += "to toggle spell view.";
-    spell_menu.set_more(formatted_string(more_str));
+    spell_menu.set_more(formatted_string::parse_string(more_str));
 
     // If there's only a single spell in the offered spell list,
     // taking the selector function into account, preselect that one.
@@ -282,7 +284,7 @@ static int _apply_spellcasting_success_boosts(spell_type spell, int chance)
     int fail_reduce = 100;
     int wiz_factor = 87;
 
-    if (you.religion == GOD_VEHUMET
+    if (you_worship(GOD_VEHUMET)
         && !player_under_penance() && you.piety >= piety_breakpoint(2)
         && vehumet_supports_spell(spell))
     {
@@ -307,7 +309,7 @@ static int _apply_spellcasting_success_boosts(spell_type spell, int chance)
     if (fail_reduce < 50)
         fail_reduce = 50;
 
-    return (chance * fail_reduce / 100);
+    return chance * fail_reduce / 100;
 }
 
 int spell_fail(spell_type spell)
@@ -339,9 +341,24 @@ int spell_fail(spell_type spell)
     default: chance += 750; break;
     }
 
+    // Only apply this penalty to Dj because other species lose nutrition
+    // rather than gaining contamination when casting spells.
+    // Also, this penalty gives fairly precise information about contam
+    // level, and only Dj already has such information (on the contam bar).
+    // Other species would have to check their failure rates all the time
+    // when at yellow glow.
+    if (you.species == SP_DJINNI)
+    {
+        int64_t contam = you.magic_contamination;
+        // Just +25 on the edge of yellow glow, +200 in the middle of yellow,
+        // forget casting when in orange.
+        chance += contam * contam * contam / 5000000000LL;
+    }
+
     int chance2 = chance;
 
-    const int chance_breaks[][2] = {
+    const int chance_breaks[][2] =
+    {
         {45, 45}, {42, 43}, {38, 41}, {35, 40}, {32, 38}, {28, 36},
         {22, 34}, {16, 32}, {10, 30}, {2, 28}, {-7, 26}, {-12, 24},
         {-18, 22}, {-24, 20}, {-30, 18}, {-38, 16}, {-46, 14},
@@ -372,6 +389,9 @@ int spell_fail(spell_type spell)
     }
 
     chance2 += 7 * player_mutation_level(MUT_WILD_MAGIC);
+
+    if (player_equip_unrand(UNRAND_HIGH_COUNCIL))
+        chance2 += 7;
 
     // Apply the effects of Vehumet and items of wizardry.
     chance2 = _apply_spellcasting_success_boosts(spell, chance2);
@@ -501,9 +521,10 @@ static int _spell_enhancement(unsigned int typeflags)
 
     if (you.attribute[ATTR_SHADOWS])
         enhanced -= 2;
+    if (you.form == TRAN_SHADOW)
+        enhanced -= 2;
 
-    if (you.archmagi())
-        enhanced++;
+    enhanced += you.archmagi();
 
     if (you.species == SP_LAVA_ORC && temperature_effect(LORC_LAVA_BOOST)
         && (typeflags & SPTYP_FIRE) && (typeflags & SPTYP_EARTH))
@@ -648,12 +669,12 @@ bool cast_a_spell(bool check_range, spell_type spell)
                 }
 
                 if (you.last_cast_spell == SPELL_NO_SPELL)
-                    mpr("Cast which spell? (? or * to list) ", MSGCH_PROMPT);
+                    mprf(MSGCH_PROMPT, "Cast which spell? (? or * to list) ");
                 else
                 {
                     mprf(MSGCH_PROMPT, "Casting: <w>%s</w>",
                          spell_title(you.last_cast_spell));
-                    mpr("Confirm with . or Enter, or press ? or * to list all spells.", MSGCH_PROMPT);
+                    mprf(MSGCH_PROMPT, "Confirm with . or Enter, or press ? or * to list all spells.");
                 }
 
                 keyin = get_ch();
@@ -705,8 +726,7 @@ bool cast_a_spell(bool check_range, spell_type spell)
         return false;
     }
 
-    if (spell_mana(spell) > (you.species != SP_DJINNI ? you.magic_points
-        : (you.hp - 1) / DJ_MP_RATE))
+    if (!enough_mp(spell_mana(spell), true))
     {
         mpr("You don't have enough magic to cast that spell.");
         crawl_state.zero_turns_taken();
@@ -763,12 +783,20 @@ bool cast_a_spell(bool check_range, spell_type spell)
 
     const bool staff_energy = player_energy();
     you.last_cast_spell = spell;
+    // Silently take MP before the spell.
+    const int cost = spell_mana(spell);
+    dec_mp(cost, true);
     const spret_type cast_result = your_spells(spell, 0, true, check_range);
     if (cast_result == SPRET_ABORT)
     {
         crawl_state.zero_turns_taken();
+        // Return the MP since the spell is aborted.
+        inc_mp(cost, true);
         return false;
     }
+
+    // XXX: the message order here might not be the best
+    zin_recite_interrupt();
 
     if (cast_result == SPRET_SUCCESS)
     {
@@ -779,16 +807,16 @@ bool cast_a_spell(bool check_range, spell_type spell)
     else
         practise(EX_DID_MISCAST, spell);
 
-    // Nasty special cases.  Mana should be taken first, but that would make
-    // cancelling spells tricky, baring some refactoring.
+    // Nasty special cases.
     if (you.species == SP_DJINNI && cast_result == SPRET_SUCCESS
         && (spell == SPELL_BORGNJORS_REVIVIFICATION
          || spell == SPELL_SUBLIMATION_OF_BLOOD && you.hp == you.hp_max))
     {
         // These spells have replenished essence to full.
+        inc_mp(cost, true);
     }
-    else
-        dec_mp(spell_mana(spell));
+    else // Redraw MP
+        flush_mp();
 
     if (!staff_energy && you.is_undead != US_UNDEAD)
     {
@@ -835,7 +863,7 @@ static void _spellcasting_side_effects(spell_type spell, int pow, god_type god)
         if (spell == SPELL_NECROMUTATION && is_good_god(you.religion))
             excommunication();
     }
-    if (spell == SPELL_STATUE_FORM && you.religion == GOD_YREDELEMNUL
+    if (spell == SPELL_STATUE_FORM && you_worship(GOD_YREDELEMNUL)
         && !crawl_state.is_god_acting())
     {
         excommunication();
@@ -861,13 +889,16 @@ static bool _vampire_cannot_cast(spell_type spell)
     {
     case SPELL_BEASTLY_APPENDAGE:
     case SPELL_BLADE_HANDS:
-    case SPELL_CURE_POISON:
     case SPELL_DRAGON_FORM:
     case SPELL_ICE_FORM:
     case SPELL_SPIDER_FORM:
     case SPELL_STATUE_FORM:
     case SPELL_STONESKIN:
         return true;
+    case SPELL_CURE_POISON:
+        // You can become poisoned at any state but bloodless; allow curing
+        // it under the same conditions.
+        return you.hunger_state <= HS_STARVING;
     default:
         return false;
     }
@@ -1020,13 +1051,16 @@ static bool _spellcasting_aborted(spell_type spell,
     string msg;
     if (!wiz_cast && spell_is_uncastable(spell, msg))
     {
-        mpr(msg);
+        mprf("%s", msg.c_str());
         return true;
     }
 
     if (is_prevented_teleport(spell))
     {
-        mpr("You cannot teleport right now.");
+        if (you.species == SP_FORMICID)
+            mpr("You cannot teleport.");
+        else
+            mpr("You cannot teleport right now.");
         return true;
     }
 
@@ -1077,7 +1111,7 @@ static targetter* _spell_targetter(spell_type spell, int pow, int range)
     case SPELL_FULMINANT_PRISM:
         return new targetter_smite(&you, range, 0, 2);
     case SPELL_DAZZLING_SPRAY:
-        return new targetter_spray(&you, 6, ZAP_DAZZLING_SPRAY);
+        return new targetter_spray(&you, range, ZAP_DAZZLING_SPRAY);
     case SPELL_MAGIC_DART:
     case SPELL_FORCE_LANCE:
     case SPELL_SHOCK:
@@ -1115,7 +1149,7 @@ static targetter* _spell_targetter(spell_type spell, int pow, int range)
 }
 
 // Returns SPRET_SUCCESS if spell is successfully cast for purposes of
-// exercising, SPRET_FAIL otherwise, or SPRET_ABORT if the player canceled
+// exercising, SPRET_FAIL otherwise, or SPRET_ABORT if the player cancelled
 // the casting.
 // Not all of these are actually real spells; invocations, decks, rods or misc.
 // effects might also land us here.
@@ -1146,10 +1180,10 @@ spret_type your_spells(spell_type spell, int powc,
         powc = calc_spell_power(spell, true);
 
     // XXX: This handles only some of the cases where spells need
-    // targetting.  There are others that do their own that will be
+    // targeting.  There are others that do their own that will be
     // missed by this (and thus will not properly ESC without cost
     // because of it).  Hopefully, those will eventually be fixed. - bwr
-    if ((flags & SPFLAG_TARGETTING_MASK) && spell != SPELL_PORTAL_PROJECTILE)
+    if ((flags & SPFLAG_TARGETING_MASK) && spell != SPELL_PORTAL_PROJECTILE)
     {
         targ_mode_type targ =
               (testbits(flags, SPFLAG_HELPFUL) ? TARG_FRIEND : TARG_HOSTILE);
@@ -1160,7 +1194,7 @@ spret_type your_spells(spell_type spell, int powc,
         if (spell == SPELL_DISPEL_UNDEAD)
             targ = TARG_HOSTILE_UNDEAD;
 
-        targetting_type dir  =
+        targeting_type dir  =
             (testbits(flags, SPFLAG_TARG_OBJ) ? DIR_TARGET_OBJECT :
              testbits(flags, SPFLAG_TARGET)   ? DIR_TARGET        :
              testbits(flags, SPFLAG_GRID)     ? DIR_TARGET        :
@@ -1169,7 +1203,7 @@ spret_type your_spells(spell_type spell, int powc,
 
         const char *prompt = get_spell_target_prompt(spell);
         if (dir == DIR_DIR)
-            mpr(prompt ? prompt : "Which direction?", MSGCH_PROMPT);
+            mprf(MSGCH_PROMPT, "%s", prompt ? prompt : "Which direction?");
 
         const bool needs_path = (!testbits(flags, SPFLAG_GRID)
                                  && !testbits(flags, SPFLAG_TARGET));
@@ -1233,7 +1267,7 @@ spret_type your_spells(spell_type spell, int powc,
     {
         int spfl = random2avg(100, 3);
 
-        if (you.religion != GOD_SIF_MUNA
+        if (!you_worship(GOD_SIF_MUNA)
             && you.penance[GOD_SIF_MUNA] && one_chance_in(20))
         {
             god_speaks(GOD_SIF_MUNA, "You feel a surge of divine spite.");
@@ -1242,7 +1276,7 @@ spret_type your_spells(spell_type spell, int powc,
             spfl = -you.penance[GOD_SIF_MUNA];
         }
         else if (spell_typematch(spell, SPTYP_NECROMANCY)
-                 && you.religion != GOD_KIKUBAAQUDGHA
+                 && !you_worship(GOD_KIKUBAAQUDGHA)
                  && you.penance[GOD_KIKUBAAQUDGHA]
                  && one_chance_in(20))
         {
@@ -1256,7 +1290,7 @@ spret_type your_spells(spell_type spell, int powc,
                           random2avg(88, 3), "the malice of Kikubaaqudgha");
         }
         else if (vehumet_supports_spell(spell)
-                 && you.religion != GOD_VEHUMET
+                 && !you_worship(GOD_VEHUMET)
                  && you.penance[GOD_VEHUMET]
                  && one_chance_in(20))
         {
@@ -1285,14 +1319,24 @@ spret_type your_spells(spell_type spell, int powc,
     if (you.props.exists("battlesphere") && allow_fail)
         aim_battlesphere(&you, spell, powc, beam);
 
+    const bool old_target = actor_at(beam.target);
+
     switch (_do_cast(spell, powc, spd, beam, god, potion, check_range, fail))
     {
     case SPRET_SUCCESS:
+    {
         if (you.props.exists("battlesphere") && allow_fail)
             trigger_battlesphere(&you, beam);
+        actor* victim = actor_at(beam.target);
+        if (you_worship(GOD_DITHMENGOS)
+            && (flags & SPFLAG_TARGETING_MASK)
+            && (!old_target || (victim && !victim->is_player())))
+        {
+            dithmengos_shadow_spell(beam.target, spell);
+        }
         _spellcasting_side_effects(spell, powc, god);
         return SPRET_SUCCESS;
-
+    }
     case SPRET_FAIL:
     {
         if (antimagic)
@@ -1302,9 +1346,10 @@ spret_type your_spells(spell_type spell, int powc,
         flush_input_buffer(FLUSH_ON_FAILURE);
         learned_something_new(HINT_SPELL_MISCAST);
 
-        if (you.religion == GOD_SIF_MUNA
+        if (you_worship(GOD_SIF_MUNA)
             && !player_under_penance()
-            && you.piety >= 100 && x_chance_in_y(you.piety + 1, 150))
+            && you.piety >= piety_breakpoint(3)
+            && x_chance_in_y(you.piety, piety_breakpoint(5)))
         {
             canned_msg(MSG_NOTHING_HAPPENS);
             return SPRET_FAIL;
@@ -1317,7 +1362,7 @@ spret_type your_spells(spell_type spell, int powc,
         // contamination!
         int nastiness = spell_difficulty(spell) * spell_difficulty(spell) * fail + 250;
 
-        const int cont_points = div_rand_round(nastiness, 500);
+        const int cont_points = 2 * nastiness;
 
         // miscasts are uncontrolled
         contaminate_player(cont_points, true);
@@ -1346,7 +1391,7 @@ spret_type your_spells(spell_type spell, int powc,
                  spell_title(spell));
         }
         else
-            mpr("Invalid spell!", MSGCH_ERROR);
+            mprf(MSGCH_ERROR, "Invalid spell!");
 
         return SPRET_ABORT;
     }
@@ -1408,11 +1453,8 @@ static spret_type _do_cast(spell_type spell, int powc,
 
 #if TAG_MAJOR_VERSION == 34
     case SPELL_EVAPORATE:
-        mpr("Sorry, this spell is gone!");
-        return SPRET_ABORT;
-
     case SPELL_CIGOTUVIS_DEGENERATION:
-        mpr("Sorry, this spell has degenerated away!");
+        mpr("Sorry, this spell is gone!");
         return SPRET_ABORT;
 #endif
 
@@ -1468,8 +1510,10 @@ static spret_type _do_cast(spell_type spell, int powc,
         return cast_liquefaction(powc, fail);
 
     case SPELL_OZOCUBUS_REFRIGERATION:
-    case SPELL_OLGREBS_TOXIC_RADIANCE:
         return cast_los_attack_spell(spell, powc, &you, true, true, fail);
+
+    case SPELL_OLGREBS_TOXIC_RADIANCE:
+        return cast_toxic_radiance(&you, powc, fail);
 
     case SPELL_IGNITE_POISON:
         return cast_ignite_poison(powc, fail);
@@ -1571,6 +1615,9 @@ static spret_type _do_cast(spell_type spell, int powc,
     case SPELL_DEATH_CHANNEL:
         return cast_death_channel(powc, god, fail);
 
+    case SPELL_SPECTRAL_WEAPON:
+        return cast_spectral_weapon(&you, powc, god, fail);
+
     case SPELL_BATTLESPHERE:
         return cast_battlesphere(&you, powc, god, fail);
 
@@ -1586,6 +1633,9 @@ static spret_type _do_cast(spell_type spell, int powc,
 
     case SPELL_MASS_CONFUSION:
         return mass_enchantment(ENCH_CONFUSION, powc, fail);
+
+    case SPELL_DISCORD:
+        return mass_enchantment(ENCH_INSANE, powc, fail);
 
     case SPELL_ENGLACIATION:
         return cast_englaciation(powc, fail);
@@ -1672,7 +1722,7 @@ static spret_type _do_cast(spell_type spell, int powc,
 
     // General enhancement.
     case SPELL_REGENERATION:
-        return cast_regen(powc, false, fail);
+        return cast_regen(powc, fail);
 
     case SPELL_REPEL_MISSILES:
         return missile_prot(powc, fail);
@@ -1700,6 +1750,18 @@ static spret_type _do_cast(spell_type spell, int powc,
 
     case SPELL_SILENCE:
         return cast_silence(powc, fail);
+
+    case SPELL_INFUSION:
+        return cast_infusion(powc, fail);
+
+    case SPELL_SONG_OF_SLAYING:
+        return cast_song_of_slaying(powc, fail);
+
+#if TAG_MAJOR_VERSION == 34
+    case SPELL_SONG_OF_SHIELDING:
+        mpr("Sorry, this spell is gone!");
+        return SPRET_ABORT;
+#endif
 
     // other
     case SPELL_BORGNJORS_REVIVIFICATION:
@@ -1760,13 +1822,19 @@ static spret_type _do_cast(spell_type spell, int powc,
     case SPELL_FULMINANT_PRISM:
         return cast_fulminating_prism(powc, beam.target, fail);
 
+    case SPELL_SEARING_RAY:
+        return cast_searing_ray(powc, beam, fail);
+
+    case SPELL_MELEE: // Rod of striking
+        mpr("This rod is automatically evoked when it strikes in combat.");
+        return SPRET_ABORT;
+
     default:
         return SPRET_NONE;
     }
 
     return SPRET_SUCCESS;
 }
-
 
 // _tetrahedral_number: returns the nth tetrahedral number.
 // This is the number of triples of nonnegative integers with sum < n.
@@ -1803,7 +1871,6 @@ static double _get_true_fail_rate(int raw_fail)
     //The random2avg distribution is symmetric, so the last interval is
     //essentially the same as the first interval.
     return (double) (1020100 - _tetrahedral_number(300 - target)) / 1020100;
-
 }
 
 //Computes the chance of getting a miscast effect of a given severity (or
@@ -1830,10 +1897,10 @@ double get_miscast_chance(spell_type spell, int severity)
 int failure_rate_colour(spell_type spell)
 {
     double chance = get_miscast_chance(spell);
-    return ((chance < 0.001) ? LIGHTGREY :
-            (chance < 0.005) ? YELLOW    :
-            (chance < 0.025) ? LIGHTRED  :
-                               RED);
+    return (chance < 0.001) ? LIGHTGREY :
+           (chance < 0.005) ? YELLOW    :
+           (chance < 0.025) ? LIGHTRED  :
+                              RED;
 }
 
 //Converts the raw failure rate into a number to be displayed.
@@ -1884,6 +1951,7 @@ string spell_noise_string(spell_type spell)
         effect_noise = 7;
         break;
 
+    case SPELL_SONG_OF_SLAYING:
     case SPELL_MALIGN_GATEWAY:
         effect_noise = 10;
         break;
@@ -1922,7 +1990,8 @@ string spell_noise_string(spell_type spell)
 
     const int noise = max(casting_noise, effect_noise);
 
-    const char* noise_descriptions[] = {
+    const char* noise_descriptions[] =
+    {
         "Silent", "Almost silent", "Quiet", "A bit loud", "Loud", "Very loud",
         "Extremely loud", "Deafening"
     };
@@ -1947,7 +2016,7 @@ static int _power_to_barcount(int power)
         return -1;
 
     const int breakpoints[] = { 10, 15, 25, 35, 50, 75, 100, 150, 200 };
-    return (breakpoint_rank(power, breakpoints, ARRAYSZ(breakpoints)) + 1);
+    return breakpoint_rank(power, breakpoints, ARRAYSZ(breakpoints)) + 1;
 }
 
 static int _spell_power_bars(spell_type spell, bool rod)

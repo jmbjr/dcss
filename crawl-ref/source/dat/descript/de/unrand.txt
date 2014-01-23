@@ -25,15 +25,6 @@ Sword of Power
 
 Es belohnt die Mächtigen mit Macht und die Sanften mit Schwäche.
 %%%%
-Staff of Olgreb
-
-Diese magische Waffe wurde von dem mächtigen Hexenmeister Olgreb getragen,
-bevor er sein Schicksal irgendwo in diesem Verlies fand. Es erhöht die
-Fähigkeit des Trägers, Giftmagie anzuwenden, und beinhaltet magische Kräfte,
-die entfesselt werden können. Die Legende erzählt, das Olgreb seltene Gifte mit
-begrenzten Effekten, welche sogar bei Kreaturen wirkten die gegen bekannte
-Gifte immun waren, erforscht hat.
-%%%%
 Staff of Wucad Mu
 
 Es kann ausgelöst werden, um eine große Menge magischer Energie
@@ -61,10 +52,6 @@ Sword of Zonguldrok
 
 Diese entsetzliche Waffe sollte auf eigene Gefahr eingesetzt werden.
 %%%%
-Sword of Cerebov
-
-Gespenstische Flammen bedecken diese verzerrte Klinge.
-%%%%
 Staff of Dispater
 
 Dieser legendäre Gegenstand kann den Zorn der Hölle entfesseln.
@@ -87,7 +74,7 @@ Es trägt die Blutflecken eines unmenschlichen Verrückten.
 %%%%
 scimitar of Flaming Death
 
-Heißes Teil !
+Heißes Teil !
 %%%%
 demon blade "Leech"
 
@@ -130,15 +117,6 @@ glaive of the Guard
 Diese Waffe gehörte einst Gar Dogh, der Wächter eines königlichen Schatzes.
 Laut den Legenden verschwand er irgendwo im Verlies.
 %%%%
-sword of Jihad
-
-Ein Langschwert, geschaffen aus einem riesigem Stück Kristall. Die Legenden
-sagen es sei ein Geschenk des Shining One an einen Gläubigen gewesen.
-%%%%
-crossbow "Hellfire"
-
-Eine flammende Armbrust, in den Feuern der Hölle geschmiedet.
-%%%%
 sword of the Doom Knight
 
 Ein großes Schwert, hart wie Diamant.
@@ -180,11 +158,6 @@ blowgun of the Assassin
 
 Geschaffen für die leichte Tarnung, hält aber trotzdem fiese Schläge ab.
 %%%%
-lance "Wyrmbane"
-
-Eine verzauberte Lanze welche immer mehr und mehr wächst für jedes mal, wenn
-damit ein Drache erschlagen wurde.
-%%%%
 Spriggan's Knife
 
 Ein elegantes kleines Messer.
@@ -222,8 +195,8 @@ Ozons.
 %%%%
 large shield of Ignorance
 
-"Ein offener Geist ist wie eine Festung mit unverschlossenen und unbewachten
-Toren."
+„Ein offener Geist ist wie eine Festung mit unverschlossenen und unbewachten
+Toren.“
 %%%%
 robe of Augmentation
 
@@ -234,7 +207,7 @@ cloak of the Thief
 Es erlaubt seinem Träger, das Diebeshandwerk überragend auszuführen, und kann
 aktiviert werden, um dicke Rauchwolken zur schnellen Flucht auszustoßen.
 %%%%
-shield "Bullseye"
+large shield "Bullseye"
 
 Nur für den Fall, dass du Probleme hattest, getroffen zu werden.
 %%%%
@@ -255,10 +228,6 @@ Eine prächtige wallende Robe aus Pelz und Seide.
 cloak of Flash
 
 Ein vibrierender Umhang.
-%%%%
-boots of the Assassin
-
-Ein Paar weiche Stiefel, die speziell von der Assassinengilde entworfen wurden.
 %%%%
 skin of Zhor
 
@@ -284,10 +253,6 @@ Eine langweilige graue Robe.
 Maxwell's patent armour
 
 Eine seltsam aussehende Rüstung.
-%%%%
-mask of the Dragon
-
-Eine blaue Maske.
 %%%%
 armour of the Dragon King
 
@@ -386,10 +351,10 @@ Träger, wenngleich etwas unzuverlässig, vor elementaren Angriffen aller Art.
 %%%%
 ring of the Octopus King
 
-"Das Liebste einer Nixe war ihr Gesang,
+„Das Liebste einer Nixe war ihr Gesang,
  welcher erweckte des Krakenkönigs Drang,
  ihr Verehrer zu werden, und sei es, zu sterben,
  drum tat er sich hartnäckig bei seinem Werben.
  Trotz aller Geschenke, aller Dinge,
- konnte sie nicht tragen all seine Ringe."
+ konnte sie nicht tragen all seine Ringe.“
 %%%%

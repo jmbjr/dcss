@@ -74,42 +74,34 @@ function volcano_portal (e)
       timed_marker {
         disappear = "There is a deep roar from within the tunnel. Moments " ..
                     "later, a river of lava pours forth, sealing it permanently.",
-        desc = "dark tunnel",
         entity = 'tunnel',
-        dst = "Volcano",
-        overview = "dark tunnel",
         turns = timeout_turns_long,
         turns_short = timeout_turns_short,
         floor = "expired_portal",
         feat_tile = "dngn_portal_volcano_gone",
         msg = messager })
     e.tags("uniq_volcano chance_volcano")
-    e.chance("5%")
-    e.kfeat("O = enter_portal_vault")
-    e.tile("O = dngn_portal_volcano")
+    e.chance(500)
+    e.kfeat("O = enter_volcano")
     e.kfeat("S = .")
-    e.colour("XOS = red")
+    e.colour("XS = red")
     e.rtile("X = wall_volcanic")
+    e.kfeat("X = rock_wall")
     e.ftile("OS = floor_rough_red")
 end
 
 -- Destinations:
 function volcano_setup (e)
     setup_loot(e)
-    e.kfeat("< = exit_portal_vault")
-    e.kfeat("I = exit_portal_vault")
-    e.tile("< = dngn_exit_volcano")
-    e.tile("I = dngn_exit_volcano")
+    e.kfeat("< = exit_volcano")
+    e.kfeat("I = exit_volcano")
     e.kfeat("^ = known alarm trap")
     e.subst("L : LLL.l")
     e.subst("L = lll.")
     e.subst("y : yyy.x")
     e.subst("y = xxx.")
-    e.colour("< = red")
     e.colour("c = lightred")
-    e.colour("G = lightred")
     e.colour("= = lightred")
-    e.set_feature_name("exit_portal_vault", "rocky tunnel leading out of this place")
     e.set_feature_name("stone_arch", "rock-blocked tunnel")
 end
 
@@ -179,20 +171,20 @@ end
 function make_fiery_armour (e, armour)
     local armour_string = ""
     for _, at in ipairs(armour) do
-        armour_string = armour_string .. " / " .. at .. " ego:fire_resistance good_item"
+        armour_string = armour_string .. " / " .. at .. " ego:fire_resistance ident:type good_item"
     end
-    return string.gsub(armour_string, "%s*\/$", "")
+    return string.gsub(armour_string, "%s*/$", "")
 end
 
 function make_fiery_weapon (e, weapon)
     local weapon_string = ""
     for _, wt in ipairs(weapon) do
         if string.find(wt, "bow") == nil
-          then weapon_string = weapon_string .. " / " .. wt .. " ego:flaming good_item"
-          else weapon_string = weapon_string .. " / " .. wt .. " ego:flame good_item"
+          then weapon_string = weapon_string .. " / " .. wt .. " ego:flaming ident:type good_item"
+          else weapon_string = weapon_string .. " / " .. wt .. " ego:flame ident:type good_item"
         end
     end
-    local n_weapon = string.gsub(weapon_string, "%s*\/$", "")
+    local n_weapon = string.gsub(weapon_string, "%s*/$", "")
     e.item(n_weapon)
 end
 
@@ -200,14 +192,14 @@ function setup_loot (e)
     e.item(make_fiery_armour(e,  {"robe w:30", "animal skin w:30", "leather armour w:30",
                                   "ring mail w:30", "scale mail w:20", "chain mail w:40",
                                   "plate armour w:10", "pair of gloves w:5",
-                                  "helmet w:6", "pair of boots w:3", "cap w:2", "wizard hat w:2",
+                                  "helmet w:6", "pair of boots w:3", "hat w:4",
                                   "shield w:1", "buckler w:3"}) ..
                                   " / fire dragon armour w:5")
     e.item([[potion of berserk rage w:20 / potion of poison w:2 / potion of might w:5 / potion of brilliance w:5 /
              potion of agility w:5 / potion of experience w:1 / potion of resistance]])
     e.item(make_fiery_weapon(e, {"demon whip w:2", "dire flail w:4", "dagger w:20",
-                                 "sabre w:20", "scimitar w:20", "demon blade w:2",
-                                 "triple sword w:1", "broad axe w:20", "battleaxe w:10",
+                                 "cutlass w:20", "scimitar w:20", "demon blade w:2",
+                                 "claymore w:1", "broad axe w:20", "battleaxe w:10",
                                  "executioner's axe w:1", "spear w:20", "trident w:20", "demon " ..
                                  "trident w:1", "glaive w:1", "halberd w:10", "lajatang w:10",
                                  "longbow w:5", "crossbow w:5"}))
@@ -326,7 +318,7 @@ function fiery_guardians (e, village)
             -- "Lair"-esque monster pack.
             e.mons("komodo dragon w:3 / fire bat band / fire drake / manticore"
                    .. " / hell hound w:3")
-            e.mons("mottled dragon w:4 / lindwurm w:4 / dragon w:1"
+            e.mons("mottled dragon w:4 / lindwurm w:4 / fire dragon w:1"
                    .. " / fire crab w:1")
         elseif set_weight < 5 then
             -- "Demonic" monster pack.
@@ -432,7 +424,7 @@ end
 
 }}
 
-default-depth: Lair:1-8, Orc:1-4
+default-depth: Lair, Orc
 
 ###############################################################################
 # Entries:
@@ -477,10 +469,10 @@ xx....@
  xxxxx.
 ENDMAP
 
-# This is the "large" one. You might get a clear path, but then again...
 NAME:       enter_volcano_4
-KPROP:      .SLO = no_rtele_into
-NSUBST:     L = 8:. / *:l
+SHUFFLE:    JKL
+SUBST:      JK = l
+SUBST:      L = .
 :           volcano_portal(_G)
 MAP
  xxxxx
@@ -490,13 +482,128 @@ xxSSSxx
 xxxSxxx
  xxx.xx
   xxx.x
-   xxLxx
-  xxLlLxx
- xxLlllLxx
- xLlllllLx
- xxLlllLxx
-  xxLlLxx
+   xx.xx
+  xxJKLxx
+ xxJlKlLxx
+ xJllKllLx
+ xxJlKlLxx
+  xxJKLxx
    x.@.x
+ENDMAP
+
+NAME: nicolae_volcano_entry_batcave
+SUBST: s = Xs, Z = Xx, Y = x.
+MONS: patrolling fire bat
+: volcano_portal(_G)
+MAP
+      xxxx
+   xxxxYYxxx
+ xxxZYY..YYxxx
+ xXZs.1.....Yxx
+xxXXS........Yxx
+xxXOS..1........@
+xxXXS........Yxx
+ xXZs.1.....Yxx
+ xxxZYY..YYxxx
+   xxxxYYxxx
+      xxxx
+ENDMAP
+
+NAME: nicolae_volcano_entry_hallway
+SUBST: L = xl, Z = XXXXl, _ = _xx
+TAGS: transparent
+CLEAR: _
+: volcano_portal(_G)
+MAP
+  _xx@@xx_
+ _xxx..xxx_
+_xxXX..Lxxx_
+_xxXZ..llLx_
+_xxXO..llLx_
+_xxXZ..llLx_
+_xxXX..Lxxx_
+ _xxx..xxx_
+  _xx@@xx_
+ENDMAP
+
+NAME: nicolae_volcano_entry_lava_flow
+NSUBST: V = 3:X / 1:XS / 1:lS / *:S, A = 2:X / 2:. / *:S, B = 2:X / 2:. / *:S, \
+        C = 2:X / 2:. / *:S, D = 2:X / 2:. / *:S, E = 2:X / 2:. / *:S, \
+        F = 2:X / 2:. / *:S
+SHUFFLE: abcdef
+SUBST: ab = S, cde = l, f : .l, ' = ..S, _ = .._
+CLEAR: _
+: volcano_portal(_G)
+MAP
+    _____
+   _'''''_
+  _'AAAAb'_
+ _'aAAAAbB'_
+_'FFaAAbBBB'_
+'FFFaAAbBBBB'_
+'ffFFVVVBBcc'_
+'fEfFVOVccCC._
+'EEffVVVCCCC'_
+'EEEEEedCCCC'_
+_'EEeeDDdCC'_
+ _'eDDDDdd'_
+  _'DDDDD'_
+   _'''''_
+    _____
+ENDMAP
+
+NAME: nicolae_volcano_entry_s_turn
+SUBST: Z = xx.
+: volcano_portal(_G)
+MAP
+    xxxxxx
+  xxxZZZZxxx..@..x
+ xxZ.....Zxxz...xx
+xxZ....Z..ZxZ...x
+xx...xZ...ZxZ..Zx
+xxSSSxZ....Z...Zx
+xxXOXxZ...Z...Zxx
+xxXXXxxZZ...ZZxx
+ xxxxxxxxZZZxxx
+    xxxxxxxxx
+ENDMAP
+
+NAME: nicolae_volcano_entry_two_sided
+SUBST: s = S., z = Xx, L = lX, q = lS, y = x.
+: volcano_portal(_G)
+MAP
+    xxxxx
+  xxxxxxxxx
+ xxxXXXXxxxx
+yyxzXLLXXXzxy
+..sSSqlLXSSs..
+@.sSSqllOSSs.@
+..szXXLLXSSs..
+ yxxxXXXXXzzy
+   xxxxxxxxxx
+    xxxxxx
+ENDMAP
+
+NAME: nicolae_volcano_entry_vermiform
+NSUBST: A = l / ., B = l / ., C = l / ., D = l / .
+NSUBST: l = 3:2 / *:l
+SHUFFLE: 1V'/Ov-
+SUBST: Y = xxxx., y = ....x, v = X, V = x, - = S, ' = ., _ = xxxx_
+KMONS: 1 = patrolling lindwurm
+KMONS: 2 = lava worm
+KFEAT: 2 = l
+CLEAR: _
+: volcano_portal(_G)
+MAP
+ __xxxxxx________xxx
+xxxxYYYYxxxxxxxxxxYxx
+xvv--....YYxxxYYx...x
+xvO-AlllB...y....yx..
+xXlllA.BlllC.Dllllx.@
+xV1'''....ClllD..yx..
+xVVxxYYYYy......x...x
+xxxxxxxxxxYYYYYxxxYxx
+ ________xxxxxxx_xxx
 ENDMAP
 
 ###############################################################################
@@ -956,10 +1063,6 @@ NSUBST:  X = 1:= / *:v
 NSUBST:  Y = 1:+ / *:c
 NSUBST:  t = 1:! / *:.
 KFEAT:   ! = alarm trap
-NSUBST:  r = 2:r / *:.
-NSUBST:  s = 2:s / *:.
-KFEAT:   r = bolt trap
-KFEAT:   s = spear trap
 #        The monsters.
 MONS:    mummy / vampire
 MONS:    manticore skeleton / ogre skeleton / spriggan skeleton / centaur skeleton / \
@@ -978,15 +1081,15 @@ xccc......ccccc..$X$$$vxxx
 cc1.........3....$X$$$vxxx
 cccc.c2.c.ccccc..$X...vxxx
 ...+...2..cxxxccccvv+vvxxx
-cccc.c2.c.ccccc..$Xsssvxxx
-cc1.........3....$Xsssvxxx
-xccc......ccccc..$Xsssvxxx
+cccc.c2.c.ccccc..$X2.2vxxx
+cc1.........3....$X.2.vxxx
+xccc......ccccc..$X...vxxx
 xxxcc.cc.ccddeccYvvvv+vxxx
 xxxxc3cc3c1eeg+!.+4Yttvvvx
 xxccc.cc.cccccccYvvvtt+1vx
-xxc...cc...crrrc..3v+vvvvx
-xxc...cc...crrr+.1.vffvxxx
-xxc$$$cc$$$+rrrc3..+fgvxxx
+xxc...cc...c...c..3v+vvvvx
+xxc...cc...c...+.1.vffvxxx
+xxc$$$cc$$$+$$$c3..+fgvxxx
 xxcccccccccccccccccvvvvxxx
 ENDMAP
 

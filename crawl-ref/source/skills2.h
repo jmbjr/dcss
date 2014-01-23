@@ -3,7 +3,6 @@
  * @brief More skill related functions.
 **/
 
-
 #ifndef SKILLS2_H
 #define SKILLS2_H
 
@@ -96,13 +95,9 @@ static const skill_type skill_display_order[] =
 
     SK_BLANK_LINE,
 
-    SK_ARMOUR, SK_DODGING, SK_STEALTH, SK_SHIELDS,
+    SK_ARMOUR, SK_DODGING, SK_SHIELDS,
 
     SK_COLUMN_BREAK, SK_TITLE,
-
-    SK_TRAPS,
-
-    SK_BLANK_LINE,
 
     SK_SPELLCASTING, SK_CONJURATIONS, SK_HEXES, SK_CHARMS, SK_SUMMONINGS,
     SK_NECROMANCY, SK_TRANSLOCATIONS, SK_TRANSMUTATIONS,
@@ -110,7 +105,7 @@ static const skill_type skill_display_order[] =
 
     SK_BLANK_LINE,
 
-    SK_INVOCATIONS, SK_EVOCATIONS,
+    SK_INVOCATIONS, SK_EVOCATIONS, SK_STEALTH,
 
     SK_COLUMN_BREAK,
 };
@@ -119,7 +114,7 @@ static const int ndisplayed_skills = ARRAYSZ(skill_display_order);
 
 static inline bool is_invalid_skill(skill_type skill)
 {
-    return (skill < SK_FIRST_SKILL || skill >= NUM_SKILLS);
+    return skill < SK_FIRST_SKILL || skill >= NUM_SKILLS;
 }
 
 #endif

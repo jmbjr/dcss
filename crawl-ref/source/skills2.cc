@@ -23,6 +23,7 @@
 #include "godabil.h"
 #include "libutil.h"
 #include "player.h"
+#include "religion.h"
 #include "species.h"
 #include "skills.h"
 #include "skill_menu.h"
@@ -47,7 +48,7 @@ public:
     static string get(const string &_key)
     {
         skill_op_map::const_iterator i = Skill_Op_Map.find(_key);
-        return (i == Skill_Op_Map.end()? string() : (i->second)());
+        return i == Skill_Op_Map.end()? string() : (i->second)();
     }
 private:
     const char *key;
@@ -91,7 +92,9 @@ static const char *skills[NUM_SKILLS][6] =
     {"Stabbing",       "Miscreant",     "Blackguard",      "Backstabber",     "Cutthroat",      "Politician"},
 #endif
     {"Shields",        "Shield-Bearer", "Hoplite",         "Blocker",         "Peltast",        "@Adj@ Barricade"},
+#if TAG_MAJOR_VERSION == 34
     {"Traps",          "Scout",         "Disarmer",        "Vigilant",        "Perceptive",     "Dungeon Master"},
+#endif
     // STR based fighters, for DEX/martial arts titles see below.  Felids get their own category, too.
     {"Unarmed Combat", "Ruffian",       "Grappler",        "Brawler",         "Wrestler",       "@Weight@weight Champion"},
 
@@ -154,7 +157,7 @@ int get_skill_progress(skill_type sk, int level, int points, int scale)
     // A scale as small as 92 would overflow with 31 bits if skill_rdiv()
     // is involved: needed can be 91985, skill_rdiv() multiplies by 256.
     const int64_t amt_done = points - prev_needed;
-    int prog = (amt_done * scale) / (needed - prev_needed);
+    int prog = amt_done * scale / (needed - prev_needed);
 
     ASSERT(prog >= 0);
 
@@ -173,14 +176,14 @@ int get_skill_percentage(const skill_type x)
 
 const char *skill_name(skill_type which_skill)
 {
-    return (skills[which_skill][0]);
+    return skills[which_skill][0];
 }
 
 skill_type str_to_skill(const string &skill)
 {
     for (int i = SK_FIRST_SKILL; i < NUM_SKILLS; ++i)
         if (skills[i][0] && skill == skills[i][0])
-            return (static_cast<skill_type>(i));
+            return static_cast<skill_type>(i);
 
     return SK_FIGHTING;
 }
@@ -203,17 +206,17 @@ static string _stk_genus_nocap()
 
 static string _stk_genus_short_cap()
 {
-    return (Skill_Species == SP_DEMIGOD ? "God" :
-            _stk_genus_cap());
+    return Skill_Species == SP_DEMIGOD ? "God" :
+           _stk_genus_cap();
 }
 
 static string _stk_walker()
 {
-    return (Skill_Species == SP_NAGA     ? "Slider" :
-            Skill_Species == SP_TENGU    ? "Glider" :
-            Skill_Species == SP_DJINNI   ? "Floater" :
-            Skill_Species == SP_OCTOPODE ? "Wriggler"
-                                         : "Walker");
+    return Skill_Species == SP_NAGA     ? "Slider" :
+           Skill_Species == SP_TENGU    ? "Glider" :
+           Skill_Species == SP_DJINNI   ? "Floater" :
+           Skill_Species == SP_OCTOPODE ? "Wriggler"
+                                        : "Walker";
 }
 
 static string _stk_weight()
@@ -293,11 +296,11 @@ static string _replace_skill_keys(const string &text)
 unsigned get_skill_rank(unsigned skill_lev)
 {
     // Translate skill level into skill ranking {dlb}:
-    return ((skill_lev <= 7)  ? 0 :
-                            (skill_lev <= 14) ? 1 :
-                            (skill_lev <= 20) ? 2 :
-                            (skill_lev <= 26) ? 3
-                            /* level 27 */    : 4);
+    return (skill_lev <= 7)  ? 0 :
+                           (skill_lev <= 14) ? 1 :
+                           (skill_lev <= 20) ? 2 :
+                           (skill_lev <= 26) ? 3
+                           /* level 27 */    : 4;
 }
 
 string skill_title_by_rank(skill_type best_skill, uint8_t skill_rank,
@@ -342,6 +345,15 @@ string skill_title_by_rank(skill_type best_skill, uint8_t skill_rank,
 
             break;
 
+        case SK_SHORT_BLADES:
+            if (player_genus(GENPC_ELVEN, static_cast<species_type>(species))
+                && skill_rank == 5)
+            {
+                result = "Blademaster";
+                break;
+            }
+            break;
+
         case SK_INVOCATIONS:
             if (god != GOD_NO_GOD)
                 result = god_title((god_type)god, (species_type)species, piety);
@@ -379,8 +391,8 @@ string skill_title_by_rank(skill_type best_skill, uint8_t skill_rank,
         result = _replace_skill_keys(result);
     }
 
-    return (result.empty() ? string("Invalid Title")
-                           : result);
+    return result.empty() ? string("Invalid Title")
+                          : result;
 }
 
 string skill_title(skill_type best_skill, uint8_t skill_lev,
@@ -474,10 +486,13 @@ void init_skill_order(void)
 
 void calc_hp()
 {
+    int oldhp = you.hp, oldmax = you.hp_max;
     you.hp_max = get_real_hp(true, false);
     if (you.species == SP_DJINNI)
         you.hp_max += get_real_mp(true);
     deflate_hp(you.hp_max, false);
+    if (oldhp != you.hp || oldmax != you.hp_max)
+        dprf("HP changed: %d/%d -> %d/%d", oldhp, oldmax, you.hp, you.hp_max);
 }
 
 void calc_mp()
@@ -496,7 +511,7 @@ void calc_mp()
 bool is_useless_skill(skill_type skill)
 {
 #if TAG_MAJOR_VERSION == 34
-    if (skill == SK_STABBING)
+    if (skill == SK_STABBING || skill == SK_TRAPS)
         return true;
 #endif
     return species_apt(skill) == -99;
@@ -504,7 +519,7 @@ bool is_useless_skill(skill_type skill)
 
 bool is_harmful_skill(skill_type skill)
 {
-    return is_magic_skill(skill) && you.religion == GOD_TROG;
+    return is_magic_skill(skill) && you_worship(GOD_TROG);
 }
 
 bool all_skills_maxed(bool inc_harmful)
@@ -534,7 +549,7 @@ int skill_bump(skill_type skill, int scale)
 
 static float _apt_to_factor(int apt)
 {
-    return (1 / exp(log(2) * apt / APT_DOUBLE));
+    return 1 / exp(log(2) * apt / APT_DOUBLE);
 }
 
 unsigned int skill_exp_needed(int lev, skill_type sk, species_type sp)
@@ -545,9 +560,6 @@ unsigned int skill_exp_needed(int lev, skill_type sk, species_type sp)
                           8200, 9450, 10800, 12300, 13950,   // 16-20
                           15750, 17700, 19800, 22050, 24450, // 21-25
                           27000, 29750 };
-
-    if (lev > 27 && you.wizard)
-        lev = 27;
 
     ASSERT_RANGE(lev, 0, 27 + 1);
 
@@ -665,7 +677,7 @@ static int _skill_elemental_preference(skill_type sk, int scale)
     const skill_type sk2 = _get_opposite(sk);
     if (sk2 == SK_NONE)
         return 0;
-    return (you.skill(sk, scale) - you.skill(sk2, scale));
+    return you.skill(sk, scale) - you.skill(sk2, scale);
 }
 
 int elemental_preference(spell_type spell, int scale)
@@ -694,9 +706,9 @@ static bool _compare_skills(skill_type sk1, skill_type sk2)
     else if (is_invalid_skill(sk2))
         return true;
     else
-        return (you.skill(sk1, 10, true) > you.skill(sk2, 10, true)
-                || you.skill(sk1, 10, true) == you.skill(sk2, 10, true)
-                   && you.skill_order[sk1] < you.skill_order[sk2]);
+        return you.skill(sk1, 10, true) > you.skill(sk2, 10, true)
+               || you.skill(sk1, 10, true) == you.skill(sk2, 10, true)
+                  && you.skill_order[sk1] < you.skill_order[sk2];
 }
 
 bool is_antitrained(skill_type sk)
@@ -714,8 +726,8 @@ bool antitrain_other(skill_type sk, bool show_zero)
     if (opposite == SK_NONE)
         return false;
 
-    return ((you.skills[opposite] > 0 || show_zero) && you.skills[sk] > 0
-            && you.skills[opposite] < 27 && _compare_skills(sk, opposite));
+    return (you.skills[opposite] > 0 || show_zero) && you.skills[sk] > 0
+           && you.skills[opposite] < 27 && _compare_skills(sk, opposite);
 }
 
 void dump_skills(string &text)
@@ -724,7 +736,7 @@ void dump_skills(string &text)
     {
         int real = you.skill((skill_type)i, 10, true);
         int cur  = you.skill((skill_type)i, 10);
-        if (real > 0 || you.train[i] > 0)
+        if (real > 0 || (!you.auto_training && you.train[i] > 0))
         {
             text += make_stringf(" %c Level %.*f%s %s\n",
                                  real == 270       ? 'O' :
@@ -774,7 +786,7 @@ int transfer_skill_points(skill_type fsk, skill_type tsk, int skp_max,
     if (!simu && you.ct_skill_points[fsk] > 0)
         dprf("ct_skill_points[%s]: %d", skill_name(fsk), you.ct_skill_points[fsk]);
 
-    // We need to transfer by small steps and updating skill levels each time
+    // We need to transfer by small steps and update skill levels each time
     // so that cross/anti-training are handled properly.
     while (total_skp_lost < skp_max
            && (simu || total_skp_lost < (int)you.transfer_skill_points))

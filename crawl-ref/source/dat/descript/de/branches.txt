@@ -9,7 +9,7 @@ tiefe Höhle ist mit einmaligen Reichtümern und ebenso Gefahren im Überfluss f
 seine Eindringlinge gefüllt. Wenige konnten lebend entkommen, und noch weniger
 behielten etwas Verstand über um die Geschichte zu erzählen.
 
-Das Höhlensystem ist 27 Ebenen tief, aber ehrlich gesagt, das ist erst der
+Das Höhlensystem ist 16 Ebenen tief, aber ehrlich gesagt, das ist erst der
 Anfang.
 %%%%
 Temple
@@ -39,15 +39,6 @@ gefüllt mit Reichtümern, doch jeder Durchreisende sollte sich über die
 legendären magischen Fähigkeiten dieses Volkes bewusst sein.
 
 Die Elfenhallen sind drei Ebenen tief.
-%%%%
-Dwarven Hall
-
-Diese meisterhaft bearbeiteten Steinhallen sind die Behausungen der
-Tiefenzwerge. Ihre außergewöhnlichen Fähigkeiten der Metallbearbeitung
-erlaubten ihnen Unmengen an Waffen zu schmieden um sie gegen Leute wie dich
-einzusetzen.
-
-Doch es ist nur eine einzelne Ebene.
 %%%%
 Lair
 
@@ -115,15 +106,6 @@ kaustisch wachsend, wie Sie hinuntersteigen.
 Die Schlamm-Gruben sind sechs Niveaus tief und enthalten die schleimige Rune.
 Der Zugang ist zwischen Höhle:6 und Höhle:8.
 %%%%
-Vaults
-
-Möglicherweise von einem mächtigen Geisteskranken erschaffen sollen die Gewölbe
-große Schätze beherbergen. Auch das weiträumig verspritzte Blut im Eingang
-zeugt von einiger Gewalt.
-
-Die Gewölbe sind acht Ebenen tief und beinhalten die Silber Rune. Der Eingang
-kann im Hauptverlies zwischen Ebene 14 und 19 gefunden werden.
-%%%%
 Hall of Blades
 
 Irgendwann einmal, in den Nachtstunden, wollten alle Dolche, Äxte und
@@ -132,6 +114,17 @@ Bestie. Diese Zeit ist vorüber, nur die Waffen sind noch dort.
 
 Die Halle der Klingen hat eine einzige Ebene und kann zwischen Gewölbe 3 und
 Gewölbe 4 gefunden werden.
+%%%%
+Crypt
+
+Eine riesige Lagerstätte für die alten Toten. Die Luft ist frostig und
+übelriechend, die Wände kalt und feucht. Knochen sind großzügig überall
+verstreut und der ganze Ort erhallt mit dem Wehklagen der gequälten Seelen der
+unruhigen Toten.
+
+Die Krypta ist fünf Ebenen tief. Das Verlies beinhaltet entweder die Krypta
+oder den Wald; wenn die Krypta vorhanden ist, kann sie zwischen Gewölbe:2 und
+Gewölbe:3 gefunden werden, und enthält den Eingang zum Grab.
 %%%%
 Tomb
 
@@ -142,19 +135,6 @@ die con diesem Ort zurückkehrten ist überaus kurz.
 
 Das Grabmal ist drei Ebenen tief und beinhaltet die Goldene Rune. Sein Eingang
 befindet sich entweder in der Krypta Ebene 2 oder 3.
-%%%%
-Tomb:quote
-
-„In den Tiefen jedes Herzens gibt es eine Grabstätte und einen Kerker, obwohl
-die Lichter, die Musik und der Rummel uns oben veranlassen können, ihre
-Existenz, und die begrabenen oder Gefangenen zu vergessen, die sie verbergen.
-Aber manchmal, und oftenest in der Mitternacht werden jene dunklen Container
-weit geöffnet geschleudert. In einer Stunde wie das, wenn die Meinung ein
-passives Feingefühl, aber keine aktive Kraft hat; wenn die Einbildungskraft ein
-Spiegel ist, Lebhaftigkeit allen Ideen, ohne die Macht des Auswählens oder
-Steuerns von ihnen gebend; dann beten Sie, dass sich Ihr grämt, kann
-schlummern, und die Bruderschaft von Gewissensbissen nicht bricht ihre Kette.“
-    -Nathaniel Hawthorne, „Die Verfolgte Meinung“. 1835.
 %%%%
 Hell
 
@@ -207,6 +187,18 @@ andere gesehen hat.
 Das Reich von Zot ist fünf Ebenen tief und kann nur betreten werden wenn man
 mindestens drei Runen bei sich trägt.
 %%%%
+Forest
+
+Unter diesem dunklen und unheimlichen Wald liegen die Höhlen der Spriggans,
+Faune, Tengu und andere Kreaturen die bereit sind den Verstand der
+Eindringlinge, die nicht bereit sind, ihren Willen aufzuzwingen.
+Leistungsstarke illusorische und behindernde Magier sind die Norm, nicht die
+Ausnahme.
+
+Der verzauberte Wald ist fünf Ebenen tief. Das Verlies verfügt entweder über
+eine Krypta oder den Wald, wenn der Wald vorhanden ist, kann er zwischen
+Gewölbe:2 und Gewölbe:3 gefunden werden, und enthält den Eingang zum Grab.
+%%%%
 Abyss
 
 Der Abgrund ist wirklich ein bizarrer Ort der sich immer verändert und
@@ -241,17 +233,6 @@ seiner Lakaien bewacht wird
  • eine Dunkle Rune im schattenhaftem Wohnsitz von Gloorx Vloq
  • Dämonische Runen existieren in mehrfachen Ausführungen, im Besitzt von
 weniger bekannten Herrschern.
-%%%%
-Ziggurat
-
-Ein Zikkurat ist ein seltsam konstruierter Turm welcher aus sechsundzwanzig
-Ebenen, mit zunehmend größeren Kampfarenen, besteht welche jede immer größere
-Reichtümer und sogar noch größere Gefahren beinhaltet als die Letzte. Welches
-Wesen auch immer dieses Ungetüm erschuf verlangt einen hohen Preis als
-Eintritt. Aber Vorsicht, ein Zikkurat ist kein Ort für schwache Nerven: selbst
-die tapfersten und geschicktesten Abenteurer fanden hier ihr Ende. Obwohl sich
-auf jeder Ebene ein Portal zur Sicherheit befindet kann man, hat man es einmal
-verlassen, ein Zikkurat nicht wieder betreten.
 %%%%
 Labyrinth
 

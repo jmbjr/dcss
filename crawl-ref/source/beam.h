@@ -3,10 +3,8 @@
  * @brief Functions related to ranged attacks.
 **/
 
-
 #ifndef BEAM_H
 #define BEAM_H
-
 
 #include "externs.h"
 #include "random.h"
@@ -97,6 +95,7 @@ struct bolt
     bool        affects_items;         // hits items on ground/inventory
 
     bool        effect_known;          // did we _know_ this would happen?
+    bool        effect_wanton;         // could we have guessed it would happen?
 
     int         draw_delay;            // delay used when drawing beam.
 
@@ -132,7 +131,7 @@ struct bolt
     // INTERNAL use - should not usually be set outside of beam.cc
     int         extra_range_used;
     bool        is_tracer;       // is this a tracer?
-    bool        is_targetting;   // . . . in particular, a targetting tracer?
+    bool        is_targeting;    // . . . in particular, a targeting tracer?
     bool        aimed_at_feet;   // this was aimed at self!
     bool        msg_generated;   // an appropriate msg was already mpr'd
     bool        noise_generated; // a noise has already been generated at this pos
@@ -181,7 +180,7 @@ public:
 
     kill_category whose_kill() const;
 
-    actor* agent() const;
+    actor* agent(bool ignore_reflections = false) const;
 
     void fire();
 
@@ -216,7 +215,6 @@ private:
     bool is_superhot() const;
     bool can_affect_wall(dungeon_feature_type feat) const;
     bool can_affect_wall_actor(const actor *act) const;
-    bool actor_wall_shielded(const actor *act) const;
     bool is_bouncy(dungeon_feature_type feat) const;
     bool stop_at_target() const;
     bool has_saving_throw() const;
@@ -235,7 +233,7 @@ private:
     string zapper() const;
 
     set<string> message_cache;
-    void emit_message(msg_channel_type chan, const char* msg);
+    void emit_message(const char* msg);
     void step();
     bool hit_wall();
 
@@ -262,6 +260,7 @@ public:
     void affect_endpoint();
 
     void beam_hits_actor(actor *act);
+    bool god_cares() const; // Will the god be unforgiving about this beam?
 
     // Stuff when a monster or player is hit.
     void affect_player_enchantment();

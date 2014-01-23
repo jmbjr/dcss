@@ -159,20 +159,16 @@ function trove.portal(e)
             toll_item = item,
             entity = "portal",
             toll_desc = "to enter a treasure trove",
-            desc = "portal to a secret trove of treasure",
-            overview = "Trove",
-            dst = "Trove",
             floor = "expired_portal",
             feat_tile = "dngn_portal_trove_gone",
         }
     end
     e.tags("uniq_trove no_monster_gen chance_trove")
-    e.chance("5%")
+    e.chance(500)
     e.lua_marker("O", stair)
-    e.kfeat("O = enter_portal_vault")
-    e.colour(".O = blue")
+    e.kfeat("O = enter_trove")
+    e.colour(". = blue")
     e.ftile(".OcG+ = floor_marble")
-    e.tile("O = dngn_portal_trove")
     e.tile("c = wall_stone_dark")
 end
 
@@ -180,8 +176,7 @@ end
 -- : trove.setup_features(_G)
 -- Note that the function also defines < to be the exit portal.
 function trove.setup_features(e)
-    e.kfeat("< = exit_portal_vault")
-    e.colour("< = blue")
+    e.kfeat("< = exit_trove")
 end
 
 -- "any scroll good_item" still gets you 'scroll of noise', 'scroll of curse weapon', etc
@@ -189,7 +184,7 @@ end
 -- mapping scrolls with a low chance of silence, vulnerability or acquirement (lowest)
 function trove.good_scroll (e)
     e.item([[scroll of enchant weapon i / scroll of enchant weapon ii /
-             scroll of enchant weapon iii w:5 / scroll of vorpalise weapon w:3 /
+             scroll of enchant weapon iii w:5 / scroll of brand weapon w:3 /
              scroll of enchant armour / scroll of identify w:20 /
              scroll of magic mapping w:5 / scroll of blinking / scroll of silence w:2 /
              scroll of recharging / scroll of acquirement w:1 / scroll of teleportation w:20 /
@@ -229,7 +224,7 @@ function trove.spell_skills (e)
 end
 }}
 
-default-depth: D:10-, Elf, Vaults
+default-depth: D:10-, Depths, Elf, Vaults
 
 ##############################################################################
 #
@@ -262,8 +257,7 @@ G.O.G
 ENDMAP
 
 NAME:   enter_trove_3
-TAGS:   uniq_trove no_monster_gen no_wall_fixup chance_trove
-CHANCE: 5%
+TAGS:   uniq_trove no_monster_gen no_wall_fixup
 : trove.portal(_G)
 COLOUR: .c = blue
 FTILE:  .cO = floor_marble
@@ -314,6 +308,120 @@ c$XXX$c
 c$$$$$c
 ccc+ccc
    @
+ENDMAP
+
+NAME: nicolae_trove_entry_columns
+: trove.portal(_G)
+MAP
+cccccccccccc
+c.........cc
+c.c.c.c.c.cc
++.........Oc
+c.c.c.c.c.cc
+c.........cc
+cccccccccccc
+ENDMAP
+
+
+NAME: nicolae_trove_entry_crossroad
+TAGS: transparent
+: trove.portal(_G)
+COLOUR: @ = blue
+FTILE: @ = floor_marble
+MAP
+cc@cc
+c...c
+@.O.@
+c...c
+cc@cc
+ENDMAP
+
+NAME: nicolae_trove_entry_crystal
+: trove.portal(_G)
+FTILE: b = floor_marble
+MAP
+ccccccccccc
+cc.c.c.cccc
+c.......bbc
++.......Obc
+c.......bbc
+cc.c.c.cccc
+ccccccccccc
+ENDMAP
+
+NAME: nicolae_trove_entry_diagonal
+: trove.portal(_G)
+MAP
+   c
+  ccc
+ ccccc
+cccO.cc
+ cc...cc
+  cc...cc
+   cc...cc
+    cc...cc
+     cc...cc
+      cc.+c
+       ccc@
+        c
+ENDMAP
+
+NAME: nicolae_trove_entry_free_sample
+: trove.portal(_G)
+COLOUR: % = blue
+FTILE: % = floor_marble
+MAP
+%.%
+.O.
+%.%
+ENDMAP
+
+NAME: nicolae_trove_entry_isolated
+TAGS: no_pool_fixup
+KPROP: .O = no_rtele_into
+KFEAT: ' = .
+: trove.portal(_G)
+MAP
+'''''''
+'wwwww'
+'w...w'
+'w.O.w'
+'w...w'
+'wwwww'
+'''''''
+ENDMAP
+
+NAME: nicolae_trove_entry_path_of_doom
+KMONS: O = patrolling guardian mummy
+KMONS: m = patrolling guardian mummy / nothing w:20
+: trove.portal(_G)
+COLOUR: $m = blue
+FTILE: $m = floor_marble
+MAP
+  ccccc
+ cc.O.cc
+cc.....cc
+c$.G.G.$c
+c$..m..$c
+c$.G.G.$c
+cc.....cc
+ cc...cc
+  cc+cc
+ENDMAP
+
+NAME: trove_entry_hex_spiral
+: trove.portal(_G)
+MAP
+             @cc
+    ccccccccc..cc
+   cc.......cc..cc
+  cc..ccccc..cc..cc
+ cc..cc..Occ..cc..cc
+cc..cc..ccc..cc..cc
+ cc..cc.....cc..cc
+  cc..ccccccc..cc
+   cc.........cc
+    ccccccccccc
 ENDMAP
 
 NAME:   trove_entry_trowel
@@ -624,7 +732,7 @@ TAGS:    no_item_gen no_monster_gen allow_dup no_species_fe no_species_op
 COLOUR:  x = blue
 MONS:    storm dragon zombie
 MONS:    golden dragon zombie
-MONS:    dragon skeleton
+MONS:    fire dragon skeleton
 ITEM:    animal skin good_item / any armour good_item
 ITEM:    gold dragon hide / storm dragon hide / fire dragon hide / troll hide / any useful armour good_item
 ITEM:    arrow good_item / dart good_item / bolt good_item / any missile good_item
@@ -766,12 +874,11 @@ ITEM:    ring of evasion unrand:ring_of_shaolin / any randart jewellery w:60 /\
          amulet of warding unrand:amulet_of_cekugob                          /\
          amulet of warding unrand:brooch_of_shielding                        /\
          amulet of rage unrand:necklace_of_bloodlust                         /\
-         helmet unrand:crown_of_dyrovepreva / randart helmet / randart cap   /\
-         cap unrand:mask_of_the_dragon / randart wizard hat                  /\
-         cap unrand:hat_of_the_bear_spirit                                   /\
-         wizard hat unrand:hat_of_the_alchemist / randart pair of gloves     /\
-         wizard hat unrand:hat_of_pondering / randart pair of boots          /\
-         pair of boots unrand:boots_of_the_assassin                          /\
+         hat unrand:crown_of_dyrovepreva / randart helmet / randart hat      /\
+         hat unrand:mask_of_the_dragon / randart hat                         /\
+         hat unrand:hat_of_the_bear_spirit                                   /\
+         hat unrand:hat_of_the_alchemist / randart pair of gloves            /\
+         hat unrand:hat_of_pondering / randart pair of boots                 /\
          pair of gloves unrand:gauntlets_of_war                              /\
          pair of gloves unrand:fencers_gloves                                /\
          naga barding unrand:lightning_scales                                /\
@@ -781,9 +888,8 @@ ITEM:    dagger unrand:vampires_tooth / dagger unrand:dagger_of_chilly_death /\
          dagger unrand:morg / great sword unrand:sword_of_the_doom_knight    /\
          great sword unrand:sword_of_power / demon blade unrand:bloodbane    /\
          scimitar unrand:scimitar_of_flaming_death / broad axe unrand:arga   /\
-         dagger unrand:knife_of_accuracy / broad axe unrand:obsidian_axe     /\
-         triple sword unrand:plutonium_sword                                 /\
-         demon blade unrand:leech / long sword unrand:sword_of_zonguldrok    /\
+         broad axe unrand:obsidian_axe / claymore unrand:plutonium_sword     /\
+         demon blade unrand:leech / bastard sword unrand:sword_of_zonguldrok /\
          staff of poison unrand:staff_of_olgreb / scythe unrand:finisher     /\
          quarterstaff unrand:elemental_staff / mace unrand:devastator        /\
          staff of energy unrand:staff_of_wucad_mu                            /\
@@ -798,8 +904,8 @@ ITEM:    dagger unrand:vampires_tooth / dagger unrand:dagger_of_chilly_death /\
          sling unrand:punk / longbow unrand:bow_of_krishna_"sharnga"         /\
          crossbow unrand:hellfire / crossbow unrand:sniper                   /\
          longbow unrand:piercer / longbow unrand:storm_bow                   /\
-         long sword unrand:autumn_katana / sabre unrand:captains_cutlass     /\
-         randart demon blade  / blowgun unrand:blowgun_of_the_assassin
+         long sword unrand:autumn_katana / cutlass unrand:captains_cutlass     /\
+         randart demon blade / blowgun unrand:blowgun_of_the_assassin
 SHUFFLE: def
 : trove.setup_features(_G)
 MAP

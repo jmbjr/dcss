@@ -30,19 +30,19 @@ extern set<pair<string, level_id> > auto_unique_annotations;
 
 static bool _mon_needs_auto_exclude(const monster* mon, bool sleepy = false)
 {
-    if (mons_is_stationary(mon))
+    if (mon->is_stationary())
         return !sleepy;
 
     // Auto exclusion only makes sense if the monster is still asleep or if it
     // is lurking (discovered mimics).
-    return (mon->asleep() || mons_is_lurking(mon));
+    return mon->asleep() || mons_is_lurking(mon);
 }
 
 // Check whether a given monster is listed in the auto_exclude option.
 static bool _need_auto_exclude(const monster* mon, bool sleepy = false)
 {
     // This only works if the name is lowercased.
-    string name = mon->name(DESC_BASENAME, mons_is_stationary(mon)
+    string name = mon->name(DESC_BASENAME, mon->is_stationary()
                                            && testbits(mon->flags, MF_SEEN));
     lowercase(name);
 
@@ -65,7 +65,7 @@ static bool _need_auto_exclude(const monster* mon, bool sleepy = false)
 // when gaining/losing nightstalker.
 static int _get_full_exclusion_radius()
 {
-    return (LOS_RADIUS - player_mutation_level(MUT_NIGHTSTALKER));
+    return LOS_RADIUS - player_mutation_level(MUT_NIGHTSTALKER);
 }
 
 // If the monster is in the auto_exclude list, automatically set an
@@ -184,18 +184,18 @@ bool travel_exclude::affects(const coord_def& p) const
              pos.x, pos.y, p.x, p.y);
     }
     if (radius == 0)
-        return (p == pos);
+        return p == pos;
     else if (radius == 1)
-        return ((p - pos).rdist() <= 1);
+        return (p - pos).rdist() <= 1;
     else
         return los.see_cell(p);
 }
 
 bool travel_exclude::in_bounds(const coord_def &p) const
 {
-    return (radius == 0 && p == pos
-            || radius == 1 && (p - pos).rdist() <= 1
-            || los.in_bounds(p));
+    return radius == 0 && p == pos
+           || radius == 1 && (p - pos).rdist() <= 1
+           || los.in_bounds(p);
 }
 
 /////////////////////////////////////////////////////////////////////////
@@ -282,12 +282,12 @@ void exclude_set::recompute_excluded_points(bool recompute_los)
 
 bool exclude_set::is_excluded(const coord_def &p) const
 {
-    return (exclude_points.find(p) != exclude_points.end());
+    return exclude_points.count(p);
 }
 
 bool exclude_set::is_exclude_root(const coord_def &p) const
 {
-    return (exclude_roots.find(p) != exclude_roots.end());
+    return exclude_roots.count(p);
 }
 
 travel_exclude* exclude_set::get_exclude_root(const coord_def &p)
@@ -459,7 +459,7 @@ void clear_excludes()
 static void _exclude_gate(const coord_def &p, bool del = false)
 {
     set<coord_def> all_doors;
-    find_connected_identical(p, grd(p), all_doors);
+    find_connected_identical(p, all_doors);
     for (set<coord_def>::const_iterator dc = all_doors.begin();
          dc != all_doors.end(); ++dc)
     {
@@ -672,10 +672,9 @@ string exclude_set::get_exclusion_desc()
                  desc.size() > 1 ? "s" : "");
         desc_str += info;
     }
-    return (desc_str + comma_separated_line(desc.begin(), desc.end(),
-                                            " and ", ", "));
+    return desc_str + comma_separated_line(desc.begin(), desc.end(),
+                                           " and ", ", ");
 }
-
 
 void marshallExcludes(writer& outf, const exclude_set& excludes)
 {

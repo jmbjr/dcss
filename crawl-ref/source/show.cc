@@ -25,7 +25,6 @@
 #include "monster.h"
 #include "options.h"
 #include "random.h"
-#include "showsymb.h"
 #include "state.h"
 #include "areas.h"
 #include "terrain.h"
@@ -35,6 +34,7 @@
 #include "tiledef-main.h"
 #include "traps.h"
 #include "travel.h"
+#include "viewgeom.h"
 #include "viewmap.h"
 
 show_type::show_type()
@@ -93,11 +93,11 @@ bool show_type::operator < (const show_type &other) const
     switch (cls)
     {
     case SH_FEATURE:
-        return (feat < other.feat);
+        return feat < other.feat;
     case SH_ITEM:
-        return (item < other.item);
+        return item < other.item;
     case SH_MONSTER:
-        return (mons < other.mons);
+        return mons < other.mons;
     default:
         return false;
     }
@@ -109,7 +109,7 @@ bool show_type::operator < (const show_type &other) const
 // command (^C) is used.
 bool show_type::is_cleanable_monster() const
 {
-    return (cls == SH_MONSTER && !mons_class_is_stationary(mons));
+    return cls == SH_MONSTER && !mons_class_is_stationary(mons);
 }
 
 static void _update_feat_at(const coord_def &gp)
@@ -117,7 +117,9 @@ static void _update_feat_at(const coord_def &gp)
     if (!you.see_cell(gp))
         return;
 
-    dungeon_feature_type feat = grid_appearance(gp);
+    dungeon_feature_type feat = grd(gp);
+    if (feat == DNGN_UNDISCOVERED_TRAP)
+        feat = DNGN_FLOOR;
     unsigned colour = env.grid_colours(gp);
     trap_type trap = TRAP_UNASSIGNED;
     if (feat_is_trap(feat))
@@ -130,9 +132,6 @@ static void _update_feat_at(const coord_def &gp)
 
     if (umbraed(gp))
         env.map_knowledge(gp).flags |= MAP_UMBRAED;
-
-    if (suppressed(gp))
-        env.map_knowledge(gp).flags |= MAP_SUPPRESSED;
 
     if (silenced(gp))
         env.map_knowledge(gp).flags |= MAP_SILENCED;
@@ -186,7 +185,7 @@ static void _update_feat_at(const coord_def &gp)
             env.map_knowledge(gp).flags |= MAP_GLOWING_MOLDY;
     }
 
-    if (slime_wall_neighbour(gp))
+    if (env.level_state & LSTATE_SLIMY_WALL && slime_wall_neighbour(gp))
         env.map_knowledge(gp).flags |= MAP_CORRODING;
 
     if (emphasise(gp))
@@ -213,12 +212,16 @@ static show_item_type _item_to_show_code(const item_def &item)
     case OBJ_FOOD:       return SHOW_ITEM_FOOD;
     case OBJ_SCROLLS:    return SHOW_ITEM_SCROLL;
     case OBJ_JEWELLERY:
-        return (jewellery_is_amulet(item)? SHOW_ITEM_AMULET : SHOW_ITEM_RING);
+        return jewellery_is_amulet(item) ? SHOW_ITEM_AMULET : SHOW_ITEM_RING;
     case OBJ_POTIONS:    return SHOW_ITEM_POTION;
     case OBJ_BOOKS:      return SHOW_ITEM_BOOK;
     case OBJ_STAVES:     return SHOW_ITEM_STAVE;
     case OBJ_RODS:       return SHOW_ITEM_STAVE;
-    case OBJ_MISCELLANY: return SHOW_ITEM_MISCELLANY;
+    case OBJ_MISCELLANY:
+        if (item.sub_type == MISC_RUNE_OF_ZOT)
+            return SHOW_ITEM_RUNE;
+        else
+            return SHOW_ITEM_MISCELLANY;
     case OBJ_CORPSES:    return SHOW_ITEM_CORPSE;
     case OBJ_GOLD:       return SHOW_ITEM_GOLD;
     case OBJ_DETECTED:   return SHOW_ITEM_DETECTED;
@@ -394,7 +397,7 @@ static void _update_monster(monster* mons)
             env.map_knowledge(gp).set_invisible_monster();
         }
 
-        // Being submerged isnot the same as invisibility.
+        // Being submerged is not the same as invisibility.
         if (mons->submerged())
             return;
 
@@ -492,7 +495,14 @@ void show_update_at(const coord_def &gp, bool terrain_only)
 void show_init(bool terrain_only)
 {
     clear_terrain_visibility();
-    for (radius_iterator ri(you.get_los()); ri; ++ri)
+    if (crawl_state.game_is_arena())
+    {
+        for (rectangle_iterator ri(crawl_view.vgrdc, LOS_MAX_RANGE); ri; ++ri)
+            show_update_at(*ri, terrain_only);
+        return;
+    }
+
+    for (radius_iterator ri(you.pos(), you.xray_vision ? LOS_NONE : LOS_DEFAULT); ri; ++ri)
         show_update_at(*ri, terrain_only);
 }
 

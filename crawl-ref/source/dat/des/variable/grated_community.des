@@ -10,13 +10,13 @@
 # home of a local deep dwarf to ensure random teleporters can escape. If
 # all else fails there is an escape hatch in the mall's washroom.
 
-default-depth:  D:18-26
+default-depth:  Depths, !Depths:$
 
 NAME:   grated_community_mu
 TAGS:   no_rotate no_monster_gen no_item_gen
 ORIENT: north
-MONS:   patrolling vault guard, patrolling war dog, patrolling centaur warrior
-MONS:   generate_awake slave, deep dwarf artificer
+MONS:   patrolling vault guard, patrolling wolf, patrolling centaur warrior
+MONS:   generate_awake slave, deep dwarf
   : if you.absdepth() < 23 then
 KMONS:  a = patrolling two-headed ogre
   : else
@@ -27,12 +27,12 @@ KMONS:  k = patrolling vampire mage / patrolling boggart
 KMONS:  d = orc warlord
   : if you.absdepth() < 23 then
 KMONS:  e = vampire / yaktaur /\
-            ettin / orc / war dog / draconian / iron troll /\
+            ettin / orc / wolf / draconian / iron troll /\
             deep troll / cyclops / deep dwarf / centaur / warg / wizard
 KMONS:  i = frost giant / fire giant
   : else
 KMONS:  e = vampire / yaktaur / w:5 frost giant / w:5 fire giant /\
-            ettin / orc / war dog / draconian / iron troll /\
+            ettin / orc / wolf / draconian / iron troll /\
             deep troll / cyclops / deep dwarf / centaur / warg / wizard
 KMONS:  i = titan
   : end
@@ -57,7 +57,6 @@ SUBST:  9 = 8
 KFEAT:  8 = granite_statue
 KFEAT:  f = fountain_blue
 KFEAT:  j = fountain_sparkling
-KFEAT:  ^ = known blade trap
 KFEAT:  ~ = closed_door
 KFEAT:  7 = tree
 KFEAT:  A = general shop type:Slaves suffix:and_Accessories count:10 ; \
@@ -93,10 +92,10 @@ cZ==========EE========EE========EE========...===============================EEZc
 cZ==========EE========EE========EE========...==============================EEEZc
 cZ==-------===QQQQQQQ===TTTTTTT===UUUUUUU=...=ccccccccccccccccccccccccccccccE=Zc
 cZ==-W+..'-===QQQQQQQ===TTTTTTT===UUUUUUU=...=ccccccccccccc$ccccccccccccc$cc==Zc
-cZ==---..--===QQQQQQQ===TTTTTTT===UUUUUUU=...=cc4c4c4c4cca.acW.Wc.^.^c.b.bcc==Zc
-cZ==-#-..P-===QQQQQQQ===TTTTTTT===UUUUUUU=...=ccgcgcgcgcc.A.cc>cc^h^.+..B.cc==Zc
-cZ==-5....-===QQQQQQQ===TTTTTTT===UUUUUUU=...=9c...eee..+.a.cW.Wch^h^c.b..cc==Zc
-cZ==-*....-===QQQQQQQ===TTTTTTT===UUUUUUU=...==n....e...cccccc+cc^h^.ccc+ccc==Zc
+cZ==---..--===QQQQQQQ===TTTTTTT===UUUUUUU=...=cc4c4c4c4cca.acW.Wc....c.b.bcc==Zc
+cZ==-#-..P-===QQQQQQQ===TTTTTTT===UUUUUUU=...=ccgcgcgcgcc.A.cc>cc.h..+..B.cc==Zc
+cZ==-5....-===QQQQQQQ===TTTTTTT===UUUUUUU=...=9c...eee..+.a.cW.Wch.h.c.b..cc==Zc
+cZ==-*....-===QQQQQQQ===TTTTTTT===UUUUUUU=...==n....e...cccccc+cc.h..ccc+ccc==Zc
 cZ==---n-+-===QQQQQQQ===TTTTTTT===UUUUUUU=.....~................ccnncc....cc==Zc
 cZ..........e.......Q.e.......T.e.......U......~.......eee.......e........cc==Zc
 cZ...=7=7=.efe.=7=7=.efe.=7=7=.ife.=7=7=.....==n.......eee.......ee.i...e.cc==Zc
@@ -130,7 +129,7 @@ NAME: grated_community_mu_vampire_home
 TAGS: grated_community_mu_home grated_community_mu_home1 unrand
 KMONS:   1 = generate_awake slave
 KMONS:   2 = generate_awake spectral hound
-KMONS:   3 = generate_awake spectral war dog
+KMONS:   3 = generate_awake spectral wolf
 KMONS:   4 = generate_awake spectral warg
 KMONS:   V = vampire knight / vampire mage
 KITEM:   V = potion of blood / q:2 potion of blood / q:3 potion of blood, any good_item
@@ -166,10 +165,12 @@ FTILE:  123456cw#+%*.8$n~ = floor_grey_dirt
 KITEM:  % = animal skin / nothing
 MARKER: + = lua:restrict_door()
 KFEAT:  ~ = closed_door
-: dgn.delayed_decay(_G, '*', 'human skeleton / yak skeleton / elf skeleton /\
-:                            gnome skeleton / elephant skeleton /\
-:                            sheep skeleton / manticore skeleton /\
-:                            w:2 nothing, animal skin')
+SUBST: * = *:35 -:1
+KITEM: - = animal skin
+: dgn.delayed_decay_extra(_G, '*', 'human skeleton / yak skeleton /\
+:                            elf skeleton / gnome skeleton /\
+:                            elephant skeleton / sheep skeleton /\
+:                            manticore skeleton', 'animal skin')
 KFEAT:  8 = granite_statue / orcish_idol / w:5 altar_trog /\
             w:5 altar_beogh / w:1 altar_makhleb / w:4 floor
 KITEM:  $ = q:5 meat ration, giant spiked club, q:2 sausage
@@ -306,7 +307,7 @@ NAME: grated_community_mu_troll_home
 TAGS: grated_community_mu_home grated_community_mu_home5 unrand
 MONS: patrolling iron troll / patrolling deep troll
 FTILE:   1.c~+#$%& = floor_dirt
-: dgn.delayed_decay(_G, '%', 'w:20 any skeleton / w:5 any chunk, any / nothing')
+: dgn.delayed_decay_extra(_G, '%', 'w:20 any skeleton / w:5 any chunk', 'any / nothing')
 KITEM:   $ = animal skin
 NSUBST:  . = 7:% / 2:$ / *:.
 KFEAT:   ~ = floor

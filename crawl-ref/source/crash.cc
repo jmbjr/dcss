@@ -10,6 +10,11 @@
 #include <sys/time.h>
 #endif
 
+#ifndef TARGET_OS_WINDOWS
+# include <errno.h>
+# include <sys/wait.h>
+#endif
+
 #if defined(UNIX)
 #include <unistd.h>
         #define BACKTRACE_SUPPORTED
@@ -79,10 +84,13 @@ static int _crash_signal    = 0;
 static int _recursion_depth = 0;
 static mutex_t crash_mutex;
 
-static void _crash_signal_handler(int sig_num)
+// Make this non-static so stack traces are easier to follow
+void crash_signal_handler(int sig_num);
+
+void crash_signal_handler(int sig_num)
 {
     // We rely on mutexes ignoring locks held by the same thread.
-    // On some platforms, this must be explicitely enabled (which we do).
+    // On some platforms, this must be explicitly enabled (which we do).
 
     // This mutex is never unlocked again -- the first thread to crash will
     // do a dump then terminate the process while everyone else waits here
@@ -135,7 +143,7 @@ static void _crash_signal_handler(int sig_num)
     // internally.
     // There's no reliable way to ensure such things won't happen.  A pragmatic
     // solution is to abort the crash dump.
-    alarm(5);
+    alarm(120);
 
     // In case the crash dumper is unable to open a file and has to dump
     // to stderr.
@@ -148,7 +156,7 @@ static void _crash_signal_handler(int sig_num)
     tiles.shutdown();
 #endif
 
-#ifdef DGAMELAUNCH
+#ifdef WATCHDOG
     /* Infinite loop protection.
 
        Not tickling the watchdog for 60 seconds of user CPU time (not wall
@@ -244,7 +252,7 @@ void init_crash_handler()
             continue;
 #endif
 
-        signal(i, _crash_signal_handler);
+        signal(i, crash_signal_handler);
     }
 
 #endif // if defined(USE_UNIX_SIGNALS)
@@ -357,6 +365,50 @@ void write_stack_trace(FILE* file, int ignore_count)
 }
 #endif
 
+void call_gdb(FILE *file)
+{
+#ifndef TARGET_OS_WINDOWS
+    if (crawl_state.no_gdb)
+        return (void)fprintf(file, "%s\n", crawl_state.no_gdb);
+
+    fprintf(file, "Trying to run gdb.\n");
+    fflush(file); // so we can use fileno()
+
+    char attach_cmd[20] = {};
+    snprintf(attach_cmd, sizeof(attach_cmd), "attach %d", getpid());
+
+    switch (int gdb = fork())
+    {
+    case -1:
+        return (void)fprintf(file, "Couldn't fork: %s\n", strerror(errno));
+    case 0:
+        {
+            int fd = fileno(file);
+            dup2(fd, 1);
+            dup2(fd, 2);
+            close(fd);
+
+            const char* argv[] =
+            {
+                "gdb",
+                "-batch",
+                "-ex", "show version", // Too bad -iex needs gdb >=7.5 (jessie)
+                "-ex", attach_cmd,
+                "-ex", "bt full",
+                0
+            };
+            execv("/usr/bin/gdb", (char* const*)argv);
+            printf("Failed to start gdb: %s\n", strerror(errno));
+            fflush(stdout);
+            _exit(0);
+        }
+        return;
+    default:
+        waitpid(gdb, 0, 0);
+    }
+#endif
+}
+
 void disable_other_crashes()
 {
     // If one thread calls end() without going through a crash (a handled
@@ -367,14 +419,19 @@ void disable_other_crashes()
 #endif
 }
 
-#ifdef DGAMELAUNCH
 void watchdog()
 {
+#ifdef UNIX
     struct itimerval t;
     t.it_interval.tv_sec = 0;
     t.it_interval.tv_usec = 0;
     t.it_value.tv_sec = 60;
     t.it_value.tv_usec = 0;
     setitimer(ITIMER_VIRTUAL, &t, 0);
-}
+#else
+    // Real time rather than CPU time.
+    // This will break DGL, but it makes no sense on Windows anyway.
+    // Mapstat is cool with this.
+    alarm(60);
 #endif
+}

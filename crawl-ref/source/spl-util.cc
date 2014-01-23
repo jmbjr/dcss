@@ -39,9 +39,7 @@
 #include "spl-zap.h"
 #include "target.h"
 #include "terrain.h"
-#include "item_use.h"
 #include "transform.h"
-
 
 struct spell_desc
 {
@@ -109,7 +107,7 @@ void init_spell_descs(void)
         ASSERTM(data.min_range <= data.max_range,
                 "spell '%s' has min_range larger than max_range", data.title);
 
-        ASSERTM(!(data.flags & SPFLAG_TARGETTING_MASK)
+        ASSERTM(!(data.flags & SPFLAG_TARGETING_MASK)
                 || (data.min_range >= 0 && data.max_range > 0),
                 "targeted/directed spell '%s' has invalid range", data.title);
 
@@ -235,7 +233,7 @@ int get_spell_slot_by_letter(char letter)
     if (you.spell_letter_table[ index ] == -1)
         return -1;
 
-    return (you.spell_letter_table[index]);
+    return you.spell_letter_table[index];
 }
 
 static int _get_spell_slot(spell_type spell)
@@ -258,7 +256,7 @@ spell_type get_spell_by_letter(char letter)
 
     const int slot = get_spell_slot_by_letter(letter);
 
-    return ((slot == -1) ? SPELL_NO_SPELL : you.spells[slot]);
+    return (slot == -1) ? SPELL_NO_SPELL : you.spells[slot];
 }
 
 bool add_spell_to_memory(spell_type spell)
@@ -364,9 +362,7 @@ int spell_hunger(spell_type which_spell, bool rod)
 
     const int level = spell_difficulty(which_spell);
 
-    const int basehunger[] = {
-        50, 95, 160, 250, 350, 550, 700, 850, 1000
-    };
+    const int basehunger[] = { 50, 95, 160, 250, 350, 550, 700, 850, 1000 };
 
     int hunger;
 
@@ -395,19 +391,19 @@ int spell_hunger(spell_type which_spell, bool rod)
 // Note - this function assumes that the monster is "nearby" its target!
 bool spell_needs_tracer(spell_type spell)
 {
-    return (_seekspell(spell)->ms_needs_tracer);
+    return _seekspell(spell)->ms_needs_tracer;
 }
 
 // Checks if the spell is an explosion that can be placed anywhere even without
 // an unobstructed beam path, such as fire storm.
 bool spell_is_direct_explosion(spell_type spell)
 {
-    return (spell == SPELL_FIRE_STORM || spell == SPELL_HELLFIRE_BURST);
+    return spell == SPELL_FIRE_STORM || spell == SPELL_HELLFIRE_BURST;
 }
 
 bool spell_needs_foe(spell_type spell)
 {
-    return (!_seekspell(spell)->ms_utility);
+    return !_seekspell(spell)->ms_utility;
 }
 
 bool spell_harms_target(spell_type spell)
@@ -417,7 +413,7 @@ bool spell_harms_target(spell_type spell)
     if (flags & (SPFLAG_HELPFUL | SPFLAG_NEUTRAL))
         return false;
 
-    if (flags & SPFLAG_TARGETTING_MASK)
+    if (flags & SPFLAG_TARGETING_MASK)
         return true;
 
     return false;
@@ -440,14 +436,14 @@ bool spell_harms_area(spell_type spell)
 // for Xom acting (more power = more likely to grab his attention) {dlb}
 int spell_mana(spell_type which_spell)
 {
-    return (_seekspell(which_spell)->level);
+    return _seekspell(which_spell)->level;
 }
 
 // applied in naughties (more difficult = higher level knowledge = worse)
 // and triggers for Sif acting (same reasoning as above, just good) {dlb}
 int spell_difficulty(spell_type which_spell)
 {
-    return (_seekspell(which_spell)->level);
+    return _seekspell(which_spell)->level;
 }
 
 int spell_levels_required(spell_type which_spell)
@@ -470,27 +466,23 @@ int spell_levels_required(spell_type which_spell)
 
 unsigned int get_spell_flags(spell_type which_spell)
 {
-    return (_seekspell(which_spell)->flags);
+    return _seekspell(which_spell)->flags;
 }
 
 const char *get_spell_target_prompt(spell_type which_spell)
 {
-    return (_seekspell(which_spell)->target_prompt);
+    return _seekspell(which_spell)->target_prompt;
 }
 
 bool spell_typematch(spell_type which_spell, unsigned int which_discipline)
 {
-    return (get_spell_disciplines(which_spell) & which_discipline);
+    return get_spell_disciplines(which_spell) & which_discipline;
 }
 
 //jmf: next two for simple bit handling
 unsigned int get_spell_disciplines(spell_type spell)
 {
-    unsigned int dis = _seekspell(spell)->disciplines;
-    if (spell == SPELL_DRAGON_FORM && player_genus(GENPC_DRACONIAN))
-        dis &= (~SPTYP_FIRE);
-
-    return dis;
+    return _seekspell(spell)->disciplines;
 }
 
 int count_bits(unsigned int bits)
@@ -511,15 +503,14 @@ bool disciplines_conflict(unsigned int disc1, unsigned int disc2)
 {
     const unsigned int combined = disc1 | disc2;
 
-    return ((combined & SPTYP_EARTH) && (combined & SPTYP_AIR)
-            || (combined & SPTYP_FIRE)  && (combined & SPTYP_ICE));
+    return (combined & SPTYP_EARTH) && (combined & SPTYP_AIR)
+           || (combined & SPTYP_FIRE)  && (combined & SPTYP_ICE);
 }
 
 const char *spell_title(spell_type spell)
 {
-    return (_seekspell(spell)->title);
+    return _seekspell(spell)->title;
 }
-
 
 // FUNCTION APPLICATORS: Idea from Juho Snellman <jsnell@lyseo.edu.ouka.fi>
 //                       on the Roguelike News pages, Development section.
@@ -533,9 +524,8 @@ int apply_area_visible(cell_func cf, int power, actor *agent)
 {
     int rv = 0;
 
-    for (radius_iterator ri(agent->pos(), you.current_vision); ri; ++ri)
-        if (agent->see_cell_no_trans(*ri))
-            rv += cf(*ri, power, 0, agent);
+    for (radius_iterator ri(agent->pos(), LOS_NO_TRANS); ri; ++ri)
+        rv += cf(*ri, power, 0, agent);
 
     return rv;
 }
@@ -552,7 +542,6 @@ static int _apply_area_square(cell_func cf, const coord_def& where,
 
     return rv;
 }
-
 
 // Applies the effect to the eight squares beside the target.
 // Returns summation of return values from passed in function.
@@ -577,7 +566,7 @@ int apply_monsters_around_square(monster_func mf, const coord_def& where,
     for (adjacent_iterator ai(where, true); ai; ++ai)
     {
         monster* mon = monster_at(*ai);
-        if (mon && affected.find(mon) == affected.end())
+        if (mon && !affected.count(mon))
         {
             rv += mf(mon, power);
             affected.insert(mon);
@@ -638,7 +627,7 @@ int apply_random_around_square(cell_func cf, const coord_def& where,
         //
         // 2) Assume the distribution is uniform at n = m+k.
         //    (ie. the probablity that any of the found elements
-        //     was chosen = m / (m+k) (the slots are symetric,
+        //     was chosen = m / (m+k) (the slots are symmetric,
         //     so it's the sum of the probabilities of being in
         //     any of them)).
         //
@@ -669,8 +658,8 @@ int apply_random_around_square(cell_func cf, const coord_def& where,
         // just don't care about the non-chosen slots enough
         // to store them, so it might look like the item
         // automatically takes the new slot when not chosen
-        // (although, by symetry all the non-chosen slots are
-        // the same... and similarly, by symetry, all chosen
+        // (although, by symmetry all the non-chosen slots are
+        // the same... and similarly, by symmetry, all chosen
         // slots are the same).
         //
         // Yes, that's a long comment for a short piece of
@@ -718,7 +707,7 @@ void apply_area_cloud(cloud_func func, const coord_def& where,
     if (number <= 0)
         return;
 
-    targetter_cloud place(0, 0, number, number);
+    targetter_cloud place(agent, GDM, number, number);
     if (!place.set_aim(where))
         return;
     unsigned int dist = 0;
@@ -733,7 +722,7 @@ void apply_area_cloud(cloud_func func, const coord_def& where,
         q[el] = q[q.size() - 1];
         q.pop_back();
 
-        if (place.seen[c] <= 0)
+        if (place.seen[c] <= 0 || cell_is_solid(c))
             continue;
         func(c, pow, spread_rate, ctype, agent, colour, name, tile, excl_rad);
         number--;
@@ -741,11 +730,11 @@ void apply_area_cloud(cloud_func func, const coord_def& where,
 }
 
 // Select a spell direction and fill dist and pbolt appropriately.
-// Return false if the user canceled, true otherwise.
+// Return false if the user cancelled, true otherwise.
 // FIXME: this should accept a direction_chooser_args directly rather
 // than move the arguments into one.
 bool spell_direction(dist &spelld, bolt &pbolt,
-                      targetting_type restrict, targ_mode_type mode,
+                      targeting_type restrict, targ_mode_type mode,
                       int range,
                       bool needs_path, bool may_target_monster,
                       bool may_target_self, const char *target_prefix,
@@ -899,13 +888,13 @@ static const spell_desc *_seekspell(spell_type spell)
     const int index = spell_list[spell];
     ASSERT(index != -1);
 
-    return (&spelldata[index]);
+    return &spelldata[index];
 }
 
 bool is_valid_spell(spell_type spell)
 {
-    return (spell > SPELL_NO_SPELL && spell < NUM_SPELLS
-            && spell_list[spell] != -1);
+    return spell > SPELL_NO_SPELL && spell < NUM_SPELLS
+           && spell_list[spell] != -1;
 }
 
 static bool _spell_range_varies(spell_type spell)
@@ -913,7 +902,7 @@ static bool _spell_range_varies(spell_type spell)
     int minrange = _seekspell(spell)->min_range;
     int maxrange = _seekspell(spell)->max_range;
 
-    return (minrange < maxrange);
+    return minrange < maxrange;
 }
 
 int spell_power_cap(spell_type spell)
@@ -955,9 +944,10 @@ int spell_range(spell_type spell, int pow, bool player_spell)
 
     if (player_spell
         && vehumet_supports_spell(spell)
-        && you.religion == GOD_VEHUMET
+        && you_worship(GOD_VEHUMET)
         && spell != SPELL_STICKY_FLAME
         && spell != SPELL_FREEZE
+        && spell != SPELL_DISCHARGE
         && !player_under_penance()
         && you.piety >= piety_breakpoint(3))
     {
@@ -1098,8 +1088,7 @@ bool spell_is_useless(spell_type spell, bool transient)
     if (transient)
     {
         if (you.duration[DUR_CONF] > 0
-            || spell_mana(spell) > (you.species != SP_DJINNI ? you.magic_points
-                                    : (you.hp - 1) / DJ_MP_RATE)
+            || !enough_mp(spell_mana(spell), true, false)
             || spell_no_hostile_in_range(spell))
         {
             return true;
@@ -1158,7 +1147,7 @@ bool spell_is_useless(spell_type spell, bool transient)
         // mere corona is not enough, but divine light blocks it completely
         if (transient && you.haloed())
             return true;
-        if (you.religion == GOD_SHINING_ONE && !player_under_penance())
+        if (you_worship(GOD_SHINING_ONE) && !player_under_penance())
             return true;
         break;
 #if TAG_MAJOR_VERSION == 34
@@ -1169,7 +1158,7 @@ bool spell_is_useless(spell_type spell, bool transient)
 #endif
     case SPELL_REPEL_MISSILES:
         if (player_mutation_level(MUT_DISTORTION_FIELD) == 3
-            || !you.suppressed() && you.scan_artefacts(ARTP_RMSL, true))
+            || you.scan_artefacts(ARTP_RMSL, true))
         {
             return true;
         }
@@ -1189,6 +1178,9 @@ bool spell_is_useless(spell_type spell, bool transient)
         }
         break;
 
+    case SPELL_DELAYED_FIREBALL:
+        return transient && you.attribute[ATTR_DELAYED_FIREBALL];
+
     default:
         break; // quash unhandled constants warnings
     }
@@ -1204,7 +1196,7 @@ int spell_highlight_by_utility(spell_type spell, int default_color,
 {
     // If your god hates the spell, that
     // overrides all other concerns
-    if (god_hates_spell(spell, you.religion))
+    if (god_hates_spell(spell, you.religion, rod_spell))
         return COL_FORBIDDEN;
 
     if (_spell_is_empowered(spell) && !rod_spell)
@@ -1249,7 +1241,7 @@ bool spell_no_hostile_in_range(spell_type spell)
     case SPELL_HOLY_BREATH:
     {
         targetter_cloud tgt(&you, range);
-        for (radius_iterator ri(you.pos(), range, C_ROUND, you.get_los());
+        for (radius_iterator ri(you.pos(), range, C_ROUND, LOS_NO_TRANS);
              ri; ++ri)
         {
             if (!tgt.valid_aim(*ri))
@@ -1312,7 +1304,7 @@ bool spell_no_hostile_in_range(spell_type spell)
         beam.beam_source = MHITYOU;
         beam.range = range;
         beam.is_tracer = true;
-        beam.is_targetting = true;
+        beam.is_targeting = true;
         beam.source  = you.pos();
         beam.dont_stop_player = true;
         beam.friend_info.dont_stop = true;
@@ -1322,7 +1314,7 @@ bool spell_no_hostile_in_range(spell_type spell)
 #ifdef DEBUG_DIAGNOSTICS
         beam.quiet_debug = true;
 #endif
-        for (radius_iterator ri(you.pos(), range, C_ROUND, you.get_los());
+        for (radius_iterator ri(you.pos(), range, C_ROUND, LOS_DEFAULT);
              ri; ++ri)
         {
             tempbeam = beam;

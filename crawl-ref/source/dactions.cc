@@ -7,13 +7,13 @@
 
 #include "dactions.h"
 
+#include "act-iter.h"
 #include "coordit.h"
 #include "decks.h"
 #include "dungeon.h"
 #include "env.h"
 #include "libutil.h"
 #include "mon-behv.h"
-#include "mon-iter.h"
 #include "mon-stuff.h"
 #include "mon-transit.h"
 #include "mon-util.h"
@@ -23,7 +23,7 @@
 #include "travel.h"
 #include "view.h"
 
-static void _daction_hog_to_human(monster *mon);
+static void _daction_hog_to_human(monster *mon, bool in_transit);
 
 #ifdef DEBUG_DIAGNOSTICS
 static const char *daction_names[] =
@@ -56,6 +56,9 @@ static const char *daction_names[] =
     "slimes allow another conversion attempt",
 #endif
     "hogs to humans",
+#if TAG_MAJOR_VERSION == 34
+    "end spirit howl",
+#endif
 };
 #endif
 
@@ -67,18 +70,18 @@ bool mons_matches_daction(const monster* mon, daction_type act)
     switch (act)
     {
     case DACT_ALLY_HOLY:
-        return (mon->wont_attack() && is_good_god(mon->god));
+        return mon->wont_attack() && is_good_god(mon->god);
     case DACT_ALLY_UNHOLY_EVIL:
-        return (mon->wont_attack() && (mon->is_unholy() || mon->is_evil()));
+        return mon->wont_attack() && (mon->is_unholy() || mon->is_evil());
     case DACT_ALLY_UNCLEAN_CHAOTIC:
-        return (mon->wont_attack() && (mon->is_unclean() || mon->is_chaotic()));
+        return mon->wont_attack() && (mon->is_unclean() || mon->is_chaotic());
     case DACT_ALLY_SPELLCASTER:
-        return (mon->wont_attack() && mon->is_actual_spellcaster());
+        return mon->wont_attack() && mon->is_actual_spellcaster();
     case DACT_ALLY_YRED_SLAVE:
         // Changed: we don't force enslavement of those merely marked.
         return is_yred_undead_slave(mon);
     case DACT_ALLY_BEOGH: // both orcs and demons summoned by high priests
-        return (mon->wont_attack() && mons_is_god_gift(mon, GOD_BEOGH));
+        return mon->wont_attack() && mons_is_god_gift(mon, GOD_BEOGH);
     case DACT_ALLY_SLIME:
         return is_fellow_slime(mon);
     case DACT_ALLY_PLANT:
@@ -88,17 +91,17 @@ bool mons_matches_daction(const monster* mon, daction_type act)
 
     // Not a stored counter:
     case DACT_ALLY_TROG:
-        return (mon->friendly() && mons_is_god_gift(mon, GOD_TROG));
+        return mon->friendly() && mons_is_god_gift(mon, GOD_TROG);
     case DACT_HOLY_PETS_GO_NEUTRAL:
-        return (mon->friendly()
-                && !mon->has_ench(ENCH_CHARM)
-                && mon->is_holy()
-                && mons_is_god_gift(mon, GOD_SHINING_ONE));
+        return mon->friendly()
+               && !mon->has_ench(ENCH_CHARM)
+               && mon->is_holy()
+               && mons_is_god_gift(mon, GOD_SHINING_ONE);
     case DACT_PIKEL_SLAVES:
-        return (mon->type == MONS_SLAVE
-                && testbits(mon->flags, MF_BAND_MEMBER)
-                && mon->props.exists("pikel_band")
-                && mon->mname != "freed slave");
+        return mon->type == MONS_SLAVE
+               && testbits(mon->flags, MF_BAND_MEMBER)
+               && mon->props.exists("pikel_band")
+               && mon->mname != "freed slave";
 
     case DACT_OLD_ENSLAVED_SOULS_POOF:
         return mons_enslaved_soul(mon);
@@ -110,14 +113,14 @@ bool mons_matches_daction(const monster* mon, daction_type act)
         return mons_is_slime(mon);
 
     case DACT_KIRKE_HOGS:
-        return ((mon->type == MONS_HOG
-                 || mon->type == MONS_HELL_HOG
-                 || mon->type == MONS_HOLY_SWINE)
-                && !mon->is_shapeshifter()
-                // Must be one of Kirke's original band
-                // *or* another monster that got porkalated
-                && (mon->props.exists("kirke_band")
-                    || mon->props.exists(ORIG_MONSTER_KEY)));
+        return (mon->type == MONS_HOG
+                || mon->type == MONS_HELL_HOG
+                || mon->type == MONS_HOLY_SWINE)
+               && !mon->is_shapeshifter()
+               // Must be one of Kirke's original band
+               // *or* another monster that got porkalated
+               && (mon->props.exists("kirke_band")
+                   || mon->props.exists(ORIG_MONSTER_KEY));
 
     default:
         return false;
@@ -154,11 +157,15 @@ void add_daction(daction_type act)
 
     // And now to any monsters in transit.
     apply_daction_to_transit(act);
-
 }
 
-void apply_daction_to_mons(monster* mon, daction_type act, bool local)
+void apply_daction_to_mons(monster* mon, daction_type act, bool local,
+        bool in_transit)
 {
+    // Transiting monsters exist outside the normal monster list (env.mons or
+    // menv for short). Be careful not to write them into the monster grid, by,
+    // for example, calling monster::move_to_pos on them.
+    // See _daction_hog_to_human for an example.
     switch (act)
     {
         case DACT_ALLY_HOLY:
@@ -217,7 +224,7 @@ void apply_daction_to_mons(monster* mon, daction_type act, bool local)
             break;
 
         case DACT_KIRKE_HOGS:
-            _daction_hog_to_human(mon);
+            _daction_hog_to_human(mon, in_transit);
             break;
 
         // The other dactions do not affect monsters directly.
@@ -251,7 +258,7 @@ static void _apply_daction(daction_type act)
         for (monster_iterator mi; mi; ++mi)
         {
             if (mons_matches_daction(*mi, act))
-                apply_daction_to_mons(*mi, act, true);
+                apply_daction_to_mons(*mi, act, true, false);
         }
         break;
 
@@ -277,6 +284,9 @@ static void _apply_daction(daction_type act)
         if (player_in_branch(BRANCH_TOMB))
             unset_level_flags(LFLAG_NO_TELE_CONTROL, you.depth != 3);
         break;
+#if TAG_MAJOR_VERSION == 34
+    case DACT_END_SPIRIT_HOWL:
+#endif
     case NUM_DA_COUNTERS:
     case NUM_DACTIONS:
         ;
@@ -294,7 +304,7 @@ unsigned int query_da_counter(daction_type c)
     return travel_cache.query_da_counter(c) + count_daction_in_transit(c);
 }
 
-static void _daction_hog_to_human(monster *mon)
+static void _daction_hog_to_human(monster *mon, bool in_transit)
 {
     // Hogs to humans
     monster orig;
@@ -303,19 +313,21 @@ static void _daction_hog_to_human(monster *mon)
     // Was it a converted monster or original band member?
     if (mon->props.exists(ORIG_MONSTER_KEY))
     {
-        // Copy it, since the instance in props will get deleted
-        // as soon a **mi is assigned to.
+        // It was transformed into a pig. Copy it, since the instance in props
+        // will get deleted as soon as **mi is assigned to.
         orig = mon->props[ORIG_MONSTER_KEY].get_monster();
         orig.mid = mon->mid;
     }
     else
     {
+        // It started life as a pig in Kirke's band.
         orig.type     = MONS_HUMAN;
         orig.attitude = mon->attitude;
         orig.mid = mon->mid;
         define_monster(&orig);
     }
-    // Keep at same spot.
+    // Keep at same spot. This position is irrelevant if the hog is in transit.
+    // See below.
     const coord_def pos = mon->pos();
     // Preserve relative HP.
     const float hp
@@ -329,7 +341,16 @@ static void _daction_hog_to_human(monster *mon)
     // Restore original monster.
     *mon = orig;
 
-    mon->move_to_pos(pos);
+    // If the hog is in transit, then it is NOT stored in the normal
+    // monster list (env.mons or menv for short). We cannot call move_to_pos
+    // on such a hog, because move_to_pos will attempt to update the
+    // monster grid (env.mgrid or mgrd for short). Since the hog is not
+    // stored in the monster list, this will corrupt the grid. The transit code
+    // will update the grid properly once the transiting hog has been placed.
+    if (!in_transit)
+        mon->move_to_pos(pos);
+    // "else {mon->position = pos}" is unnecessary because the transit code will
+    // ignore the old position anyway.
     mon->enchantments = enchantments;
     mon->hit_points   = max(1, (int) (mon->max_hit_points * hp));
     mon->flags        = mon->flags | preserve_flags;
@@ -360,6 +381,5 @@ static void _daction_hog_to_human(monster *mon)
     if (could_see && !can_see)
         mpr("The hog vanishes!");
     else if (!could_see && can_see)
-        mprf("%s appears from out of thin air!",
-                mon->name(DESC_A).c_str());
+        mprf("%s appears from out of thin air!", mon->name(DESC_A).c_str());
 }

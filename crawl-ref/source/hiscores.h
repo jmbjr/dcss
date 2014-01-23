@@ -3,10 +3,8 @@
  * @brief Scorefile manipulation functions
 **/
 
-
 #ifndef HISCORES_H
 #define HISCORES_H
-
 
 class scorefile_entry;
 
@@ -69,9 +67,11 @@ private:
     uint8_t     lvl;                // player level.
     skill_type  best_skill;         // best skill #
     uint8_t     best_skill_lvl;     // best skill level
+    string      title;              // title
     int         death_type;
     int         death_source;       // NON_MONSTER or monster type
     string      death_source_name;  // overrides death_source
+    set<string> death_source_flags; // misc flags about killer
     string      auxkilldata;        // weapon wielded, spell cast, etc
     string      indirectkiller;     // the effect or real monster that summoned
     string      killerpath;         // colon-separated intermediate killers

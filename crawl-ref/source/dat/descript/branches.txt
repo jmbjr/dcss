@@ -8,7 +8,7 @@ its origin, this deep cavern is filled with riches unheard of as well as with
 ample dangers to any intruder. Few have escaped alive, and even fewer have kept
 some sliver of sanity sufficient to tell the tale.
 
-The dungeon is 27 levels deep, but, honestly, this is only the beginning.
+The dungeon is 16 levels deep, but, honestly, this is only the beginning.
 %%%%
 Temple
 
@@ -35,14 +35,6 @@ this, the deep elves did. Their halls are filled with riches, but any
 passers-by should be aware of the legendary magical prowess of this species.
 
 The Elven Halls are three levels deep.
-%%%%
-Dwarven Hall
-
-These halls of finely worked stone are the dwelling of the Deep Dwarves. Their
-fine metalworking skills allowed them to forge plenty weapons for use against
-the likes of you.
-
-It is but a single level.
 %%%%
 Lair
 
@@ -110,8 +102,9 @@ great treasures. The blood spattered liberally around the entrance suggests
 that there is a certain amount of violence, too.
 
 The Vaults are five levels deep and contain the silver rune, as well as the
-entrances to two more branches. The entrance can be found between levels 15 and
-20 of the main dungeon.
+entrances to two more branches. They can be entered while carrying at least one
+rune of Zot. The entrance can be found between levels 14 and 15 of the main
+dungeon.
 %%%%
 Hall of Blades
 
@@ -141,18 +134,6 @@ pure death is exceedingly short.
 
 The Tomb is three levels deep and contains the golden rune. Its entry is either
 on Crypt:2 or Crypt:3.
-%%%%
-Tomb:quote
-
-“In the depths of every heart, there is a tomb and a dungeon, though the
-lights, the music, and revelry above may cause us to forget their existence,
-and the buried ones, or prisoners whom they hide. But sometimes, and oftenest
-at midnight, those dark receptacles are flung wide open. In an hour like this,
-when the mind has a passive sensibility, but no active strength; when the
-imagination is a mirror, imparting vividness to all ideas, without the power of
-selecting or controlling them; then pray that your grieves may slumber, and the
-brotherhood of remorse not break their chain.”
-    -Nathaniel Hawthorne, “The Haunted Mind”. 1835.
 %%%%
 Hell
 
@@ -192,14 +173,6 @@ drain all life out of treasure-craving visitors.
 
 Tartarus is seven levels deep and contains the bone rune. It can be accessed
 via the Vestibule of Hell.
-%%%%
-Tartarus:quote
-
-“There is a drear and lonely tract of hell
- From all the common gloom removed afar:
- A flat, sad land it is, where shadows are,
- Whose lorn estate my verse may never tell.”
-    -Edward Arlington Robinson, “Supremacy”. 1897.
 %%%%
 Zot
 
@@ -257,11 +230,11 @@ Ziggurat
 
 A ziggurat is a strange tower constructed of twenty seven levels of
 incrementally larger combat arenas, each containing greater wealth and even
-greater danger than the last. Whatever entity created this monstrosity charges
-a steep price for entry. Beware, for a ziggurat is not a place for the faint of
-heart: even the bravest and most skilled adventurers have met their ends in
-one. While a portal to safety will be present on every level, once left, a
-ziggurat cannot be re-entered.
+greater danger than the last. Beware, for a ziggurat is not a place for the
+faint of heart: even the bravest and most skilled adventurers have met their
+ends in one, and even entering requires the power of three runes of Zot. While
+a portal to safety will be present on every level, once left, a ziggurat cannot
+be re-entered.
 %%%%
 Labyrinth
 
@@ -343,4 +316,12 @@ laboratories still exist, filled with the results of their experiments. Those
 willing to explore these laboratories may find powerful magical treasure, but
 be warned: the wizards to whom these labs belonged to deserved their
 reputations.
+%%%%
+Depths
+
+The Depths are the deepest part of the dungeon proper, subject to the
+corrupting influence of the Realm of Zot without being considered a part of it.
+
+The Depths are six levels deep and can be entered from the lowest floor of the
+Dungeon.
 %%%%
