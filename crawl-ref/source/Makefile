@@ -70,6 +70,9 @@
 #    them somewhere in the near future.
 
 GAME = crawl-farmer
+SAVEDIR := ~/crawl-dev/saves/farmer
+SHAREDDIR := ~/crawl-dev/meta/farmer
+DATADIR := ~/crawl-dev/data/farmer
 
 # Disable GNU Make implicit rules and variables. Leaving them enabled will slow
 # down MinGW and Cygwin builds by a very VERY noticeable degree. Besides, we have
@@ -362,15 +365,15 @@ endif
 
 # SAVEDIR := saves/
 # DATADIR := data/
-ifneq (,$(FHS))
-DATADIR       := share/crawl
-SAVEDIR       := ~/.crawl
-endif
+#ifneq (,$(FHS))
+#DATADIR       := share/crawl
+#SAVEDIR       := ~/.crawl
+#endif
 
-ifneq ($(patsubst /opt%,%,$(prefix)),$(prefix))
-DATADIR := data
-SAVEDIR := ~/.crawl
-endif
+#ifneq ($(patsubst /opt%,%,$(prefix)),$(prefix))
+#DATADIR := data
+#SAVEDIR := ~/.crawl
+#endif
 
 
 INCLUDES_L += -isystem contrib/install/$(ARCH)/include
