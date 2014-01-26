@@ -42,9 +42,9 @@ watch_socket_dirs = False
 # Game configs
 # %n in paths is replaced by the current username
 games = OrderedDict([
-    ("dcss-web-trunk", dict(
-        name = "DCSS trunk",
-        crawl_binary = "./crawl",
+    ("dcss-web-farmer", dict(
+        name = "DCSS Farmer",
+        crawl_binary = "./crawl-farmer",
         rcfile_path = "./rcs/",
         macro_path = "./rcs/",
         morgue_path = "./rcs/%n",
@@ -53,42 +53,6 @@ games = OrderedDict([
         socket_path = "./rcs",
         client_path = "./webserver/game_data/",
         send_json_options = True)),
-    ("sprint-web-trunk", dict(
-        name = "Sprint trunk",
-        crawl_binary = "./crawl",
-        rcfile_path = "./rcs/",
-        macro_path = "./rcs/",
-        morgue_path = "./rcs/%n",
-        inprogress_path = "./rcs/running",
-        ttyrec_path = "./rcs/ttyrecs/%n",
-        socket_path = "./rcs",
-        client_path = "./webserver/game_data/",
-        send_json_options = True,
-        options = ["-sprint"])),
-    ("zd-web-trunk", dict(
-        name = "Zot Defense trunk",
-        crawl_binary = "./crawl",
-        rcfile_path = "./rcs/",
-        macro_path = "./rcs/",
-        morgue_path = "./rcs/%n",
-        inprogress_path = "./rcs/running",
-        ttyrec_path = "./rcs/ttyrecs/%n",
-        socket_path = "./rcs",
-        client_path = "./webserver/game_data/",
-        send_json_options = True,
-        options = ["-zotdef"])),
-    ("tut-web-trunk", dict(
-        name = "Tutorial trunk",
-        crawl_binary = "./crawl",
-        rcfile_path = "./rcs/",
-        macro_path = "./rcs/",
-        morgue_path = "./rcs/%n",
-        inprogress_path = "./rcs/running",
-        ttyrec_path = "./rcs/ttyrecs/%n",
-        socket_path = "./rcs",
-        client_path = "./webserver/game_data/",
-        send_json_options = True,
-        options = ["-tutorial"])),
 ])
 
 dgl_status_file = "./rcs/status"
