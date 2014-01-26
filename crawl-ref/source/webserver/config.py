@@ -17,21 +17,21 @@ bind_port = 8081
 # )
 
 logging_config = {
-#    "filename": "webtiles.log",
+    "filename": "/home/jmbjr/crawl-dev/DGL/crawl-master/webserver/run/webtiles.log",
     "level": logging.INFO,
     "format": "%(asctime)s %(levelname)s: %(message)s"
 }
 
-password_db = "./webserver/passwd.db3"
-
-static_path = "./webserver/static"
-template_path = "./webserver/templates/"
+#password_db = "./webserver/passwd.db3"
+password_db = "/home/jmbjr/crawl-dev/DGL/dgldir/dgamelaunch.db"
+static_path = "/home/jmbjr/crawl-dev/DGL/crawl-master/webserver/static"
+template_path = "/home/jmbjr/crawl-dev/DGL/crawl-master/webserver/templates/"
 
 # Path for server-side unix sockets (to be used to communicate with crawl)
 server_socket_path = None # Uses global temp dir
 
 # Server name, so far only used in the ttyrec metadata
-server_id = ""
+server_id = "dbro"
 
 # Disable caching of game data files
 game_data_no_cache = True
@@ -44,21 +44,20 @@ watch_socket_dirs = False
 games = OrderedDict([
     ("dcss-web-farmer", dict(
         name = "DCSS Farmer",
-        crawl_binary = "./crawl-farmer",
-        rcfile_path = "./rcs/",
-        macro_path = "./rcs/",
-        morgue_path = "./rcs/%n",
-        inprogress_path = "./rcs/running",
-        ttyrec_path = "./rcs/ttyrecs/%n",
-        socket_path = "./rcs",
-        client_path = "./webserver/game_data/",
+        crawl_binary = "/home/jmbjr/crawl-dev/DGL/usr/games/crawl-farmer",
+        rcfile_path = "/home/jmbjr/crawl-dev/DGL/dgldir/rcfiles/crawl-farmer/",
+        macro_path = "/home/jmbjr/crawl-dev/DGL/dgldir/rcfiles/crawl-farmer/",
+        morgue_path = "/home/jmbjr/crawl-dev/DGL/dgldir/morgue/%n",
+        inprogress_path = "/home/jmbjr/crawl-dev/DGL/dgldir/inprogress/crawl-farmer/",
+        ttyrec_path = "/home/jmbjr/crawl-dev/DGL/dgldir/ttyrec/%n",
+        socket_path = "/home/jmbjr/crawl-dev/DGL/crawl-master/webserver/sockets",
         send_json_options = True)),
 ])
 
-dgl_status_file = "./rcs/status"
+dgl_status_file = "/home/jmbjr/crawl-dev/DGL/crawl-master/webserver/run/status"
 
 # Set to None not to read milestones
-milestone_file = "./milestones"
+milestone_file = "/home/jmbjr/crawl-dev/DGL/crawl-master/saves/milestones"
 
 status_file_update_rate = 5
 
@@ -69,7 +68,7 @@ max_connections = 100
 # Script to initialize a user, e.g. make sure the paths
 # and the rc file exist. This is not done by the server
 # at the moment.
-init_player_program = "./util/webtiles-init-player.sh"
+init_player_program = "/home/jmbjr/crawl-dev/DGL/bin/init-webtiles.sh"
 
 ssl_options = None # No SSL
 #ssl_options = {
