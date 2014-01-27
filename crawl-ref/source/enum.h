@@ -2845,6 +2845,7 @@ enum monster_type                      // menv[].type
     MONS_DRAGON,                // genus
     MONS_SNAKE,                 // genus
 #endif
+    MONS_VINE_STALKER,
 
     NUM_MONSTERS,               // used for polymorph
 
@@ -3053,6 +3054,8 @@ enum mutation_type
     MUT_FUMES,
     MUT_JUMP,
     MUT_EXOSKELETON,
+    MUT_ANTIMAGIC_BITE,
+    MUT_NO_DEVICE_HEAL,
     NUM_MUTATIONS,
 
     RANDOM_MUTATION,
@@ -3406,7 +3409,8 @@ enum species_type
     SP_LAVA_ORC,
     SP_GARGOYLE,
     SP_FORMICID,
-    LAST_VALID_SPECIES = SP_FORMICID,
+    SP_VINE_STALKER,
+    LAST_VALID_SPECIES = SP_VINE_STALKER,
 // The high scores viewer still needs enums for removed species.
     SP_ELF,                            // (placeholder)
     SP_HILL_DWARF,                     // (placeholder)

@@ -673,6 +673,7 @@ char_choice_restriction weapon_restriction(weapon_type wpn,
         case SP_OCTOPODE:
         case SP_BASE_DRACONIAN:
         case SP_FORMICID:
+        case SP_VINE_STALKER:
             return CC_UNRESTRICTED;
 
         default:
@@ -698,6 +699,7 @@ char_choice_restriction weapon_restriction(weapon_type wpn,
         case SP_BASE_DRACONIAN:
         case SP_DJINNI:
         case SP_FORMICID:
+        case SP_VINE_STALKER:
             return CC_UNRESTRICTED;
 
         case SP_SPRIGGAN:
@@ -734,6 +736,7 @@ char_choice_restriction weapon_restriction(weapon_type wpn,
         case SP_BASE_DRACONIAN:
         case SP_DJINNI:
         case SP_FORMICID:
+        case SP_VINE_STALKER:
             return CC_UNRESTRICTED;
 
         default:
@@ -783,6 +786,7 @@ char_choice_restriction weapon_restriction(weapon_type wpn,
         case SP_DJINNI:
         case SP_FORMICID:
         case SP_GARGOYLE:
+        case SP_VINE_STALKER:
             return CC_UNRESTRICTED;
 
         default:

@@ -2266,7 +2266,7 @@ int player_movement_speed(bool ignore_burden)
     if (you.run())
         mv -= 1;
 
-    mv += 2 * you.wearing_ego(EQ_ALL_ARMOUR, SPARM_PONDEROUSNESS);
+    mv += you.wearing_ego(EQ_ALL_ARMOUR, SPARM_PONDEROUSNESS);
 
     // Cheibriados
     if (you_worship(GOD_CHEIBRIADOS))
@@ -3567,6 +3567,24 @@ void level_change(int source, const char* aux, bool skip_attribute_increase)
                     perma_mutate(MUT_BIG_WINGS, 1, "gargoyle growth");
                     mprf(MSGCH_INTRINSIC_GAIN, "You can now fly continuously.");
                 }
+                break;
+
+            case SP_VINE_STALKER:
+                if (!(you.experience_level % 4))
+                {
+                    modify_stat((coinflip() ? STAT_STR
+                                            : STAT_DEX), 1, false,
+                                "level gain");
+                }
+
+                if (you.experience_level == 6)
+                    perma_mutate(MUT_REGENERATION, 1, "vine stalker growth");
+
+                if (you.experience_level == 8)
+                    perma_mutate(MUT_FANGS, 1, "vine stalker growth");
+
+                if (you.experience_level == 12)
+                    perma_mutate(MUT_REGENERATION, 1, "vine stalker growth");
                 break;
 
             default:
@@ -6794,7 +6812,7 @@ int player::res_rotting(bool temp) const
         return 3;
     }
 
-    if (species == SP_GARGOYLE)
+    if (species == SP_GARGOYLE || species == SP_VINE_STALKER)
         return 3;
 
     if (mutation[MUT_FOUL_STENCH])
@@ -6904,6 +6922,7 @@ int player_res_magic(bool calc_unid, bool temp)
         break;
     case SP_NAGA:
     case SP_MUMMY:
+    case SP_VINE_STALKER:
         rm = you.experience_level * 5;
         break;
     case SP_PURPLE_DRACONIAN:
