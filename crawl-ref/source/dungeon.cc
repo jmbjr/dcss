@@ -1433,18 +1433,11 @@ void fixup_misplaced_items()
     }
 }
 
-static bool _at_top_of_branch(bool connected = true)
-{
-    return your_branch().exit_stairs != NUM_FEATURES
-           && you.depth == 1
-           && (!connected || player_in_connected_branch());
-}
-
 static void _fixup_branch_stairs()
 {
     // Top level of branch levels - replaces up stairs with stairs back to
     // dungeon or wherever:
-    if (_at_top_of_branch(false))
+    if (you.depth == 1)
     {
 #ifdef DEBUG_DIAGNOSTICS
         int count = 0;
@@ -1572,7 +1565,11 @@ static bool _fixup_stone_stairs(bool preserve_vault_stairs)
             num_stairs = num_up_stairs;
             replace = DNGN_FLOOR;
             base = DNGN_STONE_STAIRS_UP_I;
-            needed_stairs = _at_top_of_branch() ? 1 : 3;
+            // Pan abuses stair placement for transits, as we want connectivity
+            // checks.
+            needed_stairs = you.depth == 1
+                            && !player_in_branch(BRANCH_PANDEMONIUM)
+                            ? 1 : 3;
         }
         else
         {
@@ -6435,7 +6432,7 @@ static bool _fixup_interlevel_connectivity()
         }
     }
 
-    const int up_region_max = _at_top_of_branch() ? 1 : 3;
+    const int up_region_max = you.depth == 1 ? 1 : 3;
 
     // Ensure all up stairs were found.
     for (int i = 0; i < up_region_max; i++)

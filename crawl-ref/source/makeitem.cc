@@ -3104,10 +3104,9 @@ static void _generate_misc_item(item_def& item, int force_type, int force_ego)
              || item.sub_type == MISC_BUGGY_EBONY_CASKET
              || item.sub_type == MISC_BOTTLED_EFREET
 #endif
-             // Pure decks are rare in the dungeon.
+             // Nemelex' decks are rare in the dungeon.
              || (item.sub_type == MISC_DECK_OF_ESCAPE
                     || item.sub_type == MISC_DECK_OF_DESTRUCTION
-                    || item.sub_type == MISC_DECK_OF_DUNGEONS
                     || item.sub_type == MISC_DECK_OF_SUMMONING
                     || item.sub_type == MISC_DECK_OF_WONDERS)
                  && !one_chance_in(5));
@@ -3726,9 +3725,14 @@ void makeitem_tests()
             item.special = SPARM_NORMAL;
         else
             item.special = random2(NUM_REAL_SPECIAL_ARMOURS);
+        int type = coinflip() ? OBJ_RANDOM : random2(NUM_ARMOURS);
+#if TAG_MAJOR_VERSION == 34
+        if (type == ARM_CAP)
+            type = ARM_HAT;
+#endif
         _generate_armour_item(item,
                               coinflip(),
-                              coinflip() ? OBJ_RANDOM : random2(NUM_ARMOURS),
+                              type,
                               level,
                               MAKE_ITEM_RANDOM_RACE);
     }

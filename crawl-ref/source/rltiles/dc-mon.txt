@@ -211,7 +211,6 @@ water_elemental MONS_WATER_ELEMENTAL
 air_elemental MONS_AIR_ELEMENTAL
 iron_elemental MONS_IRON_ELEMENTAL
 %rim 0
-wellspring MONS_ELEMENTAL_WELLSPRING
 fire_vortex1 MONS_FIRE_VORTEX /*'v'*/
 fire_vortex2
 fire_vortex3
@@ -1054,6 +1053,10 @@ lich_form_octopode TRAN_LICH_OCTOPODE
 %syn TRAN_LICH_EQUIP_LAST
 lich_form_felid TRAN_LICH_FELID
 tree_form TRAN_TREE
+%rim 0
+mushroom_form TRAN_MUSHROOM
+shadow_form TRAN_SHADOW
+%rim 1
 
 %sdir misc
 unseen_monster MONS_UNKNOWN

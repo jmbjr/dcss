@@ -2255,6 +2255,8 @@ int player_movement_speed(bool ignore_burden)
         mv = 8;
     else if (you.form == TRAN_JELLY)
         mv = 11;
+    else if (you.form == TRAN_ICE_BEAST && you.in_liquid())
+        mv = 11;
     else if (you.fishtail)
         mv = 6;
 
@@ -5910,6 +5912,7 @@ void player::init()
     received_noskill_warning = false;
     wizmode_teleported_into_rock = false;
     ash_init_bondage(this);
+    digging = false;
 
     delay_queue.clear();
 

@@ -52,6 +52,16 @@ static bool _is_random_name_vowel(char let);
 static char _random_vowel(int seed);
 static char _random_cons(int seed);
 
+static void _maybe_identify_pack_item()
+{
+    for (int i = 0; i < ENDOFPACK; i++)
+    {
+        item_def& item = you.inv[i];
+        if (item.defined() && get_ident_type(item) != ID_KNOWN_TYPE)
+            maybe_identify_base_type(item);
+    }
+}
+
 bool is_vowel(const ucs_t chr)
 {
     const char low = towlower(chr);
@@ -2030,8 +2040,8 @@ void set_ident_type(item_def &item, item_type_id_state_type setting,
     if (is_artefact(item) || crawl_state.game_is_arena())
         return;
 
-    item_type_id_state_type old_setting = get_ident_type(item);
-    set_ident_type(item.base_type, item.sub_type, setting, force);
+    if (!set_ident_type(item.base_type, item.sub_type, setting, force))
+        return;
 
     if (in_inventory(item))
     {
@@ -2040,8 +2050,8 @@ void set_ident_type(item_def &item, item_type_id_state_type setting,
             item_skills(item, you.start_train);
     }
 
-    if (setting == ID_KNOWN_TYPE && old_setting != ID_KNOWN_TYPE
-        && notes_are_active() && is_interesting_item(item)
+    if (setting == ID_KNOWN_TYPE && notes_are_active()
+        && is_interesting_item(item)
         && !(item.flags & (ISFLAG_NOTED_ID | ISFLAG_NOTED_GET)))
     {
         // Make a note of it.
@@ -2054,7 +2064,7 @@ void set_ident_type(item_def &item, item_type_id_state_type setting,
     }
 }
 
-void set_ident_type(object_class_type basetype, int subtype,
+bool set_ident_type(object_class_type basetype, int subtype,
                      item_type_id_state_type setting, bool force)
 {
     preserve_quiver_slots p;
@@ -2063,18 +2073,36 @@ void set_ident_type(object_class_type basetype, int subtype,
         && (setting == ID_MON_TRIED_TYPE || setting == ID_TRIED_TYPE)
         && setting <= get_ident_type(basetype, subtype))
     {
-        return;
+        return false;
     }
 
     if (!item_type_has_ids(basetype))
-        return;
+        return false;
 
-    if (you.type_ids[basetype][subtype] != setting)
+    if (you.type_ids[basetype][subtype] == setting)
+        return false;
+
+    you.type_ids[basetype][subtype] = setting;
+    request_autoinscribe();
+    if (setting == ID_KNOWN_TYPE)
     {
-        you.type_ids[basetype][subtype] = setting;
-        request_autoinscribe();
-        if (setting == ID_KNOWN_TYPE)
-            shopping_list.item_type_identified(basetype, subtype);
+        shopping_list.item_type_identified(basetype, subtype);
+        _maybe_identify_pack_item();
+    }
+
+    return true;
+}
+
+void pack_item_identify_message(int base_type, int sub_type)
+{
+    for (int i = 0; i < ENDOFPACK; i++)
+    {
+        item_def& item = you.inv[i];
+        if (item.defined() && item.base_type == base_type
+            && item.sub_type == sub_type)
+        {
+            mprf_nocap("%s", item.name(DESC_INVENTORY_EQUIP).c_str());
+        }
     }
 }
 
@@ -2087,9 +2115,11 @@ void identify_healing_pots()
 
     if (ident_count == 1 && tried_count == 1)
     {
-        set_ident_type(OBJ_POTIONS, POT_CURING, ID_KNOWN_TYPE);
-        set_ident_type(OBJ_POTIONS, POT_HEAL_WOUNDS, ID_KNOWN_TYPE);
         mpr("You have identified the last healing potion.");
+        if (set_ident_type(OBJ_POTIONS, POT_CURING, ID_KNOWN_TYPE))
+            pack_item_identify_message(OBJ_POTIONS, POT_CURING);
+        if (set_ident_type(OBJ_POTIONS, POT_HEAL_WOUNDS, ID_KNOWN_TYPE))
+            pack_item_identify_message(OBJ_POTIONS, POT_HEAL_WOUNDS);
     }
 }
 

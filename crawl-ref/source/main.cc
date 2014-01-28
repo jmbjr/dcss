@@ -226,6 +226,7 @@ static void _announce_goal_message();
 static void _god_greeting_message(bool game_start);
 static void _take_starting_note();
 static void _startup_hints_mode();
+static void _set_removed_types_as_identified();
 
 static void _compile_time_asserts();
 
@@ -413,6 +414,8 @@ NORETURN static void _launch_game()
 
     // Override some options when playing in hints mode.
     init_hints_options();
+
+    _set_removed_types_as_identified();
 
     if (!game_start && you.prev_save_version != Version::Long)
     {
@@ -646,6 +649,22 @@ static void _startup_hints_mode()
     const int ch = getch_ck();
     if (!key_is_escape(ch))
         hints_starting_screen();
+}
+
+// required so that maybe_identify_base_type works correctly
+static void _set_removed_types_as_identified()
+{
+#if TAG_MAJOR_VERSION == 34
+    you.type_ids[OBJ_JEWELLERY][AMU_CONTROLLED_FLIGHT] = ID_KNOWN_TYPE;
+    you.type_ids[OBJ_STAVES][STAFF_ENCHANTMENT] = ID_KNOWN_TYPE;
+    you.type_ids[OBJ_STAVES][STAFF_CHANNELING] = ID_KNOWN_TYPE;
+    you.type_ids[OBJ_POTIONS][POT_GAIN_STRENGTH] = ID_KNOWN_TYPE;
+    you.type_ids[OBJ_POTIONS][POT_GAIN_DEXTERITY] = ID_KNOWN_TYPE;
+    you.type_ids[OBJ_POTIONS][POT_GAIN_INTELLIGENCE] = ID_KNOWN_TYPE;
+    you.type_ids[OBJ_POTIONS][POT_WATER] = ID_KNOWN_TYPE;
+#endif
+    // not generated, but the enum value is still used
+    you.type_ids[OBJ_POTIONS][POT_SLOWING] = ID_KNOWN_TYPE;
 }
 
 #ifdef WIZARD
@@ -4434,7 +4453,10 @@ static void _move_player(coord_def move)
         {
             you.walking = move.abs();
             you.turn_is_over = true;
-            mpr("Ouch!");
+            if (you.digging) // no actual damage
+                mpr("You hurt your mandibles, ouch!"), you.digging = false;
+            else
+                mpr("Ouch!");
             apply_berserk_penalty = true;
             crawl_state.cancel_cmd_repeat();
 
@@ -4460,7 +4482,12 @@ static void _move_player(coord_def move)
 
     // You can't walk out of bounds!
     if (!in_bounds(targ))
+    {
+        // Why isn't the border permarock?
+        if (you.digging)
+            mpr("This wall is too hard to dig through.");
         return;
+    }
 
     dungeon_feature_type targ_grid = grd(targ);
 
@@ -4491,6 +4518,23 @@ static void _move_player(coord_def move)
     }
 
     bool targ_pass = you.can_pass_through(targ) && you.form != TRAN_TREE;
+
+    if (you.digging)
+    {
+        if (grd(targ) == DNGN_ROCK_WALL || grd(targ) == DNGN_CLEAR_ROCK_WALL
+            || grd(targ) == DNGN_GRATE)
+        {
+            targ_pass = true;
+        }
+        else // moving or attacking ends dig
+        {
+            you.digging = false;
+            if (feat_is_solid(grd(targ)))
+                mpr("You can't dig through that.");
+            else
+                mpr("You retract your mandibles.");
+        }
+    }
 
     // You can swap places with a friendly or good neutral monster if
     // you're not confused, or if both of you are inside a sanctuary.
@@ -4627,6 +4671,14 @@ static void _move_player(coord_def move)
             }
             you.duration[DUR_WATER_HOLD] = 1;
             you.props.erase("water_holder");
+        }
+
+        if (you.digging)
+        {
+            mprf("You dig through %s.", feature_description_at(targ, false,
+                 DESC_THE, false).c_str());
+            nuke_wall(targ);
+            you.time_taken = you.time_taken * 3 / 2;
         }
 
         if (swap)

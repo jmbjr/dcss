@@ -1039,13 +1039,13 @@ void dec_penance(god_type god, int val)
             else if (god == GOD_SHINING_ONE
                      && you.piety >= piety_breakpoint(0))
             {
-                mpr("Your divine halo returns!");
+                mprf(MSGCH_GOD, "Your divine halo returns!");
                 invalidate_agrid(true);
             }
             else if (god == GOD_ASHENZARI
                      && you.piety >= piety_breakpoint(2))
             {
-                mpr("Your vision regains its divine sight.");
+                mprf(MSGCH_GOD, "Your vision regains its divine sight.");
                 autotoggle_autopickup(false);
             }
             else if (god == GOD_CHEIBRIADOS)
@@ -1058,7 +1058,7 @@ void dec_penance(god_type god, int val)
             else if (god == GOD_DITHMENGOS
                      && you.piety >= piety_breakpoint(0))
             {
-                mpr("Your aura of darkness returns!");
+                mprf(MSGCH_GOD, "Your aura of darkness returns!");
                 invalidate_agrid(true);
             }
 
@@ -1142,7 +1142,7 @@ static void _inc_penance(god_type god, int val)
         else if (god == GOD_SHINING_ONE)
         {
             if (you.haloed())
-                mpr("Your divine halo fades away.");
+                mprf(MSGCH_GOD, god, "Your divine halo fades away.");
 
             if (you.duration[DUR_DIVINE_SHIELD])
                 tso_remove_divine_shield();
@@ -1169,7 +1169,7 @@ static void _inc_penance(god_type god, int val)
         else if (god == GOD_DITHMENGOS)
         {
             if (you.umbraed())
-                mpr("Your aura of darkness fades away.");
+                mprf(MSGCH_GOD, god, "Your aura of darkness fades away.");
             invalidate_agrid();
         }
 
@@ -1324,15 +1324,15 @@ void get_pure_deck_weights(int weights[])
                                     + you.sacrifice_value[OBJ_STAVES]
                                     + you.sacrifice_value[OBJ_RODS]
                                     + you.sacrifice_value[OBJ_MISSILES] + 1;
-    weights[NEM_GIFT_DUNGEONS]    = you.sacrifice_value[OBJ_MISCELLANY]
-                                    + you.sacrifice_value[OBJ_JEWELLERY]
-                                    + you.sacrifice_value[OBJ_BOOKS];
     weights[NEM_GIFT_SUMMONING]   = you.sacrifice_value[OBJ_CORPSES] / 2;
     weights[NEM_GIFT_WONDERS]     = you.sacrifice_value[OBJ_POTIONS]
                                     + you.sacrifice_value[OBJ_SCROLLS]
                                     + you.sacrifice_value[OBJ_WANDS]
-                                    + you.sacrifice_value[OBJ_FOOD];
-}
+                                    + you.sacrifice_value[OBJ_FOOD]
+                                    + you.sacrifice_value[OBJ_MISCELLANY]
+                                    + you.sacrifice_value[OBJ_JEWELLERY]
+                                    + you.sacrifice_value[OBJ_BOOKS];
+ }
 
 static void _update_sacrifice_weights(int which)
 {
@@ -1352,13 +1352,6 @@ static void _update_sacrifice_weights(int which)
         you.sacrifice_value[OBJ_RODS]     *= 4;
         you.sacrifice_value[OBJ_MISSILES] *= 4;
         break;
-    case NEM_GIFT_DUNGEONS:
-        you.sacrifice_value[OBJ_MISCELLANY] /= 5;
-        you.sacrifice_value[OBJ_JEWELLERY]  /= 5;
-        you.sacrifice_value[OBJ_BOOKS]      /= 5;
-        you.sacrifice_value[OBJ_MISCELLANY] *= 4;
-        you.sacrifice_value[OBJ_JEWELLERY]  *= 4;
-        you.sacrifice_value[OBJ_BOOKS]      *= 4;
     case NEM_GIFT_SUMMONING:
         you.sacrifice_value[OBJ_CORPSES] /= 5;
         you.sacrifice_value[OBJ_CORPSES] *= 4;
@@ -1372,6 +1365,12 @@ static void _update_sacrifice_weights(int which)
         you.sacrifice_value[OBJ_SCROLLS] *= 4;
         you.sacrifice_value[OBJ_WANDS]   *= 4;
         you.sacrifice_value[OBJ_FOOD]    *= 4;
+        you.sacrifice_value[OBJ_MISCELLANY] /= 5;
+        you.sacrifice_value[OBJ_JEWELLERY]  /= 5;
+        you.sacrifice_value[OBJ_BOOKS]      /= 5;
+        you.sacrifice_value[OBJ_MISCELLANY] *= 4;
+        you.sacrifice_value[OBJ_JEWELLERY]  *= 4;
+        you.sacrifice_value[OBJ_BOOKS]      *= 4;
         break;
     }
 }
@@ -1379,7 +1378,7 @@ static void _update_sacrifice_weights(int which)
 #if defined(DEBUG_GIFTS) || defined(DEBUG_CARDS)
 static void _show_pure_deck_chances()
 {
-    int weights[5];
+    int weights[4];
 
     get_pure_deck_weights(weights);
 
@@ -1388,13 +1387,12 @@ static void _show_pure_deck_chances()
         total += (float) weights[i];
 
     mprf(MSGCH_DIAGNOSTICS, "Pure cards chances: "
-         "escape %0.2f%%, destruction %0.2f%%, dungeons %0.2f%%,"
+         "escape %0.2f%%, destruction %0.2f%%, "
          "summoning %0.2f%%, wonders %0.2f%%",
          (float)weights[0] / total * 100.0,
          (float)weights[1] / total * 100.0,
          (float)weights[2] / total * 100.0,
-         (float)weights[3] / total * 100.0,
-         (float)weights[4] / total * 100.0);
+         (float)weights[3] / total * 100.0);
 }
 #endif
 
@@ -1404,7 +1402,6 @@ static misc_item_type _gift_type_to_deck(int gift)
     {
     case NEM_GIFT_ESCAPE:      return MISC_DECK_OF_ESCAPE;
     case NEM_GIFT_DESTRUCTION: return MISC_DECK_OF_DESTRUCTION;
-    case NEM_GIFT_DUNGEONS:    return MISC_DECK_OF_DUNGEONS;
     case NEM_GIFT_SUMMONING:   return MISC_DECK_OF_SUMMONING;
     case NEM_GIFT_WONDERS:     return MISC_DECK_OF_WONDERS;
     }
@@ -1430,9 +1427,9 @@ static bool _give_nemelex_gift(bool forced = false)
         misc_item_type gift_type;
 
         // Make a pure deck.
-        int weights[5];
+        int weights[4];
         get_pure_deck_weights(weights);
-        const int choice = choose_random_weighted(weights, weights+5);
+        const int choice = choose_random_weighted(weights, weights+4);
         gift_type = _gift_type_to_deck(choice);
 #if defined(DEBUG_GIFTS) || defined(DEBUG_CARDS)
         _show_pure_deck_chances();
@@ -2791,7 +2788,7 @@ static void _gain_piety_point()
             }
 
             if (you_worship(GOD_SHINING_ONE) && i == 0)
-                mpr("A divine halo surrounds you!");
+                mprf(MSGCH_GOD, "A divine halo surrounds you!");
 
             if (you_worship(GOD_ASHENZARI))
             {
@@ -2807,7 +2804,7 @@ static void _gain_piety_point()
             }
 
             if (you_worship(GOD_DITHMENGOS) && i == 0)
-                mpr("You are shrouded in an aura of darkness!");
+                mprf(MSGCH_GOD, "You are shrouded in an aura of darkness!");
 
             // When you gain a piety level, you get another chance to
             // make hostile holy beings good neutral.
@@ -3111,7 +3108,7 @@ void excommunication(god_type new_god)
         break;
 
     case GOD_KIKUBAAQUDGHA:
-        mpr("You sense decay."); // in the state of Denmark?
+        mprf(MSGCH_GOD, old_god, "You sense decay."); // in the state of Denmark
         add_daction(DACT_ROT_CORPSES);
         _set_penance(old_god, 30);
         break;
@@ -3181,7 +3178,7 @@ void excommunication(god_type new_god)
 
     case GOD_SHINING_ONE:
         if (was_haloed)
-            mpr("Your divine halo fades away.");
+            mprf(MSGCH_GOD, old_god, "Your divine halo fades away.");
 
         if (you.duration[DUR_DIVINE_SHIELD])
             tso_remove_divine_shield();
@@ -3262,7 +3259,7 @@ void excommunication(god_type new_god)
 
     case GOD_DITHMENGOS:
         if (was_umbraed)
-            mpr("Your aura of darkness fades away.");
+            mprf(MSGCH_GOD, old_god, "Your aura of darkness fades away.");
         _set_penance(old_god, 25);
         break;
 

@@ -2568,9 +2568,24 @@ static void tag_read_you(reader &th)
     for (i = 0; i < count; i++)
         you.piety_max[i] = unmarshallByte(th);
     count = unmarshallByte(th);
+#if TAG_MAJOR_VERSION == 34
+    if (th.getMinorVersion() < TAG_MINOR_NEMELEX_DUNGEONS)
+    {
+        for (i = 0; i < NEM_GIFT_SUMMONING; i++)
+            you.nemelex_sacrificing.set(i, unmarshallBoolean(th));
+        unmarshallBoolean(th); // dungeons weight
+        for (i = NEM_GIFT_SUMMONING; i < NUM_NEMELEX_GIFT_TYPES; i++)
+            you.nemelex_sacrificing.set(i, unmarshallBoolean(th));
+    }
+    else
+    {
+#endif
     ASSERT(count == NUM_NEMELEX_GIFT_TYPES);
     for (i = 0; i < count; i++)
         you.nemelex_sacrificing.set(i, unmarshallBoolean(th));
+#if TAG_MAJOR_VERSION == 34
+    }
+#endif
 
     you.gift_timeout   = unmarshallByte(th);
 
@@ -3857,7 +3872,7 @@ void unmarshallMonsterInfo(reader &th, monster_info& mi)
         switch (mi.base_speed())
         {
         case 10:
-            mi.type = MONS_ELEMENTAL_WELLSPRING;
+            mi.type = MONS_GHOST; // wellspring
             break;
         case 12:
             mi.type = MONS_POLYMOTH;
@@ -4351,7 +4366,7 @@ void unmarshallMonster(reader &th, monster& m)
         case 6: case 7: // slowed
         case 10:
         case 15: // hasted/berserked
-            m.type = MONS_ELEMENTAL_WELLSPRING;
+            m.type = MONS_GHOST; // wellspring
             break;
         case 8: // slowed
         case 12:
