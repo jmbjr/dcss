@@ -139,13 +139,32 @@ static void _jobs_stat_init(job_type which_job)
     case JOB_SKALD:             s =  4; i =  4; d =  4; break;
     case JOB_CHAOS_KNIGHT:      s =  4; i =  4; d =  4; break;
     case JOB_DEATH_KNIGHT:      s =  5; i =  3; d =  4; break;
+    case JOB_ABYSSAL_KNIGHT:    s =  4; i =  4; d =  4; break;
+
+    case JOB_FARMER:            s =  4; i =  4; d =  4; break;
+    case JOB_HEALER:            s =  4; i =  4; d =  4; break;
+
+    case JOB_ASSASSIN:          s =  3; i =  3; d =  6; break;
+
+    case JOB_HUNTER:            s =  4; i =  3; d =  5; break;
+    case JOB_WARPER:            s =  3; i =  5; d =  4; break;
+    case JOB_ARCANE_MARKSMAN:   s =  3; i =  5; d =  4; break;
+
+    case JOB_MONK:              s =  3; i =  2; d =  7; break;
+    case JOB_TRANSMUTER:        s =  2; i =  5; d =  5; break;
+
+    case JOB_WIZARD:            s = -1; i = 10; d =  3; break;
+    case JOB_CONJURER:          s =  0; i =  7; d =  5; break;
+    case JOB_ENCHANTER:         s =  0; i =  7; d =  5; break;
+    case JOB_FIRE_ELEMENTALIST: s =  0; i =  7; d =  5; break;
+    case JOB_ICE_ELEMENTALIST:  s =  0; i =  7; d =  5; break;
+    case JOB_AIR_ELEMENTALIST:  s =  0; i =  7; d =  5; break;
+    case JOB_EARTH_ELEMENTALIST:s =  0; i =  7; d =  5; break;
+    case JOB_SUMMONER:          s =  0; i =  7; d =  5; break;
+    case JOB_VENOM_MAGE:        s =  0; i =  7; d =  5; break;
+    case JOB_NECROMANCER:       s =  0; i =  7; d =  5; break;
 
     case JOB_WANDERER:
-        // Wanderers get their stats randomly distributed.
-        _wanderer_assign_remaining_stats(12);           break;
-
-    case JOB_ARTIFICER:         s =  3; i =  4; d =  5; break;
-    default:                    s =  0; i =  0; d =  0; break;
         // Wanderers get their stats randomly distributed.
         _wanderer_assign_remaining_stats(12);           break;
 
