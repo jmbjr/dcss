@@ -1156,6 +1156,12 @@ Summon Fire Elementals spell
 
 This spell summons one or more fire elementals.
 %%%%
+Summon Flock spell
+
+This spell summons a flock of loyal animals to serve the caster. At low
+levels, only sheep may heed the call, but at high levels yaks and death
+yaks may appear.
+%%%%
 Summon Greater Demon spell
 
 This spell calls forth one of the greater demons of Pandemonium to serve the
