@@ -5,51 +5,12 @@
 #                   define a set of monsters. Use large_abstract.des for vaults
 #                   which don't have a special theme.
 #
-# Note that all maps for the Vaults branch system (including Vaults:8) reside in
+# Note that all maps for the Vaults branch system (including Vaults:$) reside in
 # vaults.des.
 ###############################################################################
 
-default-depth: D:12-26
+default-depth: D:12-, !D:$, Depths, !Depths:$
 # be careful to adapt these numbers for new vaults (using DEPTH)
-
-###############################################################################
-# Rats! (Lemuel), slightly easier now
-# There is another, harder version for the Lair.
-#
-NAME:    RatsNest_Dungeon
-ORIENT:  northeast
-TAGS:    uniq_rats_nest
-WEIGHT:  5
-DEPTH:   D:5-8
-SHUFFLE: 23, 34
-MONS:    rat / nothing, grey rat / nothing
-MONS:    green rat / nothing, orange rat / w:40 rat
-ITEM:    cheese w:100 / apple / orange / pear / apricot / choko
-SUBST:   d = d...., e = e., e=d
-MAP
-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-xxxxxxxxxx.eexxxxxxxxxxxxxxxxxxxxxxxxxxxx
-xxx343dxx.xxxxxxxxd334433xxxxxxxxx23..exx
-xxd222...xxxxxxxx..224422xxxxxx1111...xxx
-xd.111..xxxxxxxxx..111111.xxx.111...xxxxx
-xx.111..xxxxxxxxxx.11111..x......xxxxxxxx
-xxxx..xx.x.xxxxxx.xx..........xxxxxxxxxxx
-xxxxx.xxx.x..x.xx.x.xx....x.xxxxxxxxxxxxx
-xxxxx...x.xxx.x33xx.xxxx.xxxxxxxxxxxxxxxx
-xxxxxxx.x.xxxx221x.xxx...xxxxxxxxxxxxxxxx
-xxxxxxxx.xxxxx111.xxxx.xxxxxxxxxxxxxxxxxx
-xxxxxxxxx..xxx.x.x.xxx.xxxxxxxxxxxxxxxxxx
-xxxxxxxxxx..x.xx.x.xx.xxxxxxxxxxxxxxxxxxx
-xxxxxxxxxxxx..xx.xx.x.xxxxxxxxxxxxxxxxxxx
-xxxxxxxxxxxxxxx.xxxx.xxxxxxxxxxxxxxxxxxxx
-xxxxxxxxxxxxxxx.xxxxxxxxxxxxxxxxxxxxxxxxx
-xxxxxxxxxxxxxxxx.xxxxxxxxxxxxxxxxxxxxxxxx
-xxxxxxxxxxxxxxxx.xxxxxxxxxxxxxxxxxxxxxxxx
-xxxxxxxxxxxxxxxxx.xxxxxxxxxxxxxxxxxxxxxxx
-xxxxxxxxxxxxxxxx.xxxxxxxxxxxxxxxxxxxxxxxx
-xxxxxxxxxxxxxxxxx.xxxxxxxxxxxxxxxxxxxxxxx
-xxxxxxxxxxxxxxxxx@xxxxxxxxxxxxxxxxxxxxxxx
-ENDMAP
 
 ###############################################################################
 # Castle of kobolds and goblins
@@ -97,7 +58,7 @@ ENDMAP
 #
 NAME:    statuecave_lemuel
 ORIENT:  northeast
-DEPTH:   D:7-18, Lair, Crypt:1-4
+DEPTH:   D:7-, Lair, Crypt:1-4
 MONS:    ice statue / orange crystal statue
 SHUFFLE: 1|/!*
 SUBST:   *:*$, ?:x., !:., '=w.
@@ -177,8 +138,8 @@ ENDMAP
 #
 NAME:    dragon1_lemuel
 ORIENT:  northeast
-DEPTH:   D:9-20, Lair
-MONS:    patrolling dragon, patrolling ice dragon
+DEPTH:   D:9-, Lair
+MONS:    patrolling fire dragon, patrolling ice dragon
 ITEM:    potion of flight / scroll of teleportation
 SUBST:   ! : ?x
 SHUFFLE: 1?/2W
@@ -207,7 +168,7 @@ ENDMAP
 # Steading of the Giant Chief
 #
 NAME:    giant_chief_lemuel
-DEPTH:   D:11-22, Orc:3-4
+DEPTH:   D:11-, Orc:3-
 ORIENT:  north
 MONS:    patrolling stone giant, patrolling frost giant, patrolling fire giant
 MONS:    hill giant, cyclops
@@ -254,14 +215,13 @@ ENDMAP
 
 NAME:   minmay_smoke_and_mirrors
 ORIENT: northwest
-DEPTH:  D:12-
+DEPTH:  D:12-, Depths
 MONS:   wizard / rakshasa / vapour / nothing
 MARKER: F = lua:fog_machine { cloud_type="purple smoke", \
             pow_min = 5, pow_max = 15, delay_min = 10,   \
             delay_max = 50, size_min = 1, size_max = 5,  \
             walk_dist = 0, spread_rate= 100 }
-SUBST:  F = ., * = *****d, | = |||d
-ITEM:   bottled efreet
+SUBST:  F = .
 MAP
 bbbbbbbbbbbbbbbbbbbbbbbbb
 b....................Fbb.
@@ -293,8 +253,8 @@ ENDMAP
 NAME:   minmay_elf_outpost
 TAGS:   no_rotate
 ORIENT: northwest
-DEPTH:  D:12-20
-MONS:   deep elf soldier / deep elf fighter w:2 / nothing w:5, deep elf knight
+DEPTH:  D:12-
+MONS:   deep elf fighter / nothing, deep elf knight
 MONS:   deep elf conjurer / deep elf mage / deep elf summoner / nothing
 MAP
 xxxxxxxxxxxxxxxxxxxxxxxx
@@ -326,7 +286,7 @@ ENDMAP
 NAME:   minmay_ice_pillars
 TAGS:   no_rotate no_pool_fixup no_monster_gen
 ORIENT: north
-DEPTH:  D:16-24
+DEPTH:  Depths, !Depths:$
 MONS:   ice beast / nothing w:3, ice statue, ice dragon / nothing
 SUBST:  y : y:48 w:1 W:1, Y : Y:48 W:1 .:1, y = wwW, Y = WW.
 MAP
@@ -351,7 +311,7 @@ ENDMAP
 NAME:   minmay_skeleton_keep
 TAGS:   no_monster_gen
 ORIENT: northwest
-DEPTH:  D:18-, Crypt
+DEPTH:  Depths, Crypt
 MONS:   flying skull / nothing w:30, skeleton w:20 / nothing
 MONS:   skeletal warrior band / bone dragon w:1 / lich w:1 / curse skull w:1
 SUBST:  G : GGccV.
@@ -377,7 +337,7 @@ ENDMAP
 NAME:   minmay_spriggan_fort
 TAGS:   no_rotate
 ORIENT: northwest
-DEPTH:  D:18-
+DEPTH:  Depths
 MONS:   plant, bush
 MONS:   spriggan w:70 / spriggan druid / spriggan berserker / spriggan rider
 MONS:   spriggan defender
@@ -417,7 +377,7 @@ ENDMAP
 
 NAME:   minmay_haunted_quarter
 ORIENT: northwest
-DEPTH:  D:14-22
+DEPTH:  Depths, !Depths:$
 KMONS:  w = wraith / freezing wraith / shadow wraith / phantasmal warrior / \
             flayed ghost / nothing w:950
 KFEAT:  w = w
@@ -458,7 +418,7 @@ ENDMAP
 NAME:   orc_temple
 ORIENT: southwest
 TAGS:   no_rotate
-DEPTH:  D:14-26, Orc:2-4
+DEPTH:  Depths, !Depths:$, Orc:2-
 MONS:   orc warlord, patrolling orc priest, patrolling orc high priest
 MONS:   orc warrior, orc wizard, orc knight, orc sorcerer
 KFEAT:  C = altar_beogh
@@ -493,7 +453,7 @@ ENDMAP
 #
 NAME:   fort_yaktaur
 ORIENT: southeast
-DEPTH:  D:14-26
+DEPTH:  Depths, !Depths:$
 MONS:   yaktaur, death yak, minotaur, random
 MONS:   yak, gnoll, random
 MAP
@@ -530,7 +490,7 @@ ENDMAP
 # Rubicon
 #
 NAME:    erik_rubicon_a
-DEPTH:   D:10-16
+DEPTH:   D:10-, !D:$
 ORIENT:  south
 TAGS:    no_pool_fixup no_rotate uniq_rubicon
 WEIGHT:  6
@@ -561,7 +521,7 @@ xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 ENDMAP
 
 NAME:    erik_rubicon_b
-DEPTH:   D:10-16
+DEPTH:   D:10-, !D:$
 ORIENT:  south
 TAGS:    no_rotate uniq_rubicon
 WEIGHT:  4
@@ -597,7 +557,7 @@ ENDMAP
 NAME:   gold_lair_mu
 ORIENT: southeast
 TAGS:   no_monster_gen
-DEPTH:  D:20-26
+DEPTH:  Depths, !Depths:$
 MONS:   golden dragon, any draconian, fungus, plant, oklob plant
 KMONS:  6 = fire drake / swamp drake / lindwurm
 KMONS:  D = fire drake w:5 / swamp drake w:5 / death drake / lindwurm w:5
@@ -649,7 +609,7 @@ ENDMAP
 # creators.
 #
 NAME:   golem_gauntlet_mu
-DEPTH:  D:16-26
+DEPTH:  Depths, !Depths:$
 TAGS:   no_monster_gen no_item_gen no_pool_fixup
 ORIENT: east
 MARKER: m = lua:fog_machine { \
@@ -703,7 +663,7 @@ ENDMAP
 #
 NAME:   minmay_goldmine
 ORIENT: southeast
-DEPTH:  D:8-16, Orc
+DEPTH:  D:8-, Orc
 MONS:   orc / orc wizard w:3 / orc priest w:2 / orc warrior w:2
 SUBST:  X = xxxZ
 KPROP:  Z = no_rtele_into
@@ -729,7 +689,7 @@ ENDMAP
 NAME:   minmay_crystal_thing
 TAGS:   no_monster_gen no_item_gen no_pool_fixup
 ORIENT: west
-DEPTH:  D:16-
+DEPTH:  Depths, !Depths:$
 MONS:   crystal golem, orange crystal statue
 ITEM:   any magical staff / any rod w:2 / any book / any jewellery w:15 / \
         any scroll w:20 / potion of magic / potion of brilliance / \
@@ -805,7 +765,7 @@ ENDMAP
 
 NAME:   minmay_twisted_water
 ORIENT: north
-DEPTH:  D:9-20
+DEPTH:  D:9-
 SUBST:  W = wW
 MONS:   ice statue, patrolling ice dragon, patrolling frost giant, ice beast
 KMONS:  w = w:490 nothing / ice beast
@@ -853,10 +813,10 @@ xwwwww..................................wwwww...
 ................................................
 ENDMAP
 
-NAME:   due_tower_of_gloom
+NAME:   due_jory_tower
 ORIENT: southwest
 TAGS:   no_rotate no_monster_gen no_item_gen
-DEPTH:  D:19-27
+DEPTH:  Depths, !Depths:$
 MONS:   flayed ghost w:5 / phantasmal warrior w:5 / phantom / shadow / shadow wraith
 MONS:   ghost moth, Jory, vampire knight
 MONS:   raven
@@ -864,14 +824,14 @@ NSUBST: A = 3:v / *:+, B = 3:v / *:+
 NSUBST: C = 2:v / *:+, D = 2:v / *:+
 # Colouring
 COLOUR: G = cyan
-COLOUR: I5M% = white
+COLOUR: 5M% = white
 # Making things other things.
 SUBST:  I = G
 # Markers:
 MARKER: V = lua:fog_machine { \
                 pow_max = 10, delay_min = 5, delay_max = 30, \
                 size = 30, size_buildup_amnt = 1, \
-                size_buildup_time = 10, cloud_type = "gloom" \
+                size_buildup_time = 10, cloud_type = "purple smoke" \
             }
 # Final subst
 SUBST:  MV = .
@@ -887,7 +847,7 @@ veto {{
 MAP
   @@@@@@ @@@@@@@@@@@@@@@@@@@ @@@@@@
 xx......v...................v.......xxxxxxxxxxxxxxxxx
-xx......v..G......V......G..v.......xxxxxxxxxxxxxxxxx
+xx......v..G.............G..v.......xxxxxxxxxxxxxxxxx
 xx......v...................v.......xxxxxxxxxxxxxxxxx
 xxxxxxxxvvvvvv.........vvvvvvxxxxxxxxxxxxxxxxxxxxxxxx
 xxxxvvvvvvvvvvvvv===vvvvvvvvvvvvvxxxxxxxxxxxxxxxxxxxx
@@ -923,7 +883,7 @@ ENDMAP
 #
 NAME:   evilmike_wizard_prison
 TAGS:   no_monster_gen
-DEPTH:  D:17-27, Crypt:1-4
+DEPTH:  Depths, !Depths:$, Crypt:1-4
 ORIENT: southeast
 SUBST:  ~ = ~:2 .:3
 SUBST:  . = ~:1 .:9
@@ -943,9 +903,8 @@ MONS:   patrolling silent spectre
 MONS:   curse skull, soul eater
 # Inmates are monsters capable of blinking, summoning or airstriking.
 MONS:   ogre mage / deep elf mage / wizard / necromancer / \
-        merfolk aquamancer / spriggan air mage / deep dwarf necromancer / \
-        orc sorcerer / deep elf sorcerer / kobold demonologist / \
-        deep elf summoner
+        merfolk aquamancer / spriggan air mage / orc sorcerer / \
+        deep elf sorcerer / kobold demonologist / deep elf summoner
 MONS:   draconian shifter / draconian annihilator / lich  / \
         deep elf annihilator / deep elf demonologist
 NSUBST: 4 = 6:5 / *:4
@@ -990,7 +949,7 @@ ENDMAP
 #
 NAME:   evilmike_makhleb_hellhole
 ORIENT: southeast
-DEPTH:  D:17-
+DEPTH:  Depths, !Depths:$
 TAGS:   no_monster_gen
 COLOUR: v = lightred
 COLOUR: = = lightred
@@ -1058,7 +1017,7 @@ ENDMAP
 #
 NAME:   evilmike_library_of_no_secrets
 ORIENT: southeast
-DEPTH:  D:11-
+DEPTH:  D:11-, Depths
 TAGS:   no_pool_fixup no_monster_gen
 TILE:   c = DNGN_STONE_WALL_BLUE
 COLOUR: c" = lightblue
@@ -1125,12 +1084,12 @@ ENDMAP
 NAME:   evilmike_iron_armoury
 ORIENT: southeast
 TAGS:   no_monster_gen no_item_gen
-DEPTH:  D:11-27
+DEPTH:  D:11-, Depths
 KFEAT:  _ = altar_okawaru
 SUBST:  = = nv
 FTILE:  '+Gvc12345_defghijk = floor_hall
 : if you.absdepth() < 16 then
-MONS:   w:5 deep elf soldier / deep elf fighter / orc warrior
+MONS:   deep elf fighter / orc warrior
 MONS:   w:20 orc warrior / centaur warrior
 MONS:   orc warrior
 MONS:   w:8 patrolling orc knight / w:2 patrolling orc warlord
@@ -1191,7 +1150,7 @@ ENDMAP
 #
 NAME:   evilmike_halls_of_destruction
 ORIENT: northeast
-DEPTH:  D:16-
+DEPTH:  Depths
 TAGS:   no_monster_gen
 COLOUR: v'4! = red
 COLOUR: = = red
@@ -1256,7 +1215,7 @@ ENDMAP
 #
 NAME:   evilmike_negative_zone
 ORIENT: southeast
-DEPTH:  D:15-
+DEPTH:  Depths
 TAGS:   no_monster_gen
 #
 # gives a 50% chance of there being at least one shortcut in this vault
@@ -1273,12 +1232,12 @@ SUBST:  b = c
 KFEAT:  _ = altar_kikubaaqudgha
 : if you.absdepth() < 19 then
 MONS:   zombie / skeleton / w:5 simulacrum
-MONS:   w:2 necromancer / w:1 deep dwarf necromancer, deep elf death mage, \
+MONS:   necromancer, deep elf death mage, \
         w:5 deep elf death mage / nothing
 MONS:   w:4 soul eater / w:1 reaper, reaper, reaper / nothing
 : elseif you.absdepth() < 24 then
 MONS:   zombie / skeleton / w:5 simulacrum
-MONS:   necromancer / w:5 deep dwarf necromancer / w:5 deep elf death mage, lich, \
+MONS:   necromancer w:15 / w:5 deep elf death mage, lich, \
         lich / deep elf death mage / nothing
 MONS:   soul eater / w:5 reaper, reaper, shadow fiend / w:5 reaper
 : else
@@ -1290,7 +1249,6 @@ MONS:   reaper / soul eater, reaper, shadow fiend
 MARKER: V = lua:fog_machine { cloud_type = "foul pestilence", \
             pow_min = 8, pow_max = 12, delay_min = 20, delay_max = 30, \
             size = 1, walk_dist = 1, spread_rate= 33 }
-MARKER: V = lua:props_marker { feature_description = "foul fountain" }
 SUBST:  % = %*|$
 SUBST:  A = 1.
 MAP
@@ -1317,7 +1275,7 @@ ENDMAP
 
 ###############################################################################
 NAME:    spider_temple_joshua
-DEPTH:   D:20-26
+DEPTH:   Depths, !Depths:$
 ORIENT:  north
 MONS:    naga mage / naga w:5 / naga skeleton w:2
 MONS:    wolf spider w:7 / giant mite w:3
@@ -1371,46 +1329,11 @@ xxxxx"x........x+xxxxx........x"xxxxx
 ..................@..................
 ENDMAP
 
-###############################################################################
-# Tagged "extra" because I find it too small to take the full vault slot.
-#
-NAME: lightli_too_deep
-DEPTH: D:17-27
-TAGS: no_monster_gen extra
-ORIENT: northeast
-MONS: balrug
-MONS: sun demon
-KFEAT: H = enter_hell
-SUBST: y = x..
-SUBST: ; = %A.....l
-KITEM: % = dwarf skeleton
-: dgn.delayed_decay(_G, '%', 'dwarf skeleton')
-KITEM: A = any weapon race:dwarven w:20 /  chain mail race:dwarven w:60 / \
-           plate armour race:dwarven w:19 / \
-           crystal plate armour race:dwarven w:1
-MAP
-xxxxxxxxxxxxxxx
-xxxxcccccccxxxx
-xxxxcA;H;Acxxxx
-xxxxc;;1;;cxxxx
-xxxxc;2|2;cxxxx
-xxxxc;;;;;cxxxx
-xxxxccc.cccxxxx
-xxxxxxy.yxxxxxx
-xxxxxxy.yxxxxxx
-xxxxxxy.yxxxxxx
-xxxxxxy.yxxxxxx
-xxxxxy%yxxxxxxx
-xxxxxy.yxxxxxxx
-xxxxxy.yxxxxxxx
-xxxxy...yxxxxxx
-xxxy.%...yxxxxx
-ENDMAP
 
 ###############################################################################
 NAME:    grunt_house_of_mirrors
 TAGS:    no_rtele_into
-DEPTH:   D:15-
+DEPTH:   Depths, !Depths:$
 ORIENT:  north
 SHUFFLE: AB / BA / BB, CD / DC / DD, EF / FE / FF
 SHUFFLE: GH / HG / HH, IJ / JI / JJ, KL / LK / LL
@@ -1448,7 +1371,7 @@ SUBST:   BDFHJLNPR = .
     mons = add_mons(mons, "mottled dragon", semi(depth, 11, 21, 334))
     mons = add_mons(mons, "efreet", peak(depth, 13, 19, 52))
     mons = add_mons(mons, "wizard", peak(depth, 14, 22, 89))
-    mons = add_mons(mons, "dragon", peak(depth, 14, 24, 192))
+    mons = add_mons(mons, "fire dragon", peak(depth, 14, 24, 192))
     mons = add_mons(mons, "ice dragon", semi(depth, 17, 25, 136))
     mons = add_mons(mons, "necromancer band", peak(depth, 18, 24, 52))
     mons = add_mons(mons, "orc sorcerer", peak(depth, 21, 27, 25))
@@ -1507,4 +1430,59 @@ xbIIIbbb...bbb...bbbPPPbx
 xbIIIbbb...bbb...bbbPPPbx
 xbbbbbbb...bbb...bbbbbbbx
 xxxxxxxx.@.xxx.@.xxxxxxxx
+ENDMAP
+
+# Based off Zaba's beehive_diamond.
+# Hopefully the changes for it to fit in D make it more interesting than Hive.
+NAME:    hangedman_what_comes_after_a
+TAGS:    no_monster_gen no_item_gen
+DEPTH:   D:12-
+ORIENT:  north
+MONS:    killer bee, queen bee, oklob plant
+KFEAT:   X = x
+ITEM:    honeycomb / royal jelly w:1, honeycomb w:4 / royal jelly
+KITEM:   | = |
+KFEAT:   | = >
+SUBST:   A = X:3 .:2, z = x.., ' = .:460 01d%
+: if you.absdepth() > 15 then
+SUBST:   " = 1
+: else
+SUBST:   8 = 9, " = '
+: end
+TILE:    X = wall_wax
+COLOUR:  X = yellow
+MAP
+             xxxxxxxxxxxxxxx
+             xxxxxcccccxxxxx
+             xxxccc*e*cccxxx
+              xxc3%e|e%3cxx
+               xcc3*e*3ccx
+               xxcccmcccxx
+             xxxxx18281xxxxx
+           xxxxxd1911191dxxxxx
+          xxxxx'"X"eAe"X"'xxxxx
+         xxxx'''XXX"""XXX'''xxxx
+        xxxx''X''X''X''X''X''xxxx
+      xxxx'''XXX'''XXX'''XXX'''xxxx
+     xxxx''X'1X''X''X''X''X1'X''xxxx
+    xxx'''XXX90'XXX'0'XXX'09XXX'''xxx
+ xxxxx.'X''X'1X1'X''X''X'1X1'X''X'.xxxxx
+xxzx...XXX'''XXX'''XXX'''XXX'''XXX...xzxx
+x.x..A.'X''X''X''X'1X1'X''X''X''X'.A..x.x
+x.x.AAA'''XXX'0'XXX'9'XXX'0'XXX'''AAA.x.x
+.x...A.'X'1X''X''X'1X1'X''X''X1'X'.A...x.
+x.x....XXX010XXX'''XXX'''XXX010XXX....x.x
+x.x..A.'X'1X1'X''X''X''X''X'1X1'X'.A..x.x
+.x..AAA'''XXX'''XXX'''XXX'''XXX'''AAA..x.
+x.x..A.'A''X''X'1X''X''X1'X''X''A'.A..x.x
+x.x....AAA'''XXX010XXX010XXX'''AAA....x.x
+.x.x....A''A''X'1X1'X'1X1'X''A''A....x.x.
+x.xzx.....AAA'''XXX'''XXX'''AAA.....xzx.x
+.x.xzx.....A''A''X''X''X''A''A.....xzx.x.
+ .x.x.x.x....AAA...XXX...AAA....x.x.x.x.
+  .xzx.x.x....A..A..X..A..A....x.x.xzx.
+   .xzx.xzx...................xzx.xzx.
+    .....xzxx.xx.xx.x.xx.xx.xxzx.....
+         .x..x.zx..xzx..xz.x..x.
+          .xx.xx.xx.x.xx.xx.xx.
 ENDMAP

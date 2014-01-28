@@ -201,8 +201,8 @@ ifneq (,$(findstring MINGW,$(uname_S)))
 		BUILD_SDLIMAGE = YesPlease
 		BUILD_LIBPNG = YesPlease
 	endif
-	ifeq ($(shell gcc -v -static-libstdc++ 2>&1 | grep 'unrecognized option'),)
-		EXTRA_LIBS += -static-libgcc -static-libstdc++
+	ifeq ($(shell gcc -v -static -static-libstdc++ 2>&1 | grep 'unrecognized option'),)
+		EXTRA_LIBS += -static -static-libgcc -static-libstdc++
 	endif
 	COPY_FONTS = yes
 endif
@@ -373,7 +373,7 @@ SAVEDIR := ~/.crawl
 endif
 
 
-INCLUDES_L += -Icontrib/install/$(ARCH)/include
+INCLUDES_L += -isystem contrib/install/$(ARCH)/include
 LIBS += -Lcontrib/install/$(ARCH)/lib
 
 INCLUDES_L += -Iutil -I.
@@ -440,6 +440,7 @@ ifdef BUILD_UNIVERSAL
 # [ds] 10.4 SDK g++-4.0 + x86_64 runs into SDL compile issues.
 CFLAGS_ARCH := -arch i386 -arch ppc -faltivec
 CFLAGS_DEPCC_ARCH := -arch i386
+NO_INLINE_DEPGEN := YesPlease
 else
 CFLAGS_ARCH := -arch $(MARCH)
 endif
@@ -455,8 +456,9 @@ CXX += -gcc-name=gcc-$(GCC_VER) -gxx-name=g++-$(GCC_VER)
 endif
 
 ifndef CROSSHOST
-HOSTCC = $(CC)
-HOSTCXX = $(CXX)
+# Don't need a universal build of host tools, so use DEPCC.
+HOSTCC = $(DEPCC)
+HOSTCXX = $(DEPCXX)
 export HOSTCC
 export HOSTCXX
 endif
@@ -527,17 +529,23 @@ else
   ifneq (,$(shell $(GXX) --version|grep 'g++.*4\.2\.'))
     # OS X uses a buggy ancient version of gcc without fixes from even
     # subsequent point releases of 4.2.
-    CFOPTIMIZE := -O1
+    CFOPTIMIZE := -O0
   else
     CFOPTIMIZE := -O2
   endif
 endif
 
 ifdef LTO
-CFOPTIMIZE += -flto=jobserver -fwhole-program
-  # FIXME: this check is fragile, and should be done via a full compile test.
-  ifeq ($(shell $(GXX) -x c++ /dev/null -fno-fat-lto-objects 2>&1 | grep 'unrecognized command line option'),)
-    CFOPTIMIZE += -fno-fat-lto-objects
+  ifeq ($(shell $(GXX) -v 2>&1|grep clang),)
+    CFOPTIMIZE += -flto=jobserver -fwhole-program
+    # FIXME: this check is fragile, and should be done via a full compile test.
+    ifeq ($(shell $(GXX) -x c++ /dev/null -fno-fat-lto-objects 2>&1 | grep 'unrecognized command line option'),)
+      CFOPTIMIZE += -fno-fat-lto-objects
+    endif
+  else
+    # Clang uses a different syntax than gcc, using -O4 instead.  This means
+    # you can't select a different level of optimization to go with LTO.
+    CFOPTIMIZE := $(patsubst -O%,,$(CFOPTIMIZE)) -O4
   endif
 endif
 
@@ -596,14 +604,14 @@ ifndef BUILD_LUA
   ifndef LUA_PACKAGE
     LUA_PACKAGE = lua5.1
   endif
-  INCLUDES_L += $(shell $(PKGCONFIG) $(LUA_PACKAGE) --cflags-only-I)
+  INCLUDES_L += $(shell $(PKGCONFIG) $(LUA_PACKAGE) --cflags-only-I | sed -e 's/-I/-isystem /')
   CFLAGS_L  += $(shell $(PKGCONFIG) $(LUA_PACKAGE) --cflags-only-other)
   LIBS += $(shell $(PKGCONFIG) $(LUA_PACKAGE) --libs)
 endif
 
 ifndef BUILD_SQLITE
   ifeq ($(shell grep -q sqlite3_prepare $(SQLITE_INCLUDE_DIR)/sqlite3.h 2>/dev/null && echo yes),yes)
-    INCLUDES_L += -I$(SQLITE_INCLUDE_DIR)
+    # INCLUDES_L += -isystem $(SQLITE_INCLUDE_DIR)
     LIBS += $(SQLITE_LIB)
     ifneq ($(shell grep -q sqlite3_prepare_v2 $(SQLITE_INCLUDE_DIR)/sqlite3.h 2>/dev/null && echo yes),yes)
       DEFINES_L += -DANCIENT_SQLITE
@@ -641,10 +649,10 @@ DEFINES_L += -DTOUCH_UI
 endif
 
 ifdef BUILD_SDL
-INCLUDES_L += -Icontrib/install/$(ARCH)/include/SDL
+INCLUDES_L += -isystem contrib/install/$(ARCH)/include/SDL
 endif
 ifdef BUILD_FREETYPE
-INCLUDES_L += -Icontrib/install/$(ARCH)/include/freetype2
+INCLUDES_L += -isystem contrib/install/$(ARCH)/include/freetype2
 endif
 
 DEFINES_L += -DUSE_SDL -DUSE_GL -DUSE_FT
@@ -659,11 +667,11 @@ ifndef NO_PKGCONFIG
 # the contributing libraries are located.
 #
 
-FREETYPE_INCLUDE := $(shell $(PKGCONFIG) freetype2 --cflags-only-I)
+FREETYPE_INCLUDE := $(shell $(PKGCONFIG) freetype2 --cflags-only-I | sed -e 's/-I/-isystem /' )
 FREETYPE_CFLAGS  := $(shell $(PKGCONFIG) freetype2 --cflags-only-other)
 FREETYPE_LDFLAGS := $(shell $(PKGCONFIG) freetype2 --libs-only-L) $(shell $(PKGCONFIG) freetype2 --libs-only-l)
 
-SDL_INCLUDE := $(shell $(PKGCONFIG) sdl --cflags-only-I)
+SDL_INCLUDE := $(shell $(PKGCONFIG) sdl --cflags-only-I | sed -e 's/-I/-isystem /')
 SDL_CFLAGS  := $(shell $(PKGCONFIG) sdl --cflags-only-other)
 SDL_LDFLAGS := $(shell $(PKGCONFIG) sdl --libs-only-L) $(shell $(PKGCONFIG) sdl --libs-only-l)
 
@@ -692,7 +700,9 @@ endif # TILES
 
 # On clang, unknown -Wfoo is merely a warning, thus -Werror.
 CFWARN_L += $(shell w=-Wno-array-bounds;echo|$(GXX) -E -x c++ - -Werror $$w >/dev/null 2>&1 && echo $$w)
+CFWARN_L += $(shell w=-Wno-format-zero-length;echo|$(GXX) -E -x c++ - -Werror $$w >/dev/null 2>&1 && echo $$w)
 CFWARN   += $(shell w=-Wmissing-declarations;echo|$(GXX) -E -x c++ - -Werror $$w >/dev/null 2>&1 && echo $$w)
+CFWARN   += $(shell w=-Wredundant-decls;echo|$(GXX) -E -x c++ - -Werror $$w >/dev/null 2>&1 && echo $$w)
 
 CFWARN_L += -Wno-parentheses -Wno-unused-parameter -Wwrite-strings -Wshadow
 CFOTHERS_L = $(EXTERNAL_FLAGS_L) $(EXTRA_FLAGS) $(DEFINES) $(SDL_CFLAGS)
@@ -933,7 +943,7 @@ NC_LIB = ncursesw
 NC_INCLUDE = $(NC_PREFIX)/include/ncursesw
 endif
 
-INCLUDES_L += -I$(NC_INCLUDE)
+INCLUDES_L += -isystem $(NC_INCLUDE)
 
 ifndef TILES
 LIBS += -L$(NC_PREFIX)/lib -l$(NC_LIB)
@@ -955,6 +965,10 @@ RANLIB := true
 LIBS += -lguide -lpthread
 CFWARN := -wd383,810,869,981,1418 -we14,193,304
 CFWARN_L :=
+endif
+
+ifeq (,$(shell echo 'int main(){return 1;}'|$(GXX) -x c++ - -o /dev/null -fuse-ld=gold 2>&1))
+  LDFLAGS += -fuse-ld=gold
 endif
 
 LDFLAGS += $(CFOPTIMIZE) $(CFOPTIMIZE_L)
@@ -996,6 +1010,7 @@ ifndef V
         QUIET_COPY     = @echo '   ' COPY $@;
         QUIET_DEPEND   = @echo '   ' DEPEND $@;
         QUIET_WINDRES  = @echo '   ' WINDRES $@;
+        QUIET_HOSTCC   = @echo '   ' HOSTCC $@;
         QUIET_PNGCRUSH = @echo '   ' $(PNGCRUSH_LABEL) $@;
         QUIET_ADVPNG   = @echo '   ' ADVPNG $@;
         export V
@@ -1073,11 +1088,12 @@ LIBS += $(CONTRIB_LIBS) $(EXTRA_LIBS)
 DOC_BASE        := ../docs
 DOC_TEMPLATES   := $(DOC_BASE)/template
 GENERATED_DOCS  := $(DOC_BASE)/aptitudes.txt $(DOC_BASE)/FAQ.html $(DOC_BASE)/crawl_manual.txt
-GENERATED_HEADERS := art-enum.h config.h #the rest are private
-GENERATED_FILES := $(GENERATED_HEADERS) art-data.h mon-mst.h mi-enum.h \
+GENERATED_HEADERS := art-enum.h config.h mon-mst.h #the rest are private
+GENERATED_FILES := $(GENERATED_HEADERS) art-data.h mi-enum.h \
                    $(RLTILES)/dc-unrand.txt build.h compflag.h dat/dlua/tags.lua \
-                   cmd-name.h $(INI_OBJECTS)
+                   cmd-name.h
 
+LANGUAGES = $(filter-out en, $(notdir $(wildcard dat/descript/??)))
 SRC_PKG_BASE  := stone_soup
 SRC_VERSION   := $(shell git describe --tags $(MERGE_BASE) 2>/dev/null || cat util/release_ver)
 MAJOR_VERSION = $(shell echo "$(SRC_VERSION)"|sed -r 's/-.*//;s/^([^.]+\.[^.]+).*/\1/')
@@ -1110,7 +1126,10 @@ webserver/game_data/static/%.png: dat/tiles/%.png
 TILEINFOJS = $(TILEIMAGEFILES) dngn
 TITLEIMGS = denzi_dragon denzi_kitchen_duty denzi_summoner \
             denzi_undead_warrior omndra_zot_demon firemage \
-            shadyamish_octm denzi_evil_mage denzi_invasion
+            shadyamish_octm denzi_evil_mage denzi_invasion \
+            psiweapon_kiku white_noise_entering_the_dungeon \
+            white_noise_grabbing_the_orb pooryurik_knight \
+            psiweapon_roxanne
 
 STATICFILES = $(TILEIMAGEFILES:%=webserver/game_data/static/%.png) \
               webserver/static/stone_soup_icon-32x32.png \
@@ -1288,6 +1307,9 @@ endif
 	mkdir -p $(datadir_fp)/dat/database
 	mkdir -p $(datadir_fp)/dat/defaults
 	mkdir -p $(datadir_fp)/dat/descript
+	for LANG in $(LANGUAGES); \
+		do mkdir -p $(datadir_fp)/dat/descript/$$LANG; \
+	done
 	mkdir -p $(datadir_fp)/docs/develop
 	mkdir -p $(datadir_fp)/docs/develop/levels
 	mkdir -p $(datadir_fp)/docs/license
@@ -1303,7 +1325,10 @@ endif
 	$(COPY)   dat/clua/*.lua $(datadir_fp)/dat/clua/
 	$(COPY_R) dat/database/* $(datadir_fp)/dat/database/
 	$(COPY_R) dat/defaults/* $(datadir_fp)/dat/defaults/
-	$(COPY_R) dat/descript/* $(datadir_fp)/dat/descript/
+	$(COPY) dat/descript/*.txt $(datadir_fp)/dat/descript/
+	for LANG in $(LANGUAGES); \
+		do $(COPY) dat/descript/$$LANG/*.txt $(datadir_fp)/dat/descript/$$LANG; \
+	done
 	$(COPY) ../docs/*.txt $(datadir_fp)/docs/
 	$(COPY) ../docs/develop/*.txt $(datadir_fp)/docs/develop/
 	$(COPY) ../docs/develop/levels/*.txt $(datadir_fp)/docs/develop/levels/
@@ -1417,7 +1442,7 @@ endif
 # Plain old compilation
 #
 
-$(OBJECTS:%.o=%.cc): $(CC_DEP) $(CONTRIB_LIBS)
+$(OBJECTS:%.o=%.cc): $(CONTRIB_LIBS)
 
 $(UTIL)%.o: ALL_CFLAGS=$(YACC_CFLAGS)
 
@@ -1432,7 +1457,7 @@ $(UTIL)%.o: ALL_CFLAGS=$(YACC_CFLAGS)
 %.o: %.m .cflags | $(GENERATED_HEADERS)
 	$(QUIET_CC)$(CC) $(ALL_CFLAGS) $(INLINE_DEPGEN_CFLAGS) -c $< -o $@
 
-%.o: %.cc %.d .cflags | $(GENERATED_HEADERS) $(TILEDEFHDRS)
+%.o: %.cc %.d .cflags $(CC_DEP) | $(GENERATED_HEADERS) $(TILEDEFHDRS)
 ifdef NO_INLINE_DEPGEN
 	$(QUIET_DEPEND)$(or $(DEPCXX),$(CXX)) -MM $(ALL_CFLAGS) -MT $*.o $< > $*.d
 endif
@@ -1649,9 +1674,14 @@ android:
 TESTS=test woken_rest unwoken_rest fireworks cerebov pan_lords miscasts kraken
 test: $(foreach i, $(TESTS), test-$(i))
 
-test-%: $(GAME) util/fake_pty
+test-%: $(GAME) util/fake_pty builddb
 	util/fake_pty test/stress/run $*
 	@echo "Finished: $*"
 
 util/fake_pty: util/fake_pty.c
-	$(if $(HOSTCC),$(HOSTCC),$(CC)) -Wall $< -o $@ -lutil
+	$(QUIET_HOSTCC)$(if $(HOSTCC),$(HOSTCC),$(CC)) -Wall $< -o $@ -lutil
+
+# Should be not needed, but the race condition in bug #6509 is hard to fix.
+builddb: $(GAME)
+	./$(GAME) --builddb
+.PHONY: builddb

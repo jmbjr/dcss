@@ -75,32 +75,6 @@ static int food_can_eat(lua_State *ls)
     return 1;
 }
 
-static bool eat_item(const item_def &item)
-{
-    // Nasty special case: can_ingest() allows potions (why???), so we need
-    // to weed them away here; we wouldn't be able to return success status
-    // otherwise.
-    if (!can_ingest(item, false) || item.base_type == OBJ_POTIONS)
-        return false;
-
-    if (in_inventory(item))
-    {
-        eat_inventory_item(item.link);
-        return true;
-    }
-    else
-    {
-        int ilink = item_on_floor(item, you.pos());
-
-        if (ilink != NON_ITEM)
-        {
-            eat_floor_item(ilink);
-            return true;
-        }
-        return false;
-    }
-}
-
 static int food_eat(lua_State *ls)
 {
     LUA_ITEM(ls, item, 1);
@@ -108,8 +82,12 @@ static int food_eat(lua_State *ls)
     bool eaten = false;
     if (!you.turn_is_over)
     {
-        if (item && can_ingest(*item, false))
+        // Nasty special case: can_ingest() allows potions (why???), so we need
+        // to weed them away here; we wouldn't be able to return success status
+        // otherwise.
+        if (item && can_ingest(*item, false) && item->base_type != OBJ_POTIONS)
             eaten = eat_item(*item);
+
     }
     lua_pushboolean(ls, eaten);
     return 1;
@@ -157,6 +135,20 @@ static int food_isfruit(lua_State *ls)
     return 1;
 }
 
+static int food_ismeaty(lua_State *ls)
+{
+    LUA_ITEM(ls, item, 1);
+    lua_pushboolean(ls, food_is_meaty(*item));
+    return 1;
+}
+
+static int food_isveggie(lua_State *ls)
+{
+    LUA_ITEM(ls, item, 1);
+    lua_pushboolean(ls, food_is_veggie(*item));
+    return 1;
+}
+
 static const struct luaL_reg food_lib[] =
 {
     { "do_eat",            food_do_eat },
@@ -170,6 +162,8 @@ static const struct luaL_reg food_lib[] =
     { "dangerous",         food_dangerous },
     { "ischunk",           food_ischunk },
     { "isfruit",           food_isfruit },
+    { "ismeaty",           food_ismeaty },
+    { "isveggie",          food_isveggie },
     { NULL, NULL },
 };
 

@@ -8,6 +8,7 @@
 #include "skill_menu.h"
 
 #include "cio.h"
+#include "clua.h"
 #include "command.h"
 #include "describe.h"
 #include "evoke.h"
@@ -103,7 +104,7 @@ static bool _show_skill(skill_type sk, skill_menu_state state)
     switch (state)
     {
     case SKM_SHOW_KNOWN:   return you.skills[sk];
-    case SKM_SHOW_DEFAULT: return (you.can_train[sk] || you.skills[sk]);
+    case SKM_SHOW_DEFAULT: return you.can_train[sk] || you.skills[sk];
     case SKM_SHOW_ALL:     return true;
     default:               return false;
     }
@@ -164,7 +165,6 @@ bool SkillMenuEntry::mastered() const
 {
     return (is_set(SKMF_EXPERIENCE) ? skm.get_raw_skill_level(m_sk)
                                     : you.skills[m_sk]) >= 27;
-
 }
 
 void SkillMenuEntry::refresh(bool keep_hotkey)
@@ -394,7 +394,7 @@ void SkillMenuEntry::set_level()
     else
         level = you.skill(m_sk, 10, real);
 
-    if (mastered())
+    if (mastered() && !you.attribute[ATTR_XP_DRAIN])
         m_level->set_text(make_stringf("%d", level / 10));
     else
         m_level->set_text(make_stringf("%4.1f", level / 10.0));
@@ -559,8 +559,14 @@ string SkillMenuSwitch::get_help()
         }
         else
         {
-            return "Skills reduced by the power of Ashenzari are in "
-                   "<magenta>magenta</magenta>. ";
+            vector<string> causes;
+            if (you.attribute[ATTR_XP_DRAIN])
+                causes.push_back("draining");
+            if (player_under_penance(GOD_ASHENZARI))
+                causes.push_back("the power of Ashenzari");
+            return "Skills reduced by "
+                   + comma_separated_line(causes.begin(), causes.end())
+                   + " are in <magenta>magenta</magenta>. ";
         }
     case SKM_VIEW_TRAINING:
         if (skm.is_set(SKMF_SIMPLE))
@@ -798,7 +804,7 @@ void SkillMenu::clear_flag(int flag)
 
 bool SkillMenu::is_set(int flag) const
 {
-    return (m_flags & flag);
+    return m_flags & flag;
 }
 
 void SkillMenu::set_flag(int flag)
@@ -854,7 +860,7 @@ bool SkillMenu::exit()
 
     if (!enabled_skill && !all_skills_maxed())
     {
-        set_help("You need to enable at least one skill.");
+        set_help("<lightred>You need to enable at least one skill.</lightred>");
         return false;
     }
 
@@ -878,7 +884,7 @@ int SkillMenu::get_line_height()
 
 int SkillMenu::get_raw_skill_level(skill_type sk)
 {
-        return m_skill_backup.skills[sk];
+    return m_skill_backup.skills[sk];
 }
 
 int SkillMenu::get_saved_skill_level(skill_type sk, bool real)
@@ -1021,9 +1027,10 @@ void SkillMenu::init_flags()
 
     for (unsigned int i = 0; i < NUM_SKILLS; ++i)
     {
-        if (you.skill(skill_type(i)) > you.skills[i])
+        skill_type type = skill_type(i);
+        if (you.skill(type, 10) > you.skill(type, 10, true))
             set_flag(SKMF_ENHANCED);
-        else if (you.skill(skill_type(i)) < you.skills[i])
+        else if (you.skill(type, 10) < you.skill(type, 10, true))
             set_flag(SKMF_REDUCED);
     }
 }
@@ -1109,7 +1116,6 @@ void SkillMenu::init_switches()
         sw->set_id(SKM_LEVEL);
         add_item(sw, sw->size(), m_pos);
     }
-
 
     sw = new SkillMenuSwitch("View", '!');
     m_switches[SKM_VIEW] = sw;
@@ -1466,6 +1472,15 @@ void skill_menu(int flag, int exp)
     clrscr();
     skm.init(flag);
     int keyn;
+
+    // Calling a user lua function here to let players automatically accept
+    // the given skill distribution for a potion or card of experience.
+    if (skm.is_set(SKMF_EXPERIENCE)
+        && clua.callbooleanfn(false, "auto_experience", NULL)
+        && skm.exit())
+    {
+        return;
+    }
 
     while (true)
     {

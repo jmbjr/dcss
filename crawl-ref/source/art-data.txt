@@ -81,8 +81,8 @@
 # * life:     Grants negative energy resistance.
 # * mutate:   Causes high magical contamination when unequipped.
 # * nogen:    Never randomly generated.
-# * noises:   Weapon makes noises.  Can be given its own set of noises by
-#             making an entry in dat/database/wpnnoise.txt, with the
+# * noises:   Weapon makes noises.  Should  be given its own set of noises
+#             by making an entry in dat/database/wpnnoise.txt, with the
 #             entry's key exactly the same as the weapon's name, but all
 #             lowercase.
 # * nospell:  Prevents wearer from casting spells.
@@ -140,6 +140,7 @@
 # METAB:    Hunger modifier.
 # MP:       Mana capacity modifier.
 # NAME:     Name of artefact when identified.
+# REGEN:    Provides regeneration (40 = ring of regen, 100 = the spell).
 # STEALTH:  Stealth modifier.
 # STR:      Strength modifier.
 # TILE:     The file containing the artefact's tile, with file type png.
@@ -186,7 +187,7 @@ COLOUR:  ETC_RANDOM
 TILE:    spwpn_mace_of_variability
 TILE_EQ: mace_of_variability
 VALUE:   700
-BOOL:    special
+BOOL:    special, no_upgrade
 BRAND:   SPWPN_CHAOS
 
 NAME:    Glaive of Prune
@@ -206,7 +207,7 @@ COLOUR:  RED
 TILE:    spwpn_sword_of_power
 TILE_EQ: sword_of_power
 VALUE:   1000
-BOOL:    special
+BOOL:    special, no_upgrade
 
 NAME:    Staff of Olgreb
 OBJ:     OBJ_WEAPONS/WPN_STAFF
@@ -215,7 +216,7 @@ COLOUR:  ETC_POISON
 TILE:    spwpn_staff_of_olgreb
 TILE_EQ: olgreb
 VALUE:   1000
-BOOL:    poison
+BOOL:    poison, no_upgrade
 
 NAME:    Staff of Wucad Mu
 OBJ:     OBJ_WEAPONS/WPN_STAFF
@@ -258,7 +259,7 @@ VALUE:   1200
 BOOL:    special, evil
 
 NAME:    Sword of Zonguldrok
-OBJ:     OBJ_WEAPONS/WPN_DOUBLE_SWORD
+OBJ:     OBJ_WEAPONS/WPN_BASTARD_SWORD
 PLUS:    +9/+9
 COLOUR:  ETC_BONE
 TILE:    spwpn_sword_of_zonguldrok
@@ -272,6 +273,8 @@ NAME:    Sword of Cerebov
 APPEAR:  great serpentine sword
 TYPE:    flamberge
 OBJ:     OBJ_WEAPONS/WPN_GREAT_SWORD
+BASE_DAM: +1
+BASE_ACC: +1
 PLUS:    +6/+6
 COLOUR:  ETC_FIRE
 TILE:    spwpn_sword_of_cerebov
@@ -309,9 +312,7 @@ PLUS:    +3
 COLOUR:  ETC_JEWEL
 TILE:    urand_faerie
 TILE_EQ: faerie_dragon_armour
-BOOL:    nogen, unided
-
-##################### End of old fixed arts.
+BOOL:    nogen, unided, no_upgrade
 
 NAME:    demon blade "Bloodbane"
 OBJ:     OBJ_WEAPONS/WPN_DEMON_BLADE
@@ -445,15 +446,16 @@ STEALTH:  -50
 BOOL:     life
 
 NAME:    crossbow "Hellfire"
+INSCRIP: hellfire,
 OBJ:     OBJ_WEAPONS/WPN_CROSSBOW
-PLUS:    +6/+9
+PLUS:    +6/+6
 COLOUR:  ETC_FIRE
 TILE:    urand_hellfire
 TILE_EQ: crossbow_fire
-BRAND:   SPWPN_FLAME
 FIRE:    2
 COLD:    -1
 MAGIC:   40
+BOOL:    evil
 
 NAME:    sword of the Doom Knight
 OBJ:     OBJ_WEAPONS/WPN_GREAT_SWORD
@@ -509,18 +511,18 @@ STR:     2
 MAGIC:   30
 
 NAME:     Elemental Staff
-OBJ:      OBJ_WEAPONS/WPN_QUARTERSTAFF
-PLUS:     +3/+1
+OBJ:      OBJ_WEAPONS/WPN_STAFF
+PLUS:     +3/+3
 COLOUR:   DARKGREY
 TILE:     urand_elemental
 TILE_EQ:  elemental_staff
-BRAND:    SPWPN_PROTECTION
 FIRE:     2
 COLD:     2
 MAGIC:    60
-METAB:    2
-BOOL:     noises
+AC:       5
+BOOL:     elec
 
+# TAG_MAJOR_VERSION == 34
 NAME:    crossbow "Sniper"
 OBJ:     OBJ_WEAPONS/WPN_CROSSBOW
 PLUS:    +10/+0
@@ -528,7 +530,7 @@ COLOUR:  ETC_DARK
 TILE:    urand_sniper
 TILE_EQ: sniper
 BRAND:   SPWPN_VENOM
-BOOL:    seeinv
+BOOL:    seeinv, nogen
 
 NAME:    longbow "Piercer"
 OBJ:     OBJ_WEAPONS/WPN_LONGBOW
@@ -536,18 +538,19 @@ PLUS:    +2/+10
 COLOUR:  CYAN
 TILE:    urand_piercer
 TILE_EQ: great_bow
-BRAND:   SPWPN_VORPAL
+BRAND:   SPWPN_PENETRATION
 EV:      -2
 
+# TAG_MAJOR_VERSION == 34
 ENUM:    BLOWGUN_ASSASSIN
 NAME:    blowgun of the Assassin
 OBJ:     OBJ_WEAPONS/WPN_BLOWGUN
-PLUS:    +6/+6
+PLUS:    +6/+0
 COLOUR:  WHITE
 TILE:    urand_blowgun
 TILE_EQ: blowgun
 STEALTH: 60
-BOOL:    inv, tilerim
+BOOL:    inv, tilerim, nogen
 
 NAME:    lance "Wyrmbane"
 OBJ:     OBJ_WEAPONS/WPN_SPEAR
@@ -560,7 +563,7 @@ TILE_EQ: wyrmbane
 BRAND:   SPWPN_DRAGON_SLAYING
 AC:      5
 FIRE:    1
-BOOL:    poison, berserk
+BOOL:    poison, berserk, no_upgrade
 
 NAME:     Spriggan's Knife
 OBJ:      OBJ_WEAPONS/WPN_DAGGER
@@ -576,7 +579,7 @@ MAGIC:    20
 STEALTH:  50
 
 NAME:    plutonium sword
-OBJ:     OBJ_WEAPONS/WPN_TRIPLE_SWORD
+OBJ:     OBJ_WEAPONS/WPN_CLAYMORE
 PLUS:    +12/+16
 COLOUR:  ETC_RANDOM
 TILE:    urand_plutonium
@@ -592,6 +595,7 @@ TILE:     urand_undeadhunter
 TILE_EQ:  undeadhunter
 BOOL:     life
 
+# TAG_MAJOR_VERSION == 34
 NAME:    whip "Snakebite"
 OBJ:     OBJ_WEAPONS/WPN_WHIP
 PLUS:    +5/+10
@@ -599,8 +603,9 @@ COLOUR:  DARKGREY
 TILE:    urand_snakebite
 TILE_EQ: snakebite
 BRAND:   SPWPN_VENOM
-BOOL:    poison, tilerim
+BOOL:    poison, tilerim, nogen
 
+# TAG_MAJOR_VERSION == 34
 NAME:     knife of Accuracy
 OBJ:      OBJ_WEAPONS/WPN_DAGGER
 TYPE:     knife
@@ -608,8 +613,9 @@ PLUS:     +27/-1
 COLOUR:   LIGHTCYAN
 TILE:     urand_knife_of_accuracy
 TILE_EQ:  knife_of_accuracy
-BOOL:     tilerim
+BOOL:     tilerim, nogen
 
+# TAG_MAJOR_VERSION == 34
 # A play on the spell of the same name.  Colour taken from crystal walls.
 ENUM:     CRYSTAL_SPEAR
 NAME:     Lehudib's crystal spear
@@ -619,17 +625,14 @@ COLOUR:   GREEN
 TILE:     urand_crystal_spear
 TILE_EQ:  crystal_spear
 INT:      3
-BRAND:    SPWPN_RETURNING
+BOOL:     nogen
 
 NAME:     captain's cutlass
-OBJ:      OBJ_WEAPONS/WPN_SABRE
-TYPE:     cutlass
-PLUS:     +6/+7
-BASE_ACC: -1
-BASE_DAM: +2
+OBJ:      OBJ_WEAPONS/WPN_CUTLASS
+PLUS:     +5/+10
 COLOUR:   DARKGREY
 TILE:     urand_cutlass
-TILE_EQ:  cutlass
+TILE_EQ:  capt_cutlass
 BRAND:    SPWPN_SPEED
 
 NAME:     storm bow
@@ -672,8 +675,8 @@ DAM:      -3
 STEALTH:  60
 BOOL:     seeinv, fog
 
-NAME:    shield "Bullseye"
-OBJ:     OBJ_ARMOUR/ARM_SHIELD
+NAME:    large shield "Bullseye"
+OBJ:     OBJ_ARMOUR/ARM_LARGE_SHIELD
 PLUS:    +15
 COLOUR:  RED
 TILE:    urand_bullseye
@@ -681,7 +684,7 @@ TILE_EQ: shield_bullseye
 EV:      -5
 
 NAME:    crown of Dyrovepreva
-OBJ:     OBJ_ARMOUR/ARM_CAP
+OBJ:     OBJ_ARMOUR/ARM_HAT
 PLUS:    +3
 COLOUR:  ETC_JEWEL
 TILE:    urand_dyrovepreva
@@ -691,7 +694,7 @@ METAB:   1
 BOOL:    elec, seeinv
 
 NAME:     hat of the Bear Spirit
-OBJ:      OBJ_ARMOUR/ARM_CAP
+OBJ:      OBJ_ARMOUR/ARM_HAT
 PLUS:     +2
 COLOUR:   DARKGREY
 TILE:     urand_bear
@@ -730,9 +733,7 @@ PLUS:     +2
 COLOUR:   BROWN
 TILE:     urand_assassin
 TILE_EQ:  middle_gray
-DEX:      3
 STEALTH:  80
-BOOL:     inv
 
 ENUM:    LEAR
 NAME:    Lear's hauberk
@@ -804,7 +805,7 @@ BOOL:    nospell, notelep, cursed
 
 ENUM:    DRAGONMASK
 NAME:    mask of the Dragon
-OBJ:     OBJ_ARMOUR/ARM_CAP
+OBJ:     OBJ_ARMOUR/ARM_HAT
 COLOUR:  ETC_SHIMMER_BLUE
 TILE:    urand_dragonmask
 TILE_EQ: art_dragonhelm
@@ -832,7 +833,7 @@ TILE_EQ: dragonarm_gold
 MAGIC:   50
 
 NAME:    hat of the Alchemist
-OBJ:     OBJ_ARMOUR/ARM_WIZARD_HAT
+OBJ:     OBJ_ARMOUR/ARM_HAT
 PLUS:    +2
 COLOUR:  LIGHTMAGENTA
 TILE:    urand_alchemist
@@ -878,7 +879,6 @@ PLUS:     +6
 COLOUR:   ETC_GOLD
 TILE:     urand_gong
 TILE_EQ:  shield_gong
-BRAND:    SPARM_SPIRIT_SHIELD
 MAGIC:    50
 BOOL:     elec, life
 
@@ -962,7 +962,7 @@ TILE_EQ:  robe_clouds
 BOOL:     elec, fly
 
 NAME:     hat of Pondering
-OBJ:      OBJ_ARMOUR/ARM_WIZARD_HAT
+OBJ:      OBJ_ARMOUR/ARM_HAT
 PLUS:     +3
 COLOUR:   LIGHTRED
 TILE:     urand_pondering
@@ -986,7 +986,7 @@ BOOL:     evil, seeinv, fly, special
 
 NAME:     lightning scales
 OBJ:      OBJ_ARMOUR/ARM_NAGA_BARDING
-PLUS:     +3
+PLUS:     +6
 TILE:     urand_lightning_scales
 TILE_EQ:  lightning_scales
 COLOUR:   ETC_ELECTRICITY
@@ -1055,7 +1055,7 @@ EV:       1
 STR:      1
 INT:      1
 DEX:      1
-BOOL:     unided
+BOOL:     unided, no_upgrade
 
 # Meatsprint only. The type is adjusted to the biggest two-handed axe the
 # player's species can wield (exec or broad).
@@ -1066,7 +1066,56 @@ OBJ:      OBJ_WEAPONS/WPN_EXECUTIONERS_AXE
 COLOUR:   ETC_BLOOD
 TILE:     urand_axe_of_woe
 TILE_EQ:  axe_of_woe
-BOOL:     nogen
+BOOL:     nogen, no_upgrade
+
+NAME:     moon troll leather armour
+OBJ:      OBJ_ARMOUR/ARM_TROLL_LEATHER_ARMOUR
+PLUS:     +4
+COLOUR:   ETC_SHIMMER_BLUE
+BRAND:    SPARM_SPIRIT_SHIELD
+TILE:     urand_moon_troll_leather_armour
+TILE_EQ:  moon_troll_leather_armour
+MP:       +5
+REGEN:    40
+
+ENUM:     FINGER_AMULET
+NAME:     macabre finger necklace
+OBJ:      OBJ_JEWELLERY/AMU_WARDING
+TILE:     urand_finger
+COLOUR:   ETC_BONE
+
+ENUM:     SPIDER
+NAME:     boots of the spider
+OBJ:      OBJ_ARMOUR/ARM_BOOTS
+TILE:     urand_spider
+TILE_EQ:  spider
+PLUS:     +3
+BRAND:    SPARM_JUMPING
+COLOUR:   LIGHTMAGENTA
+STEALTH:  50
+
+NAME:     dark maul
+OBJ:      OBJ_WEAPONS/WPN_GREAT_MACE
+TYPE:     maul
+COLOUR:   LIGHTRED
+TILE:     urand_dark_maul
+TILE_EQ:  dark_maul
+PLUS:     +6/+6
+BASE_ACC: +2
+BASE_DAM: +27
+BASE_DELAY: +13
+BRAND:    SPWPN_VORPAL
+
+ENUM:    HIGH_COUNCIL
+NAME:    hat of the High Council
+INSCRIP: Wiz-
+OBJ:     OBJ_ARMOUR/ARM_HAT
+COLOUR:  LIGHTGREEN
+TILE:    urand_high_council
+TILE_EQ: wizard_lightgreen
+PLUS:    +2
+BRAND:   SPARM_ARCHMAGI
+STEALTH: -20
 
 # This is the first of two amulets used to test suppression aura.
 # Together, they confer every randart effect except for a few that are

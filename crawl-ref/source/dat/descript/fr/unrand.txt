@@ -26,12 +26,13 @@ Elle récompense les puissants par la puissance et les faibles par la faiblesse.
 %%%%
 Staff of Olgreb
 
-C'était l'arme magique portée par l'effroyable magicien Olgreb avant qu'il
-rencontre sa destinée quelque part dans ce donjon. elle accroit les aptitudes
-de son porteur à employer la magie du poison et, possède des pouvoirs pouvant
-être évoqués. Les rumeurs disent qu'Olgreb recherchait des venins rares qui
-avaient des effets mêmes limités sur des créatures communément immunisées aux
-poisons.
+C'était l'arme magique portée par le puissant magicien Olgreb avant qu'il ne
+rende l'âme quelque part dans ce donjon. Elle accroît les aptitudes à la magie
+du poison de son porteur et possède des pouvoirs pouvant être évoqués. Les
+rumeurs disent qu'Olgreb recherchait des venins rares qui pouvaient parfois
+affecter des créatures immunisées à tous les poisons connus. Pour des raisons
+évidentes, Olgreb avait conçu son bâton afin qu'il accorde une immunité totale
+à ses propres venins.
 %%%%
 Staff of Wucad Mu
 
@@ -41,9 +42,9 @@ d'endommager l'esprit de son utilisateur.
 %%%%
 Vampire's Tooth
 
-Cette dague d'ivoire pourrait avoir été taillée à partir d'un dent d'un
-prédateur énorme, et apparemment d'une taille suffisante sucer le sang d'un
-humain.
+Cette dague d'ivoire pourrait avoir été taillée à partir de la dent d'un
+prédateur énorme, et bien évidement pas celle d'un suceur de sang de taille
+humaine.
 
 C'est mortellement vampirique.
 %%%%
@@ -61,19 +62,25 @@ Cette arme terrible est utilisée par son porteur à ses risques et périls.
 %%%%
 Sword of Cerebov
 
-Des flammes étranges courent sur cette lame sinueuse.
+Des flammes étranges courent sur cette lame sinueuse. Son pouvoir démoniaque
+fait s'évaporer une partie de la résistance au feu du défenseur.
 %%%%
 Staff of Dispater
 
-Cet objet légendaire peut déclencher la fureur des Enfers.
+Cet objet légendaire peut déclencher la fureur des Enfers. Les flammes impies
+qu'il évoque peuvent vous coûter une partie de votre vie et de votre âme, mais
+depuis quand ces détails empêchent quiconque de poursuivre leur quête de
+pouvoir ?
 %%%%
 Sceptre of Asmodeus
 
-Il porte certains pouvoirs de l'archi-démon Asmodeus.
+Il porte certains pouvoirs de l'archi-démon Asmodeus. Brandir ce puissant
+sceptre peut convoquer des rejetons infernaux de leur domicile et les asservir
+à votre volonté. Evidemment, ils ne vont pas vous aimer quand le sort expirera.
 %%%%
 faerie dragon armour
 
-Les dragons féés était un peuple de la même espèce que les dragons tachetés.
+Les dragons fées étaient un peuple de la même espèce que les dragons tachetés.
 Malheureusement, leurs couleurs vives firent leur perte, car elles alertaient
 leurs proies potentielles. Ils sont maintenant presque tous éteints, et cette
 précieuse relique est l'une des dernières preuves de leur existence.
@@ -84,7 +91,7 @@ Elle porte la soif sanglante d'un fou inhumain.
 %%%%
 scimitar of Flaming Death
 
-Ça fume !
+Ça fume !
 %%%%
 mace of Brilliance
 
@@ -95,7 +102,7 @@ créatures qui sont invisibles.
 %%%%
 demon blade "Leech"
 
-Elle pousse l'esprit de son porteur à assouvir un but unique : se gaver de
+Elle pousse l'esprit de son porteur à assouvir un but unique : se gaver de
 force vitale drainée.
 %%%%
 dagger of Chilly Death
@@ -137,11 +144,14 @@ légende, elle avait été perdue quelque part dans le donjon.
 sword of Jihad
 
 Une épée longue taillée dans un énorme bloc de cristal. La légende raconte
-qu'elle aurait été un cadeau accordé par Le Rayonnant à un de ses fidèles.
+qu'elle aurait été un cadeau accordé par L’Étincelant à un de ses fidèles.
+Cette lame est connue pour insuffler une rage meurtrière à son porteur ainsi
+qu'à tous ses alliés mortels.
 %%%%
 crossbow "Hellfire"
 
-Une arbalète enflammée, forgée dans les feux des Enfers.
+Une arbalète enflammée, forgée dans les feux des Enfers ; elle imprègne les
+carreaux qu'elle tire avec la puissance brute du même nom.
 %%%%
 sword of the Doom Knight
 
@@ -159,7 +169,7 @@ trident of the Octopus King
 
 Ce trident a été volé il y a plusieurs années dans le jardin du Roi Octopus par
 un homme sans importance et déjà mort. Mais prenez garde à la colère du Roi
-Octopus !
+Octopus !
 %%%%
 mithril axe "Arga"
 
@@ -167,7 +177,7 @@ Une belle hache en mithrill, probablement perdue par un héros nain.
 %%%%
 Elemental Staff
 
-Ce bâton puissant a appartenu au chef de la Guilde des Cinq Éléments.
+Ce puissant bâton a appartenu au chef de la Guilde des Cinq Éléments.
 %%%%
 crossbow "Sniper"
 
@@ -185,7 +195,8 @@ nerveuse.
 lance "Wyrmbane"
 
 Une lance enchantée qui devient plus puissante à chaque fois qu'elle inflige
-une frappe mortelle à un dragon.
+une frappe mortelle à un puissant dragon. Plus elle deviens puissante, plus il
+sera difficile de trouver un adversaire digne d'elle.
 %%%%
 Spriggan's Knife
 
@@ -197,9 +208,8 @@ autre à ce peuple féérique.
 %%%%
 plutonium sword
 
-Une épée triple faite d'un métal luisant étrange. Vous vous demandez si cette
-radiance a fait pousser deux nouvelles lames et si, elle vous fera pousser deux
-têtes supplémentaires aussi.
+Une claymore faite d'un étrange métal luisant. Vous vous demandez si cette
+radiation va vous faire pousser une nouvelle tête.
 %%%%
 great mace "Undeadhunter"
 
@@ -210,11 +220,8 @@ détruire les flux maintenant les morts vivant, leur infligeant ainsi de
 terribles dégâts.
 
 Bien que la liche fut exterminée il y a longtemps, ses armes, qui répandirent
-la destruction au sein des morts-vivants, ont été très populaires. Du moins,
-les vieux contes en sont pleins. Toutefois, cette masse pourrait être la
-dernière d'entre elles — probablement parce que les fidèles du Raoyannant
-soutiennent que personne ne devrait combattre la nécromancie par la
-nécromancie.
+la destruction au sein des morts-vivants, ont été très populaires. Toutefois,
+cette masse pourrait bien en être la dernière.
 %%%%
 whip "Snakebite"
 
@@ -232,7 +239,7 @@ bien, l'inverse.
 %%%%
 captain's cutlass
 
-Cette arme tristement célèbre a été utilisée par le capitaine pirate qui a
+Cette arme tristement célèbre a été utilisée par un capitaine pirate qui a
 égorgé bon nombre d'innocents. Finalement, il trouva la mort quand un kraken
 avala son navire avec tout son équipage. Le coutelas aurait du être perdu à
 jamais mais ce n'est pas le cas puisque vous le tenez dans vos mains.
@@ -244,8 +251,8 @@ l'ozone.
 %%%%
 large shield of Ignorance
 
-"Un esprit ouvert est comme une forteresse aux portes non verrouillées et sans
-garde."
+« Un esprit ouvert est comme une forteresse aux portes non verrouillées et sans
+garde. »
 %%%%
 robe of Augmentation
 
@@ -255,7 +262,7 @@ cloak of the Thief
 
 Elle permet à son porteur d'exceller dans l'art du vol.
 %%%%
-shield "Bullseye"
+large shield "Bullseye"
 
 Juste au cas où vous auriez du mal à vous faire toucher.
 %%%%
@@ -278,7 +285,14 @@ Une cape vibrante.
 %%%%
 boots of the Assassin
 
-Des bottes souples, spécialement dessinées par la Guilde des Assassins.
+Des bottes souples, conçue spécialement par la Guilde des Assassins. Elles
+permettent au porteur de sentir la présence de victimes potentielles et le rend
+plus à même de trouver les points faibles de ses victimes.
+%%%%
+Lear's hauberk
+
+Un haubert d'or de bonne facture qui couvre toutes les parties du corps de son
+porteur. Il comprend une cotte , des chausses et des gantelets en maille.
 %%%%
 skin of Zhor
 
@@ -291,7 +305,7 @@ Une armure de cuir confectionné avec la peau d'une salamandre.
 gauntlets of War
 
 Ces gantelets épais en acier ont été la récompense d'Okawaru à un puissant
-seigneur de guerre. Méritez-vous de les porter ?
+seigneur de guerre. Méritez-vous de les porter ?
 %%%%
 shield of Resistance
 
@@ -307,7 +321,8 @@ Une armure à l'allure bizarre.
 %%%%
 mask of the Dragon
 
-Un masque bleu.
+Un étrange casque bleu en cuir rigide qui rend le visage du porteur semblable à
+celui d'un dragon.
 %%%%
 robe of Night
 
@@ -350,7 +365,7 @@ shield of the gong
 C'est un large gong en bronze qui peut être utilisé comme bouclier. D'après
 certains mystiques, frapper un tel gong accorde une protection spirituelle.
 
-Et très certainement que ce bouclier va se faire entendre !
+Et très certainement que ce bouclier va se faire entendre !
 %%%%
 amulet of the Air
 
@@ -393,8 +408,8 @@ son porteur.
 %%%%
 brooch of Shielding
 
-Lors de l'age d'or, chaque aventurier avait une de ses pratiques broches. Ça et
-un poney.
+Lors de l'age d'or, chaque aventurier avait une de ses pratiques broches. Ça,
+et un poney.
 %%%%
 robe of Clouds
 
@@ -404,10 +419,10 @@ hat of Pondering
 
 Un chapeau de mage visqueux.
 
-Le chapeau préféré de la limace magicienne Gastronok, coloré de mucus rougeâtre
-et enchanté pour favoriser ses incantations. Il a été aussi spécialement
-ensorcelé pour protéger contre les effets du sel, bien que vous vous en fichiez
-probablement.
+Le chapeau préféré de la limace magicienne Gastronok, coloré de slimes
+rougeâtre et enchanté pour favoriser ses incantations. Il a été aussi
+spécialement ensorcelé pour protéger contre les effets du sel, bien que vous
+vous en fichiez probablement.
 %%%%
 obsidian axe
 
@@ -426,7 +441,7 @@ Black Knight's horse barding
 
 Ce caparaçon était porté par le cheval du Chevalier Noir durant son règle de
 terreur. D'un noir profond, il semble être fait non seulement d'un étrange
-acier noir, mais aussi de plaques entières de diamants noirs ! Naturellement,
+acier noir, mais aussi de plaques entières de diamants noirs ! Naturellement,
 un tel poids ne peut que ralentir la monture. Toutefois, il offre non seulement
 une protection contre les coups, mais aussi contre les morts-vivants grâce à un
 enchantement spécifique.
@@ -451,9 +466,66 @@ faiblement.
 %%%%
 ring of the Octopus King
 
-"Une sirène qui aimait chanter,
+« Une sirène qui aimait chanter,
  Insuffla la luxure au roi Octopus.
  Son ondulant prétendant,
  S'efforça de la courtiser,
- Mais elle ne pouvait porter tous ses anneaux."
+ Mais elle ne pouvait porter tous ses anneaux. »
+%%%%
+Axe of Woe
+
+Lorsque vous tenez cette hache, votre esprit ne semble plus entièrement le
+votre. Votre corps commence à présenter une force au-delà de ses capacités, et
+vos mouvements deviennent guidé par Makhleb.
+%%%%
+moon troll leather armour
+
+Cette armure aurait été créé par l'enchantement de la peau d'un troll dont
+l'espèce est désormais éteinte. Que cette armure soit véritablement un vestige
+des légendaires terreurs invisibles du vent ou simplement une appropriation du
+nom pour y ajouter du mysticisme est un mystère ; son pouvoir de régénération
+rapide au détriment occasionnelle de la puissance magique du porteur, est
+cependant difficile a contester.
+%%%%
+macabre finger necklace
+
+Ce doigt aurait l'air mieux avec un anneau.
+%%%%
+boots of the spider
+
+Une paire de bottes originale, inventée par un soupirant d'Arachne.
+%%%%
+dark maul
+
+Ce grand marteau ferré est l'outil dont vous avez besoin, si vous aviez de
+lourds enjeux à entretenir. Il est fait pour porter des coups massifs — et nous
+ne parlons pas d'une simple commotion cérébrale, mais des restes d'un casque
+debout sur des chaussures , ou peut-être simplement d'une tache humide. Hélas,
+un tel pouvoir a un prix : la tête du marteau est si lourd qu'il faut une
+éternité pour la soulever et frapper a nouveau. Ce marteau est dimensionné pour
+un humain, donc les ogres peuvent vouloir utiliser leurs matraques coutumières
+à la place, celles-ci étant moins lourd dans leurs grandes mains.
+%%%%
+hat of the High Council
+
+Une relique de certaines anciennes guerre de sorciers. Des siècles plus tard,
+il crépite encore des effets résiduelles des malédictions et des énergies
+magiques auquel il a pendant un temps été soumis sur une base quotidienne ; les
+lanceurs de sorts capables d'obtenir une poignée sur son pouvoir, cependant,
+obtiendront un renforcement de leur puissance de sorts.
+%%%%
+milk chocolate
+
+Cet objet est une aide au debuggage, et octroi d'une vaste gamme d'artefacts
+aux propriétés principalement bénéfique.
+
+Si vous le voyez en jeu, c'est un bug.
+%%%%
+dark chocolate
+
+Cet objet est une aide au debuggage, et octroi une vaste gamme d'artefacts aux
+propriétés principalement nuisibles. Il est distinct de son homologue par un
+conflit d'accessoires les uns avec les autres.
+
+Si vous le voyez en jeu, c'est un bug.
 %%%%

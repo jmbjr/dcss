@@ -109,13 +109,15 @@ static void cull_lost_items(i_transit_list &ilist, int how_many)
 m_transit_list *get_transit_list(const level_id &lid)
 {
     monsters_in_transit::iterator i = the_lost_ones.find(lid);
-    return (i != the_lost_ones.end()? &i->second : NULL);
+    return i != the_lost_ones.end()? &i->second : NULL;
 }
 
 void add_monster_to_transit(const level_id &lid, const monster& m)
 {
+    ASSERT(m.alive());
+
     m_transit_list &mlist = the_lost_ones[lid];
-    mlist.push_back(m);
+    mlist.push_back(follower(m));
 
     dprf("Monster in transit to %s: %s", lid.describe().c_str(),
          m.name(DESC_PLAIN, true).c_str());
@@ -237,7 +239,7 @@ void place_transiting_items()
                                   pos, true);
 
         // List of items we couldn't place.
-        if (!copy_item_to_grid(*item, where_to_go, 1, false, true))
+        if (!copy_item_to_grid(*item, where_to_go, -1, false, true))
             keep.push_back(*item);
     }
 
@@ -255,7 +257,13 @@ void apply_daction_to_transit(daction_type act)
         {
             monster* mon = &j->mons;
             if (mons_matches_daction(mon, act))
-                apply_daction_to_mons(mon, act, false);
+                apply_daction_to_mons(mon, act, false, true);
+
+            // If that killed the monster, remove it from transit.
+            // Removing this monster invalidates the iterator that
+            // points to it, so decrement the iterator first.
+            if (!mon->alive())
+                m->erase(j--);
         }
     }
 }
@@ -283,6 +291,7 @@ int count_daction_in_transit(daction_type act)
 
 follower::follower(const monster& m) : mons(m), items()
 {
+    ASSERT(m.alive());
     load_mons_items();
 }
 
@@ -297,6 +306,8 @@ void follower::load_mons_items()
 
 bool follower::place(bool near_player)
 {
+    ASSERT(mons.alive());
+
     monster *m = get_free_monster();
     if (!m)
         return false;
@@ -346,10 +357,10 @@ void follower::restore_mons_items(monster& m)
 
 static bool _is_religious_follower(const monster* mon)
 {
-    return ((you.religion == GOD_YREDELEMNUL
-             || you.religion == GOD_BEOGH
-             || you.religion == GOD_FEDHAS)
-                 && is_follower(mon));
+    return (you_worship(GOD_YREDELEMNUL)
+            || you_worship(GOD_BEOGH)
+            || you_worship(GOD_FEDHAS))
+                && is_follower(mon);
 }
 
 static bool _tag_follower_at(const coord_def &pos, bool &real_follower)
@@ -365,7 +376,7 @@ static bool _tag_follower_at(const coord_def &pos, bool &real_follower)
         || fol->speed_increment < 50
         || fol->incapacitated()
         || mons_is_boulder(fol)
-        || mons_is_stationary(fol))
+        || fol->is_stationary())
     {
         return false;
     }
@@ -382,18 +393,9 @@ static bool _tag_follower_at(const coord_def &pos, bool &real_follower)
         return false;
     }
 
-    // Monsters that are not directly adjacent are subject to more
-    // stringent checks.
-    if ((pos - you.pos()).abs() > 2)
-    {
-        if (!fol->friendly())
-            return false;
-
-        // Undead will follow Yredelemnul worshippers, orcs will follow
-        // Beogh worshippers, and plants will follow Fedhas worshippers.
-        if (!_is_religious_follower(fol))
-            return false;
-    }
+    // Unfriendly monsters must be directly adjacent to follow.
+    if (!fol->friendly() && (pos - you.pos()).abs() > 2)
+        return false;
 
     // Monsters that can't use stairs can still be marked as followers
     // (though they'll be ignored for transit), so any adjacent real
@@ -437,7 +439,7 @@ static int follower_tag_radius2()
                 return 2;
     }
 
-    return (6 * 6);
+    return 6 * 6;
 }
 
 void tag_followers()

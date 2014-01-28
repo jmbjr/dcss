@@ -55,7 +55,7 @@
 
 bool trap_def::active() const
 {
-    return (type != TRAP_UNASSIGNED);
+    return type != TRAP_UNASSIGNED;
 }
 
 bool trap_def::type_has_ammo() const
@@ -162,10 +162,10 @@ string trap_def::name(description_level_type desc) const
         if (is_vowel(basename[0]))
             prefix += 'n';
         prefix += ' ';
-        return (prefix + basename);
+        return prefix + basename;
     }
     else if (desc == DESC_THE)
-        return (string("the ") + basename);
+        return string("the ") + basename;
     else                        // everything else
         return basename;
 }
@@ -189,15 +189,15 @@ bool trap_def::is_known(const actor* act) const
         // * very intelligent monsters can be assumed to have a high T&D
         //   skill (or have memorised part of the dungeon layout ;))
 
-        if (category() == DNGN_TRAP_NATURAL)
+        if (type == TRAP_SHAFT)
         {
             // Slightly different rules for shafts:
             // * Lower intelligence requirement for native monsters.
             // * Allied zombies won't fall through shafts. (No herding!)
             // * Highly intelligent monsters never fall through shafts.
-            return (intel >= I_HIGH
-                    || intel > I_PLANT && mons_is_native_in_branch(mons)
-                    || player_knows && mons->wont_attack());
+            return intel >= I_HIGH
+                   || intel > I_PLANT && mons_is_native_in_branch(mons)
+                   || player_knows && mons->wont_attack();
         }
         else
         {
@@ -213,8 +213,8 @@ bool trap_def::is_known(const actor* act) const
             if (crawl_state.game_is_zotdef())
                 return false;
 
-            return (mons_is_native_in_branch(mons)
-                    || intel >= I_HIGH && one_chance_in(3));
+            return mons_is_native_in_branch(mons)
+                   || intel >= I_HIGH && one_chance_in(3);
         }
     }
     die("invalid actor type");
@@ -226,11 +226,8 @@ bool trap_def::is_safe(actor* act) const
         act = &you;
 
     // Shaft and mechanical traps are safe when flying or clinging.
-    if ((act->airborne() || act->can_cling_to(pos) || you.species == SP_DJINNI)
-        && category() != DNGN_TRAP_MAGICAL)
-    {
+    if ((act->airborne() || act->can_cling_to(pos)) && ground_only())
         return true;
-    }
 
     // TODO: For now, just assume they're safe; they don't damage outright,
     // and the messages get old very quickly
@@ -241,7 +238,7 @@ bool trap_def::is_safe(actor* act) const
         return false;
 
     // No prompt (teleport traps are ineffective if wearing an amulet of
-    // stasis or a -TELE item)
+    // stasis or a -Tele item)
     if (type == TRAP_TELEPORT && you.no_tele(false))
         return true;
 
@@ -350,7 +347,7 @@ void monster_caught_in_net(monster* mon, bolt &pbolt)
         return;
     }
 
-    if (mon->flight_mode() && (!mons_is_confused(mon) || one_chance_in(3)))
+    if (mon->flight_mode() && !mons_is_confused(mon) && one_chance_in(3))
     {
         simple_monster_message(mon, " darts out from under the net!");
         return;
@@ -382,7 +379,7 @@ bool player_caught_in_net()
     if (you.body_size(PSIZE_BODY) >= SIZE_GIANT)
         return false;
 
-    if (you.flight_mode() && (!you.confused() || one_chance_in(3)))
+    if (you.flight_mode() && !you.confused() && one_chance_in(3))
     {
         mpr("You dart out from under the net!");
         return false;
@@ -514,7 +511,7 @@ static string _direction_string(coord_def pos, bool fuzz)
         ew="";
     if (abs(dx) > 2 * abs(dy))
         ns="";
-    return (string(ns) + ew);
+    return string(ns) + ew;
 }
 
 void trap_def::trigger(actor& triggerer, bool flat_footed)
@@ -560,8 +557,7 @@ void trap_def::trigger(actor& triggerer, bool flat_footed)
         return;
     }
     // Only magical traps and webs affect flying critters.
-    if (!triggerer.ground_level() && category() != DNGN_TRAP_MAGICAL
-                                  && category() != DNGN_TRAP_WEB)
+    if (!triggerer.ground_level() && ground_only())
     {
         if (you_know && m && triggerer.airborne())
             simple_monster_message(m, " flies safely over a trap.");
@@ -573,7 +569,7 @@ void trap_def::trigger(actor& triggerer, bool flat_footed)
     if (in_sight)
         reveal();
 
-    // Store the position now in case it gets cleared inbetween.
+    // Store the position now in case it gets cleared in between.
     const coord_def p(pos);
 
     if (type_has_ammo())
@@ -927,7 +923,7 @@ void trap_def::trigger(actor& triggerer, bool flat_footed)
             actor* targ = NULL;
             if (m->wont_attack() || crawl_state.game_is_arena())
                 targ = m;
-            else if (in_sight && one_chance_in(5))
+            else if (you.see_cell_no_trans(pos) && one_chance_in(5))
                 targ = &you;
 
             // Give the player a chance to figure out what happened
@@ -996,7 +992,14 @@ void trap_def::trigger(actor& triggerer, bool flat_footed)
         }
         break;
 
+#if TAG_MAJOR_VERSION == 34
     case TRAP_GAS:
+        if (in_sight && you_know)
+            mpr("The gas trap seems to be inoperative.");
+        trap_destroyed = true;
+        break;
+#endif
+
     case TRAP_PLATE:
         dungeon_events.fire_position_event(DET_PRESSURE_PLATE, pos);
         break;
@@ -1006,14 +1009,7 @@ void trap_def::trigger(actor& triggerer, bool flat_footed)
     }
 
     if (you_trigger)
-    {
         learned_something_new(HINT_SEEN_TRAP, p);
-
-        // Exercise T&D if the trap revealed itself, but not if it ran
-        // out of ammo.
-        if (!you_know && type != TRAP_UNASSIGNED && is_known())
-            practise(EX_TRAP_TRIGGER);
-    }
 
     if (trap_destroyed)
         destroy(know_trap_destroyed);
@@ -1073,8 +1069,10 @@ int trap_def::difficulty()
         return 15;
     case TRAP_WEB:
         return 12;
+#if TAG_MAJOR_VERSION == 34
     case TRAP_GAS:
         return 15;
+#endif
     // Irrelevant:
     default:
         return 0;
@@ -1122,7 +1120,7 @@ trap_def* find_trap(const coord_def& pos)
     ASSERT(env.trap[t].pos == pos);
     ASSERT(env.trap[t].type != TRAP_UNASSIGNED);
 
-    return (&env.trap[t]);
+    return &env.trap[t];
 }
 
 trap_type get_trap_type(const coord_def& pos)
@@ -1139,7 +1137,7 @@ static bool _disarm_is_deadly(trap_def& trap)
     if (trap.type == TRAP_NEEDLE && you.res_poison() <= 0)
         dam += 15; // arbitrary
 
-    return (you.hp <= dam);
+    return you.hp <= dam;
 }
 
 // where *must* point to a valid, discovered trap.
@@ -1155,15 +1153,16 @@ void disarm_trap(const coord_def& where)
 
     switch (trap.category())
     {
-    case DNGN_TRAP_MAGICAL:
+    case DNGN_TRAP_ALARM:
         // Zotdef - allow alarm traps to be disarmed
-        if (!crawl_state.game_is_zotdef() || trap.type != TRAP_ALARM)
-        {
-            mpr("You can't disarm that trap.");
-            return;
-        }
-        break;
-    case DNGN_TRAP_NATURAL:
+        if (crawl_state.game_is_zotdef())
+            break;
+    case DNGN_TRAP_TELEPORT:
+    case DNGN_TRAP_ZOT:
+    case DNGN_PASSAGE_OF_GOLUBRIA: // not a trap, FIXME
+        mpr("You can't disarm that trap.");
+        return;
+    case DNGN_TRAP_SHAFT:
         // Only shafts for now.
         mpr("You can't disarm a shaft.");
         return;
@@ -1188,12 +1187,10 @@ void disarm_trap(const coord_def& where)
 
     // Make the actual attempt
     you.turn_is_over = true;
-    if (random2(you.skill_rdiv(SK_TRAPS) + 2) <= random2(trap.difficulty() + 5))
+    if (random2(div_rand_round(you.experience_level, 3) + 2) <= random2(trap.difficulty() + 5))
     {
         mpr("You failed to disarm the trap.");
-        if (random2(you.dex()) > 5 + random2(5 + trap.difficulty()))
-            practise(EX_TRAP_DISARM_FAIL, trap.difficulty());
-        else
+        if (random2(you.dex()) <= 5 + random2(5 + trap.difficulty()))
         {
             if ((trap.type == TRAP_NET || trap.type==TRAP_WEB)
                 && trap.pos != you.pos())
@@ -1206,15 +1203,12 @@ void disarm_trap(const coord_def& where)
             }
             else
                 trap.trigger(you, true);
-
-            practise(EX_TRAP_DISARM_TRIGGER);
         }
     }
     else
     {
         mpr("You have disarmed the trap.");
         trap.disarm();
-        practise(EX_TRAP_DISARM, trap.difficulty());
     }
 }
 
@@ -1616,13 +1610,16 @@ dungeon_feature_type trap_category(trap_type type)
     case TRAP_WEB:
         return DNGN_TRAP_WEB;
     case TRAP_SHAFT:
-        return DNGN_TRAP_NATURAL;
+        return DNGN_TRAP_SHAFT;
 
     case TRAP_TELEPORT:
+        return DNGN_TRAP_TELEPORT;
     case TRAP_ALARM:
+        return DNGN_TRAP_ALARM;
     case TRAP_ZOT:
+        return DNGN_TRAP_ZOT;
     case TRAP_GOLUBRIA:
-        return DNGN_TRAP_MAGICAL;
+        return DNGN_PASSAGE_OF_GOLUBRIA;
 
     case TRAP_DART:
     case TRAP_ARROW:
@@ -1631,13 +1628,20 @@ dungeon_feature_type trap_category(trap_type type)
     case TRAP_BOLT:
     case TRAP_NEEDLE:
     case TRAP_NET:
+#if TAG_MAJOR_VERSION == 34
     case TRAP_GAS:
+#endif
     case TRAP_PLATE:
         return DNGN_TRAP_MECHANICAL;
 
     default:
         die("placeholder trap type %d used", type);
     }
+}
+
+bool trap_def::ground_only() const
+{
+    return type == TRAP_SHAFT || category() == DNGN_TRAP_MECHANICAL;
 }
 
 bool is_valid_shaft_level(const level_id &place)
@@ -1654,7 +1658,7 @@ bool is_valid_shaft_level(const level_id &place)
 
     // Shafts are now allowed on the first two levels, as they have a
     // good chance of being detected. You'll also fall less deep.
-    /* if (place == BRANCH_MAIN_DUNGEON && you.depth < 3)
+    /* if (place == BRANCH_DUNGEON && you.depth < 3)
         return false; */
 
     // Don't generate shafts in branches where teleport control
@@ -1674,7 +1678,7 @@ bool is_valid_shaft_level(const level_id &place)
     if (env.turns_on_level == -1 && branch.dangerous_bottom_level)
         min_delta = 2;
 
-    return ((brdepth[place.branch] - place.depth) >= min_delta);
+    return (brdepth[place.branch] - place.depth) >= min_delta;
 }
 
 // Shafts can be generated visible.
@@ -1685,9 +1689,9 @@ bool is_valid_shaft_level(const level_id &place)
 bool shaft_known(int depth, bool randomly_placed)
 {
     if (randomly_placed)
-        return (coinflip() && x_chance_in_y(3, depth));
+        return coinflip() && x_chance_in_y(3, depth);
     else
-        return (coinflip() || x_chance_in_y(3, depth));
+        return coinflip() || x_chance_in_y(3, depth);
 }
 
 static level_id _generic_shaft_dest(level_pos lpos, bool known = false)
@@ -1762,27 +1766,33 @@ void handle_items_on_shaft(const coord_def& pos, bool open_shaft)
     if (o == NON_ITEM)
         return;
 
-    igrd(pos) = NON_ITEM;
-
-    if (env.map_knowledge(pos).seen() && open_shaft)
-    {
-        mpr("A shaft opens up in the floor!");
-        grd(pos) = DNGN_TRAP_NATURAL;
-    }
+    bool need_open_message = env.map_knowledge(pos).seen() && open_shaft;
 
     while (o != NON_ITEM)
     {
         int next = mitm[o].link;
 
-        if (mitm[o].defined())
+        if (mitm[o].defined() && !item_is_stationary(mitm[o]))
         {
-            if (env.map_knowledge(pos).seen())
+            if (need_open_message)
+            {
+                mpr("A shaft opens up in the floor!");
+                grd(pos) = DNGN_TRAP_SHAFT;
+                need_open_message = false;
+            }
+
+            if (env.map_knowledge(pos).visible())
             {
                 mprf("%s fall%s through the shaft.",
                      mitm[o].name(DESC_INVENTORY).c_str(),
                      mitm[o].quantity == 1 ? "s" : "");
+
+                env.map_knowledge(pos).clear_item();
+                StashTrack.update_stash(pos);
             }
+
             // Item will be randomly placed on the destination level.
+            unlink_item(o);
             mitm[o].pos = INVALID_COORD;
             add_item_to_transit(dest, mitm[o]);
 
@@ -1799,7 +1809,7 @@ int num_traps_for_place()
 {
     switch (you.where_are_you)
     {
-    case BRANCH_ECUMENICAL_TEMPLE:
+    case BRANCH_TEMPLE:
         return 0;
     default:
         if (!player_in_connected_branch())
@@ -1850,7 +1860,7 @@ static trap_type _random_trap_default(int level_number)
         type = TRAP_BLADE;
 
     if (random2(1 + level_number) > 14 && one_chance_in(3)
-        || (player_in_branch(BRANCH_HALL_OF_ZOT) && coinflip()))
+        || (player_in_branch(BRANCH_ZOT) && coinflip()))
     {
         type = TRAP_ZOT;
     }
@@ -1869,7 +1879,7 @@ trap_type random_trap_for_place()
 {
     int level_number = env.absdepth0;
 
-    if (player_in_branch(BRANCH_SLIME_PITS))
+    if (player_in_branch(BRANCH_SLIME))
         return _random_trap_slime(level_number);
 
     return _random_trap_default(level_number);
@@ -1917,7 +1927,7 @@ void place_webs(int num, bool is_second_phase)
                 {
                     // Solid wall?
                     float solid_weight = 0;
-                    if (feat_is_solid(grd(*ai)))
+                    if (cell_is_solid(*ai))
                         solid_weight = 1;
                     // During play, adjacent webs also count slightly
                     else if (is_second_phase

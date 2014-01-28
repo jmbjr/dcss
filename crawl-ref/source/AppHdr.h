@@ -47,7 +47,7 @@ static inline T move(T x) { return x; } // good enough for our purposes
 
 #ifdef __sun
 // Solaris libc has ambiguous overloads for float, double, long float, so
-// we need to upgrade ints explicitely:
+// we need to upgrade ints explicitly:
 #include <math.h>
 static inline double sqrt(int x) { return sqrt((double)x); }
 static inline double atan2(int x, int y) { return atan2((double)x, (double)y); }
@@ -99,7 +99,7 @@ static inline double pow(int x, double y) { return std::pow((double)x, y); }
     #endif
 #endif
 
-#if !defined(__cplusplus) || (__cplusplus < 201103)
+#if !defined(__cplusplus) || __cplusplus < 201103
 # define constexpr const
 #endif
 
@@ -286,6 +286,11 @@ static inline double pow(int x, double y) { return std::pow((double)x, y); }
 
     // Use UTC for dgamelaunch servers.
     #define TIME_FN gmtime
+
+    // Outside DGL, there's a local player who can kill the game himself, so
+    // there are no false positives.
+    // (A false positive would be possible with wizmode shenanigans.)
+    #define WATCHDOG
 #endif
 
 #ifndef TIME_FN
@@ -335,6 +340,10 @@ static inline double pow(int x, double y) { return std::pow((double)x, y); }
     #if !defined(NDEBUG)
         #define NDEBUG                  // used by <assert.h>
     #endif
+#endif
+
+#ifdef DEBUG_DIAGNOSTICS
+    #define DEBUG_TESTS
 #endif
 
 // =========================================================================

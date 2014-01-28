@@ -27,6 +27,7 @@ skill_type abil_skill(ability_type abil)
     case ABIL_EVOKE_FLIGHT:
     case ABIL_EVOKE_FOG:
     case ABIL_EVOKE_TELEPORT_CONTROL:
+    case ABIL_EVOKE_JUMP:
         return SK_EVOCATIONS;
 
     case ABIL_NEMELEX_DRAW_ONE:
@@ -44,7 +45,6 @@ skill_type abil_skill(ability_type abil)
     case ABIL_ZIN_RECITE:
     case ABIL_SIF_MUNA_CHANNEL_ENERGY:
     case ABIL_OKAWARU_HEROISM:
-    case ABIL_JIYVA_CALL_JELLY:
     case ABIL_ZIN_VITALISATION:
     case ABIL_TSO_DIVINE_SHIELD:
     case ABIL_BEOGH_SMITING:
@@ -66,12 +66,10 @@ skill_type abil_skill(ability_type abil)
     case ABIL_ELYVILON_GREATER_HEALING_SELF:
     case ABIL_ELYVILON_GREATER_HEALING_OTHERS:
     case ABIL_LUGONU_BANISH:
-    case ABIL_JIYVA_SLIMIFY:
     case ABIL_TSO_CLEANSING_FLAME:
     case ABIL_OKAWARU_FINESSE:
     case ABIL_CHEIBRIADOS_SLOUCH:
     case ABIL_LUGONU_CORRUPT:
-    case ABIL_JIYVA_CURE_BAD_MUTATION:
     case ABIL_CHEIBRIADOS_TIME_STEP:
     case ABIL_ZIN_SANCTUARY:
     case ABIL_MAKHLEB_GREATER_SERVANT_OF_MAKHLEB:
@@ -102,6 +100,7 @@ static int _abil_degree(ability_type abil)
     case ABIL_EVOKE_FLIGHT:
     case ABIL_EVOKE_FOG:
     case ABIL_EVOKE_TELEPORT_CONTROL:
+    case ABIL_EVOKE_JUMP:
         return 1;
 
     case ABIL_NEMELEX_DRAW_ONE:
@@ -123,7 +122,6 @@ static int _abil_degree(ability_type abil)
         return 1;
     case ABIL_SIF_MUNA_CHANNEL_ENERGY:
     case ABIL_OKAWARU_HEROISM:
-    case ABIL_JIYVA_CALL_JELLY:
         return 1 + random2(3);
 
     case ABIL_ZIN_RECITE:
@@ -152,7 +150,6 @@ static int _abil_degree(ability_type abil)
     case ABIL_ELYVILON_GREATER_HEALING_SELF:
     case ABIL_ELYVILON_GREATER_HEALING_OTHERS:
     case ABIL_LUGONU_BANISH:
-    case ABIL_JIYVA_SLIMIFY:
     case ABIL_CHEIBRIADOS_DISTORTION:
         return 3 + random2(5);
     case ABIL_TSO_CLEANSING_FLAME:
@@ -166,7 +163,6 @@ static int _abil_degree(ability_type abil)
         return 4 + random2(6);
 
     case ABIL_LUGONU_CORRUPT:
-    case ABIL_JIYVA_CURE_BAD_MUTATION:
     case ABIL_CHEIBRIADOS_TIME_STEP:
     case ABIL_KIKU_TORMENT:
         return 5 + random2(5);
@@ -224,7 +220,7 @@ static void _exercise_spell(spell_type spell, bool success)
     if (conj && !x_chance_in_y(skillcount, 4))
         return;
 
-    random_shuffle(disc.begin(), disc.end());
+    shuffle_array(disc);
 
     for (unsigned int k = 0; k < disc.size(); ++k)
     {
@@ -366,6 +362,7 @@ void practise(exer_type ex, int param1)
         switch (param1) // missile subtype
         {
         case MI_DART:
+        case MI_TOMAHAWK:
         case MI_JAVELIN:
         case MI_THROWING_NET:
             deg = 1;
@@ -401,37 +398,6 @@ void practise(exer_type ex, int param1)
     case EX_DID_MISCAST:
         _exercise_spell(static_cast<spell_type>(param1),
                         ex == EX_DID_CAST);
-        break;
-
-    case EX_TRAP_FOUND:
-        exercise(SK_TRAPS, 1 + random2(2));
-        break;
-
-    case EX_TRAP_PASSIVE:
-        exercise(SK_TRAPS, 3);
-        break;
-
-    case EX_TRAP_TRIGGER:
-        exercise(SK_TRAPS, 1 + random2(2));
-        break;
-
-    case EX_TRAP_DISARM:
-        // param1 == you.absdepth0
-        exercise(SK_TRAPS, 1 + random2(5) + param1 / 5);
-        break;
-
-    case EX_TRAP_DISARM_FAIL:
-        // param1 == you.absdepth0
-        exercise(SK_TRAPS, 1 + random2(param1 / 5));
-        break;
-
-    case EX_TRAP_DISARM_TRIGGER:
-        if (coinflip())
-            exercise(SK_TRAPS, 1);
-        break;
-
-    case EX_REMOVE_NET:
-        exercise(SK_TRAPS, 1);
         break;
 
     case EX_SHIELD_BLOCK:

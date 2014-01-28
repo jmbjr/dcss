@@ -10,6 +10,7 @@ sub articled($)
     return $_ if /^[A-Z]/ && !/ trap$/;
     return "\u$_" if /^(?:the |an |a |some )/i;
     return "A $_" if /^one-/i;
+    return "The $_" if $_ eq "floor";
     return /^[aeiou]/i ? "An $_" : "A $_";
 }
 
@@ -45,7 +46,7 @@ for (grep /\.des|\.des\.disabled|\.lua$/, `git ls-files`)
 }
 
 $features{articled("gleaming silver wall")} = 1;
-for (qw(open closed runed))
+for (qw(open closed runed sealed))
 {
     $features{articled("large $_ door")} = 1;
     $features{articled("$_ gate")} = 1;

@@ -7,18 +7,18 @@
 #                     patterns). Use large_themed.des for vaults with a clear
 #                     theme to them.
 #
-# Note that all maps for the Vaults branch system (including Vaults:8) reside in
+# Note that all maps for the Vaults branch system (including Vaults:$) reside in
 # vaults.des.
 ###############################################################################
 
-default-depth: D:12-26
+default-depth: D:12-, !D:$, Depths, !Depths:$
 
 ###############################################################################
 
 NAME:   minmay_octagon_city
 TAGS:   no_rotate
 ORIENT: north
-DEPTH:  D:16-
+DEPTH:  Depths, !Depths:$
 NSUBST: A = 1:+ / *:xxxx+, B = 1:+ / *:xxxx+, C = 1:+ / *:xxxx+
 NSUBST: D = 1:+ / *:xxxx+, E = 1:+ / *:xxxx+, F = 1:+ / *:xxxx+
 NSUBST: H = 1:+ / *:xxxx+, I = 1:+ / *:xxxx+, J = 1:+ / *:xxxx+
@@ -57,7 +57,7 @@ ENDMAP
 
 NAME:   minmay_thick_lines
 ORIENT: north
-DEPTH:  D:4-
+DEPTH:  D:4-, Depths
 WEIGHT: 1
 MAP
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -85,7 +85,7 @@ ENDMAP
 #############################################################################
 NAME:    vault_1
 ORIENT:  north
-DEPTH:   D:16-26
+DEPTH:   Depths, !Depths:$
 MONS:    shapeshifter, shapeshifter, glowing shapeshifter
 MONS:    silver statue, nothing
 SUBST:   E=E.
@@ -136,7 +136,7 @@ ENDMAP
 #
 NAME:    cell_vault
 ORIENT:  northwest
-DEPTH:   D:16-26
+DEPTH:   Depths, !Depths:$
 SHUFFLE: 890
 KITEM:   8 = | / nothing w:50
 KITEM:   9 = * / nothing w:50
@@ -182,7 +182,7 @@ ENDMAP
 # A little maze vault
 #
 NAME:   little_maze_vault
-DEPTH:  D:16-26
+DEPTH:  Depths, !Depths:$
 ORIENT: northeast
 MAP
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -219,7 +219,7 @@ ENDMAP
 # thingy vault.
 #
 NAME:   thingy_vault
-DEPTH:  D:12-26
+DEPTH:  D:12-, !D:$, Depths, !Depths:$
 ORIENT: southwest
 TAGS:   no_rotate
 NSUBST: ^ = 3:^ / *:.
@@ -258,7 +258,7 @@ ENDMAP
 #
 NAME:   hourglass_vault
 ORIENT: southeast
-DEPTH:  D:12-26
+DEPTH:  D:12-, !D:$, Depths, !Depths:$
 TAGS:   no_rotate no_hmirror
 MAP
 xxxxxxxxxxxxxx@xxxxxxxxxxxxxxxx
@@ -274,7 +274,7 @@ xxxxxxxx.............xxxxxxxxxx
 xxxxxxxxx.....8.....xxxxxxxxxxx
 xxxxxxxxxx...999...xxxxxxxxxxxx
 xxxxxxxxxxxx00000xxxxxxxxxxxxxx
-xxxxxxxxxxxxx===xxxxxxxxxxxxxxx
+xxxxxxxxxxxxx+++xxxxxxxxxxxxxxx
 xxxxxxxxxxxx.....xxxxxxxxxxxxxx
 xxxxxxxxxx.........xxxxxxxxxxxx
 xxxxxxxxx...........xxxxxxxxxxx
@@ -295,7 +295,7 @@ ENDMAP
 #
 NAME:   Angbandy_vault
 ORIENT: northeast
-DEPTH:  D:16-26
+DEPTH:  Depths, !Depths:$
 SUBST:  ^ = ^.
 SUBST:  "=.", '=.', '=$, "=*, *=* |:1
 MAP
@@ -336,7 +336,7 @@ ENDMAP
 # four-leaf vault
 #
 NAME:   four-leaf_vault
-DEPTH:  D:12-26
+DEPTH:  D:12-, !D:$, Depths, !Depths:$
 ORIENT: northwest
 MAP
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -375,7 +375,7 @@ ENDMAP
 # Cross-vault
 #
 NAME:   cross_vault
-DEPTH:  D:12-26
+DEPTH:  D:12-, !D:$, Depths, !Depths:$
 ORIENT: northwest
 SUBST:  ~=.~, ^=^.
 MAP
@@ -415,9 +415,9 @@ ENDMAP
 # Another thingy vault
 #
 NAME:   thingy_vault_2
-DEPTH:  D:14-26
+DEPTH:  Depths, !Depths:$
 ORIENT: southeast
-SUBST:  ' = ^ .:50
+KFEAT:  ' = alarm trap / floor w:190
 MONS:   orange crystal statue
 MAP
 xxxxxxxxxxxxxxx@xxxxxxxxxxxxxxxx
@@ -453,7 +453,7 @@ ENDMAP
 # Impenetrable vault
 #
 NAME:   impenetrable_vault
-DEPTH:  D:16-26
+DEPTH:  Depths:2-, !Depths:$
 ORIENT: southeast
 MAP
        .......@................x
@@ -490,7 +490,7 @@ ENDMAP
 #
 NAME:   mludivico_vault
 ORIENT: southwest
-DEPTH:  D:18-27
+DEPTH:  Depths, !Depths:$
 MONS:   hell hound, necromancer, wizard, orange demon, rotting devil
 MONS:   hell knight, great orb of eyes
 MAP
@@ -498,19 +498,19 @@ xx.@.xxxxxxxxxxxxxxxxxxxxxxxxxxx
 xxx...xxxxxxxxxxxxxxxxxxxxxxxxxx
 xxxx..........................xx
 xxxxxxxxxxxxxxxxxxxxxxxxxxxx..xx
-x.^^..........................xx
-xx.^^xx+xxxxxxxxxxxxxxxxxxxxxxxx
-xxx.^...11....xxxxxxxx..xxxxxxxx
+x.............................xx
+xx...xx+xxxxxxxxxxxxxxxxxxxxxxxx
+xxx.....11....xxxxxxxx..xxxxxxxx
 xxxx..x.1..6..xxx........xx..xxx
 xxxxx.xxxxxxxxx...vvvvv...x...xx
 x6..1...x.........+1..v.......xx
 x..1....x.........vvvvv........x
 x..5...xx......................x
-xxxxxx^++...........vvvvvvv....x
-xxxxxx^xx...xx=xx...vv$%$vvvvv.x
-xxxxxx^x...xxv1vxx...vvv*2...v.x
-xxxxxx^x..vvvv7.vvvv...vv.vv+v^x
-x..xxx^..vvvb....bvvv...vvv^...x
+xxxxxx.++...........vvvvvvv....x
+xxxxxx.xx...xx=xx...vv$%$vvvvv.x
+xxxxxx.x...xxv1vxx...vvv*2...v.x
+xxxxxx.x..vvvv7.vvvv...vv.vv+v.x
+x..xxx...vvvb....bvvv...vvv....x
 x%%.xx..vvvvb....bvvvv.......xxx
 xx.....vvbbb......bbbvv.....xxxx
 xxx....vvb....66....bvvxxxxxxxxx
@@ -523,9 +523,42 @@ xcccccccbbbbbbbbbbbccccccccccccx
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 ENDMAP
 
+NAME:   kennysheep_water_balloons
+ORIENT: northwest
+DEPTH:  D:15-, Depths
+NSUBST: % = 5:|
+SUBST:  % : %$
+MAP
+ccccccccccccccccccccccccc
+cccc............+.wwGww.c
+ccc..wwwww......c..www..c
+cc..wwwwwww....ccc..w..cc
+c..wwwwwwwww..ccccc...cc
+c.wwww%%%wwww.cccccc+cc
+c.www%9%8%www.ccccc...cc
+c.www%%G%%www.cccc..w..cc
+c.www%8%9%www.ccc..www..c
+c.wwww%%%wwww.ccc.ww9ww.c
+c..wwwwwwwww..ccc..www..c
+cc..wwwwwww..ccccc..w..cc
+ccc..wwwww..cc...+c...cc
+cccc.......cc..w..ccccc
+cccccccccccc..www..c
+cccccccccccc.ww9ww.c
+cccccccccccc..www..c
+c..ccccc...cc..w..cc
+cw..ccc..w..+c...cc
+cww..c..www..ccccc
+cGww.+.ww9ww.c
+cww..c..www..c
+cw..ccc..w..cc
+c..cc cc...cc
+c+cc   ccccc
+ENDMAP
+
 NAME:    minmay_open_boxes_in_corner
 ORIENT:  southeast
-DEPTH:   D:12-
+DEPTH:   D:12-, !D:$, Depths, !Depths:$
 SHUFFLE: $*%
 SUBST:   c : xcv
 SUBST:   $ = $$$$%*
@@ -553,7 +586,7 @@ ENDMAP
 
 NAME:    minmay_connected_boxes_in_corner
 ORIENT:  southeast
-DEPTH:   D:12-
+DEPTH:   D:12-, !D:$, Depths
 SHUFFLE: $*%, ABCDEFH
 SUBST:   $ = $$$$%*..
 SUBST:   % = %%%%$*.....
@@ -600,7 +633,7 @@ ENDMAP
 
 NAME:    minmay_triangles_in_corner
 ORIENT:  southeast
-DEPTH:   D:12-
+DEPTH:   D:12-, !D:$, Depths
 SHUFFLE: $%
 SUBST:   $ = $$$$%* .:180
 SUBST:   % = %%%%$* .:180
@@ -638,7 +671,7 @@ ENDMAP
 
 NAME:    minmay_isolated_rectangles_in_corner
 ORIENT:  southeast
-DEPTH:   D:12-26
+DEPTH:   D:12-, !D:$, Depths, !Depths:$
 SHUFFLE: ([{)]}, *$
 SUBST:   * = %**|$....
 SUBST:   $ = $$$$%
@@ -670,7 +703,7 @@ ENDMAP
 
 NAME:    minmay_connected_triangles_in_corner
 ORIENT:  southeast
-DEPTH:   D:12-26
+DEPTH:   D:12-, !D:$, Depths, !Depths:$
 SHUFFLE: ([{)]}, 890, |*%$
 SUBST:   c : cv
 MAP
@@ -703,7 +736,7 @@ ENDMAP
 
 NAME:   minmay_expanding_squares
 ORIENT: southeast
-DEPTH:  D:12-
+DEPTH:  D:12-, !D:$, Depths
 MAP
 @xxxxxxxxxxxxxxxxxxxxx
 x.0xxxxxxxxxxxxxxxxxxx
@@ -731,7 +764,7 @@ ENDMAP
 
 NAME:   minmay_expanding_circles
 ORIENT: southeast
-DEPTH:  D:12-
+DEPTH:  D:12-, !D:$, Depths
 KPROP:  .089 = no_rtele_into
 SUBST:  c : cv
 KMONS:  0 = 0
@@ -762,7 +795,7 @@ ENDMAP
 
 NAME:   minmay_box_of_statues
 ORIENT: southeast
-DEPTH:  D:12-
+DEPTH:  D:12-, !D:$, Depths
 SUBST:  c : cv
 MAP
 ccccccccccccccc+ccc
@@ -788,7 +821,7 @@ ENDMAP
 
 NAME:    minmay_nested_s
 ORIENT:  southwest
-DEPTH:   D:12-26
+DEPTH:   D:12-, !D:$, Depths, !Depths:$
 SUBST:   c : cv
 SHUFFLE: ([{, )]}
 MAP
@@ -839,7 +872,7 @@ ENDMAP
 ################################################################################
 # Two diamond shaped vaults
 NAME:   evilmike_diamond_1
-DEPTH:  D:12-
+DEPTH:  D:12-, !D:$, Depths, !Depths:$
 ORIENT: northwest
 NSUBST: | = 2:* / *:|
 SUBST:  X : c.., Y : c..
@@ -881,7 +914,7 @@ xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx.@
 ENDMAP
 
 NAME:   evilmike_diamond_2
-DEPTH:  D:12-
+DEPTH:  D:12-, !D:$, Depths
 ORIENT: southeast
 SUBST:  X : xxxnb.
 SUBST:  c : ccxxb
@@ -926,7 +959,7 @@ ENDMAP
 
 NAME:    nooodl_heptagram
 ORIENT:  south
-DEPTH:   D:18-
+DEPTH:   Depths
 SHUFFLE: AC / B8
 SHUFFLE: YZ / w" / l"
 SUBST:   " = .
@@ -964,7 +997,7 @@ xxC9xxxxxxxx'''''x.YY....xx...0..YYYY..0...xx....YY.x'''''xxxxxxxx98xx
 xx+xxxxxxxx''''''x..Y...xxxx..............xxxx...Y..x''''''xxxxxxxx+xx
 xAAAAxxxxxx''''''x+.Z..xxxxxx............xxxxxx..Z.+x''''''xxxxxxBBBBx
 xAAAAx.9.x''''''''x.Y..xxxxxx............xxxxxx..Y.x''''''''x.9.xBBBBx
-xAAAA+...=''''''''x.YY..xxxx..0...xx...0..xxxx..YY.x''''''''=...+BBBBx
+xAAAA+...+''''''''x.YY..xxxx..0...xx...0..xxxx..YY.x''''''''+...+BBBBx
 xAAAAxxxxxxx''''''x..Y...xx......xxxx......xx...Y..x''''''xxxxxxxBBBBx
 xxxxxxxxxxxxxx''''xx.YY.........xxxxxx.........YY.xx''''xxxxxxxxxxxxxx
 xxxxxxxxxxxxxxxxx''x..YY........xxxxxx........YY..x''xxxxxxxxxxxxxxxxx
@@ -985,7 +1018,7 @@ ENDMAP
 
 NAME:   minmay_tri_stars
 ORIENT: north
-DEPTH:  D:12-18
+DEPTH:  D:12-, !D:$, Depths, !Depths:$
 SUBST:  x : xvb
 MONS:   wizard w:400 / deep elf mage w:50 / orc wizard / deep elf conjurer / \
         deep elf summoner / orc sorcerer / ogre mage / nothing w:500
@@ -1026,7 +1059,7 @@ ENDMAP
 
 NAME:   minmay_three_patterns
 ORIENT: north
-DEPTH:  D:16-
+DEPTH:  Depths, !Depths:$
 SUBST:  x : x:7 c:1 b:1 v:1
 SUBST:  9 = 9., 8 = 8...
 MAP
@@ -1049,7 +1082,7 @@ ENDMAP
 
 NAME:    minmay_broken_ring
 ORIENT:  northwest
-DEPTH:   D:16-
+DEPTH:   Depths
 SHUFFLE: |*
 SUBST:   y : z:50 .:50 xcvbn8GTUVY
 SUBST:   z : c:30 v:12 b:7 n:1
@@ -1086,7 +1119,7 @@ ENDMAP
 
 NAME:   minmay_fractal_lines_corner
 ORIENT: northwest
-DEPTH:  D:16-
+DEPTH:  Depths
 SUBST:  z : xcvb
 SUBST:  8 = 888.
 MAP
@@ -1122,7 +1155,7 @@ ENDMAP
 
 NAME:   minmay_stepped
 ORIENT: northwest
-DEPTH:  D:12-
+DEPTH:  D:12-, !D:$, Depths
 SUBST:  z : xcvb
 SUBST:  9 = 9...
 MAP
@@ -1157,7 +1190,7 @@ ENDMAP
 
 NAME:   minmay_outward_triangles
 ORIENT: northwest
-DEPTH:  D:12-
+DEPTH:  D:12-, !D:$, Depths
 SUBST:  z : xcvb
 SUBST:  9 = 9.
 MAP
@@ -1192,7 +1225,7 @@ ENDMAP
 
 NAME:   minmay_wizard_corner
 ORIENT: southeast
-DEPTH:  D:12-18
+DEPTH:  D:12-
 KMONS:  1 = wizard / nothing w:140
 KMONS:  * = wizard / nothing
 KITEM:  * = *
@@ -1216,7 +1249,7 @@ xxxxxxxxxxxxxxxx
 ENDMAP
 
 NAME:  grunt_bent_corner
-DEPTH: D:16-
+DEPTH: Depths, !Depths:$
 ORIENT: northwest
 KMONS: 8 = 8 band w:20 / 9 band
 KMONS: 9 = 9 band w:20 / 0 band
@@ -1252,4 +1285,43 @@ cc.9.c...+cc
  cc..+..cc
   cc*c*cc
    ccccc
+ENDMAP
+
+NAME:   grunt_twisty_corner
+ORIENT: southwest
+DEPTH:  Depths, !Depths:$
+KMONS:  0 = 0 band
+KMONS:  9 = 9 band
+KMONS:  8 = 8 band
+MAP
+xxxxxxxxxxxxxxxxxxxxxxxxxx@
+xxxxxx........xxxxxxxxxxxx.@
+xxxxx.0........xxxxxxxxxx...@
+xxxx.0.xxxxxxx9.xxxxxxxx..G..@
+xxxx..xxxxxxxxx.xxxxxxx.....xx
+xxxx..xx.+.9*xx.xxxxxx.....xxx
+xxxx..xx.x98|xx.xxxxx.....xxxx
+xxxx..xx.x*||xx.xxxx.....xxxxx
+xxxx..xx.xxxxx..xxx.....xxxxxx
+xxxx..xx.9xxx.9xxx.....xxxxxxx
+xxxx..xxx.....xxx.....xxxxxxxx
+xxxx.0.xxxxxxxxx.....xxxxxxxxx
+xxxxx.0.xxxxxxx.....xxxxxxxxxx
+xxxxxx.......x.....xxxxxxxxxxx
+xxxxxxxx....0.....xxx......xxx
+xxxxxxxxxxxx..9..xxx9.xxxx9.xx
+xxxx$......x+...xxx..xxxxxx..x
+xxx*0.....0.++.0.xx.xx||*xx..x
+xx*9.......9.xx..xx.xx|89xx..x
+x$0..ccccc..0.x..xx.xx*9.xx..x
+x...cc*||cc...x..xx.9xxx+xx..x
+x...c.8*||c...x..xxx.....xx..x
+x...c9.8*|c...xx..xxxxxxxxx..x
+x...c.9.8*c...xx.0.xxxxxxx.0.x
+x...++.9.cc...xxx.0.......0.xx
+x$0..+cccc..0$xxxx.........xxx
+xx*9.......9*xxxxxxxxxxxxxxxxx
+xxx*0.....0*xxxxxxxxxxxxxxxxxx
+xxxx$.....$xxxxxxxxxxxxxxxxxxx
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 ENDMAP

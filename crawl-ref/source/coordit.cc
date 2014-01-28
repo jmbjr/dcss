@@ -9,8 +9,10 @@
 
 #include "coord-circle.h"
 #include "coord.h"
+#include "libutil.h"
+#include "los.h"
+#include "losglobal.h"
 #include "random.h"
-#include "player.h"
 
 rectangle_iterator::rectangle_iterator(const coord_def& corner1,
                                         const coord_def& corner2)
@@ -19,6 +21,15 @@ rectangle_iterator::rectangle_iterator(const coord_def& corner1,
     topleft.y = min(corner1.y, corner2.y); // not really necessary
     bottomright.x = max(corner1.x, corner2.x);
     bottomright.y = max(corner1.y, corner2.y);
+    current = topleft;
+}
+
+rectangle_iterator::rectangle_iterator(const coord_def& center, int halfside)
+{
+    topleft.x = center.x - halfside;
+    topleft.y = center.y - halfside;
+    bottomright.x = center.x + halfside;
+    bottomright.y = center.y + halfside;
     current = topleft;
 }
 
@@ -34,7 +45,7 @@ rectangle_iterator::rectangle_iterator(int x_border_dist, int y_border_dist)
 
 rectangle_iterator::operator bool() const
 {
-    return (current.y <= bottomright.y);
+    return current.y <= bottomright.y;
 }
 
 coord_def rectangle_iterator::operator *() const
@@ -62,7 +73,6 @@ void rectangle_iterator::operator++(int dummy)
 {
     ++(*this);
 }
-
 
 random_rectangle_iterator::random_rectangle_iterator(const coord_def& corner1,
                                                      const coord_def& corner2)
@@ -144,86 +154,66 @@ void random_rectangle_iterator::operator++(int dummy)
     ++(*this);
 }
 
-
 /*
- *  circle iterator
+ *  radius iterator
  */
-
-circle_iterator::circle_iterator(const circle_def &circle_)
-    : circle(circle_), iter(circle_.get_bbox().iter())
-{
-    while (iter && !circle.contains(*iter))
-        ++iter;
-}
-
-circle_iterator::operator bool() const
-{
-    return iter;
-}
-
-coord_def circle_iterator::operator*() const
-{
-    return *iter;
-}
-
-void circle_iterator::operator++()
-{
-    do
-        ++iter;
-    while (iter && !circle.contains(*iter));
-}
-
-void circle_iterator::operator++(int)
-{
-    ++(*this);
-}
-
-
-radius_iterator::radius_iterator(const coord_def& center, int param,
+radius_iterator::radius_iterator(const coord_def _center, int r,
                                  circle_type ctype,
-                                 const los_base* _los,
                                  bool _exclude_center)
-    : circle(center, param, ctype),
-      iter(circle.iter()),
-      exclude_center(_exclude_center),
+    : state(RI_START),
+      center(_center),
+      los(LOS_NONE)
+{
+    ASSERT(map_bounds(_center));
+    switch (ctype)
+    {
+    case C_CIRCLE: credit_y = r; break;
+    case C_POINTY: credit_y = r * r; break;
+    case C_ROUND:  credit_y = r * r + 1; break;
+    }
+    ++(*this);
+    if (_exclude_center)
+        ++(*this);
+}
+
+radius_iterator::radius_iterator(const coord_def _center,
+                                 los_type _los,
+                                 bool _exclude_center)
+    : state(RI_START),
+      center(_center),
       los(_los)
 {
-    advance(true);
+    ASSERT(map_bounds(_center));
+    credit_y = los_radius2;
+    ++(*this);
+    if (_exclude_center)
+        ++(*this);
 }
 
-radius_iterator::radius_iterator(const coord_def& _center, int _radius,
-                                 bool roguelike, bool _require_los,
+radius_iterator::radius_iterator(const coord_def _center,
+                                 int r,
+                                 circle_type ctype,
+                                 los_type _los,
                                  bool _exclude_center)
-    : circle(_center, _radius, roguelike ? C_SQUARE : C_POINTY),
-      iter(circle.iter()),
-      exclude_center(_exclude_center),
-      los(_require_los ? you.get_los() : NULL)
+    : state(RI_START),
+      center(_center),
+      los(_los)
 {
-    advance(true);
-}
-
-radius_iterator::radius_iterator(const los_base* los_,
-                                 bool _exclude_center)
-    : circle(los_->get_bounds()),
-      iter(circle.iter()),
-      exclude_center(_exclude_center),
-      los(los_)
-{
-    advance(true);
-}
-
-void radius_iterator::advance(bool may_stay)
-{
-    if (!may_stay)
-        ++iter;
-    while (iter && !is_valid_square(*iter))
-        ++iter;
-    current = *iter;
+    ASSERT(map_bounds(_center));
+    switch (ctype)
+    {
+    case C_CIRCLE: credit_y = r; break;
+    case C_POINTY: credit_y = r * r; break;
+    case C_ROUND:  credit_y = r * r + 1; break;
+    }
+    ++(*this);
+    if (_exclude_center)
+        ++(*this);
 }
 
 radius_iterator::operator bool() const
 {
-    return iter;
+    return state;
 }
 
 coord_def radius_iterator::operator *() const
@@ -236,21 +226,93 @@ const coord_def* radius_iterator::operator->() const
     return &current;
 }
 
-bool radius_iterator::is_valid_square(const coord_def &p) const
-{
-    if (exclude_center && p == circle.get_center())
-        return false;
-    if (los && !los->see_cell(p))
-        return false;
-    return true;
-}
+#define coreturn(id) { state = id; return; case id:; }
+#define cobegin(id)  switch (state) { case id:
+#define coend(id)    coreturn(id); }
+#define ret_coord(dx, dy, id) do                                \
+    {                                                           \
+        current.x = center.x + (dx);                            \
+        current.y = center.y + (dy);                            \
+        if (!los || cell_see_cell(center, current, los))        \
+            coreturn(id);                                       \
+    } while (0)
 
 void radius_iterator::operator++()
 {
-    advance(false);
+    cobegin(RI_START);
+
+    y = 0;
+    cost_y = -1;
+
+    do
+    {
+        x = 0;
+        cost_x = -1;
+        credit_x = credit_y;
+
+        do
+        {
+            if (x + center.x < GXM)
+            {
+                if (y + center.y < GYM)
+                    ret_coord( x,  y, RI_SE);
+                if (y && y <= center.y)
+                    ret_coord( x, -y, RI_NE);
+            }
+            if (x && x <= center.x)
+            {
+                if (y + center.y < GYM)
+                    ret_coord(-x,  y, RI_SW);
+                if (y && y <= center.y)
+                    ret_coord(-x, -y, RI_NW);
+            }
+            x++;
+            credit_x -= (cost_x += 2);
+        } while (credit_x >= 0);
+
+        y++;
+        credit_y -= (cost_y += 2);
+    } while (credit_y >= 0);
+
+    coend(RI_DONE);
 }
 
 void radius_iterator::operator++(int dummy)
+{
+    ++(*this);
+}
+
+/*
+ *  adjacent iterator
+ */
+extern const struct coord_def Compass[9];
+
+adjacent_iterator::operator bool() const
+{
+    return i >= 0;
+}
+
+coord_def adjacent_iterator::operator *() const
+{
+    return val;
+}
+
+const coord_def* adjacent_iterator::operator->() const
+{
+    return &val;
+}
+
+void adjacent_iterator::operator ++()
+{
+    while (--i >= 0)
+    {
+        val = center + Compass[i];
+        if (map_bounds(val))
+            return;
+    }
+}
+
+void adjacent_iterator::operator++(int dummy)
 {
     ++(*this);
 }
@@ -371,3 +433,109 @@ int distance_iterator::radius() const
 {
     return r;
 }
+
+/********************/
+/* regression tests */
+/********************/
+#ifdef DEBUG_TESTS
+static void _test_ai(const coord_def c, bool exc, size_t expected)
+{
+    set<coord_def> seen;
+
+    for (adjacent_iterator ai(c, exc); ai; ++ai)
+    {
+        if (seen.count(*ai))
+            die("adjacent_iterator: %d,%d seen twice", ai->x, ai->y);
+        seen.insert(*ai);
+
+        if (c == *ai && !exc)
+            continue;
+        if ((c - *ai).range() != 1)
+        {
+            die("adjacent_iterator: %d,%d not adjacent to %d,%d",
+                ai->x, ai->y, c.x, c.y);
+        }
+    }
+
+    if (seen.size() != expected)
+    {
+        die("adjacent_iterator(%d,%d): seen %d, expected %d",
+            c.x, c.y, (int)seen.size(), (int)expected);
+    }
+}
+
+void coordit_tests()
+{
+    // bounding box of our playground
+    #define BC   16
+    #define BBOX 32
+    ASSERT(los_radius2 < sqr(BC - 2));
+    coord_def center(BC, BC);
+
+    FixedBitArray<BBOX, BBOX> seen;
+
+    for (int r = 0; r <= los_radius2; ++r)
+    {
+        seen.reset();
+
+        for (radius_iterator ri(center, r, C_CIRCLE); ri; ++ri)
+        {
+            if (seen(*ri))
+                die("radius_iterator(C%d): %d,%d seen twice", r, ri->x, ri->y);
+            seen.set(*ri);
+        }
+
+        for (int x = 0; x < BBOX; x++)
+            for (int y = 0; y < BBOX; y++)
+            {
+                bool in = sqr(x - BC) + sqr(y - BC) <= r;
+                if (seen(coord_def(x, y)) != in)
+                {
+                    die("radius_iterator(C%d) mismatch at %d,%d: %d != %d",
+                        r, x, y, seen(coord_def(x, y)), in);
+                }
+            }
+    }
+
+    for (radius_iterator ri(coord_def(2, 2), 5, C_ROUND); ri; ++ri)
+        if (!map_bounds(*ri))
+            die("radius_iterator(R5) out of bounds at %d, %d", ri->x, ri->y);
+    for (radius_iterator ri(coord_def(GXM - 1, GYM - 1), 7, C_ROUND); ri; ++ri)
+        if (!map_bounds(*ri))
+            die("radius_iterator(R7) out of bounds at %d, %d", ri->x, ri->y);
+
+    seen.reset();
+    int rd = 0;
+    for (distance_iterator di(center, true, false, BC - 1); di; ++di)
+    {
+        if (seen(*di))
+            die("distance_iterator: %d,%d seen twice", di->x, di->y);
+        seen.set(*di);
+
+        int rc = (center - *di).range();
+        if (rc < rd)
+            die("distance_iterator went backwards");
+        rd = rc;
+    }
+
+    for (int x = 0; x < BBOX; x++)
+        for (int y = 0; y < BBOX; y++)
+        {
+            bool in = sqr(x - BC) + sqr(y - BC) <= dist_range(BC - 1);
+            if (seen(coord_def(x, y)) != in)
+            {
+                die("distance_iterator mismatch at %d,%d: %d != %d",
+                    x, y, seen(coord_def(x, y)), in);
+            }
+        }
+
+    _test_ai(center, false, 9);
+    _test_ai(center, true, 8);
+    _test_ai(coord_def(3, 0), false, 6);
+    _test_ai(coord_def(3, 0), true, 5);
+    _test_ai(coord_def(0, 0), false, 4);
+    _test_ai(coord_def(0, 0), true, 3);
+    _test_ai(coord_def(GXM, GYM), false, 1);
+    _test_ai(coord_def(GXM, GYM), true, 1);
+}
+#endif

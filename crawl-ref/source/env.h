@@ -14,6 +14,8 @@ typedef set<string> string_set;
 struct vault_placement;
 typedef vector<vault_placement*> vault_placement_refv;
 
+typedef FixedArray< map_cell, GXM, GYM > MapKnowledge;
+
 class final_effect;
 struct crawl_environment
 {
@@ -21,7 +23,7 @@ struct crawl_environment
     colour_t floor_colour;
 
     FixedVector< item_def, MAX_ITEMS >       item;  // item list
-    FixedVector< monster, MAX_MONSTERS+1 >   mons;  // monster list, plus anon
+    FixedVector< monster, MAX_MONSTERS+2 >   mons;  // monster list, plus anon
 
     feature_grid                             grid;  // terrain grid
     FixedArray<terrain_property_t, GXM, GYM> pgrid; // terrain properties
@@ -37,7 +39,6 @@ struct crawl_environment
     string_set                               level_uniq_maps;
     string_set                               level_uniq_map_tags;
     string_set                               level_layout_types;
-    vector<string>                           level_vault_list;
 
     string                                   level_build_method;
 
@@ -45,10 +46,11 @@ struct crawl_environment
 
     unique_ptr<grid_heightmap>               heightmap;
 
+    map_bitmask                              map_seen;
     // Player-remembered terrain and LOS
-    FixedArray< map_cell, GXM, GYM >         map_knowledge;
-    // Previous map knowledge (last step)
-    FixedArray< map_cell, GXM, GYM >         map_shadow;
+    MapKnowledge                             map_knowledge;
+    // Forgotten map knowledge (X^F)
+    unique_ptr<MapKnowledge>                 map_forgotten;
     set<coord_def> visible;
 
     vector<coord_def>                        travel_trail;

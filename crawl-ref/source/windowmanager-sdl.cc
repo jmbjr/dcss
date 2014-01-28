@@ -114,13 +114,13 @@ static int _translate_keysym(SDL_keysym &keysym)
     {
     case SDLK_RETURN:
     case SDLK_KP_ENTER:
-        return (CK_ENTER + offset);
+        return CK_ENTER + offset;
     case SDLK_BACKSPACE:
-        return (CK_BKSP + offset);
+        return CK_BKSP + offset;
     case SDLK_ESCAPE:
-        return (CK_ESCAPE + offset);
+        return CK_ESCAPE + offset;
     case SDLK_DELETE:
-        return (CK_DELETE + offset);
+        return CK_DELETE + offset;
 
 #ifdef __ANDROID__
     // i think android's SDL port treats these differently? they certainly
@@ -172,40 +172,40 @@ static int _translate_keysym(SDL_keysym &keysym)
 
         // Hack.  libw32c overloads clear with '5' too.
     case SDLK_KP5:
-        return (CK_CLEAR + numpad_offset);
+        return CK_CLEAR + numpad_offset;
 
     case SDLK_KP8:
     case SDLK_UP:
-        return (CK_UP + numpad_offset);
+        return CK_UP + numpad_offset;
     case SDLK_KP2:
     case SDLK_DOWN:
-        return (CK_DOWN + numpad_offset);
+        return CK_DOWN + numpad_offset;
     case SDLK_KP4:
     case SDLK_LEFT:
-        return (CK_LEFT + numpad_offset);
+        return CK_LEFT + numpad_offset;
     case SDLK_KP6:
     case SDLK_RIGHT:
-        return (CK_RIGHT + numpad_offset);
+        return CK_RIGHT + numpad_offset;
     case SDLK_KP0:
     case SDLK_INSERT:
         return CK_INSERT + numpad_offset;
     case SDLK_KP7:
     case SDLK_HOME:
-        return (CK_HOME + numpad_offset);
+        return CK_HOME + numpad_offset;
     case SDLK_KP1:
     case SDLK_END:
-        return (CK_END + numpad_offset);
+        return CK_END + numpad_offset;
     case SDLK_CLEAR:
-        return (CK_CLEAR + numpad_offset);
+        return CK_CLEAR + numpad_offset;
     case SDLK_KP9:
     case SDLK_PAGEUP:
-        return (CK_PGUP + numpad_offset);
+        return CK_PGUP + numpad_offset;
     case SDLK_KP3:
     case SDLK_PAGEDOWN:
-        return (CK_PGDN + numpad_offset);
+        return CK_PGDN + numpad_offset;
     case SDLK_TAB:
         if (numpad_offset) // keep tab a tab
-            return (CK_TAB_TILE + numpad_offset);
+            return CK_TAB_TILE + numpad_offset;
 #ifdef TOUCH_UI
         break;
     // used for zoom in/out
@@ -222,7 +222,7 @@ static int _translate_keysym(SDL_keysym &keysym)
     const int key_offset = (mod & MOD_ALT) ? -3000 : 0;
 
     const bool is_ascii = keysym.unicode < 127;
-    return (is_ascii ? (keysym.unicode & 0x7F) + key_offset : keysym.unicode);
+    return is_ascii ? (keysym.unicode & 0x7F) + key_offset : keysym.unicode;
 }
 
 static void _translate_event(const SDL_MouseMotionEvent &sdl_event,
@@ -316,7 +316,9 @@ int SDLWrapper::init(coord_def *m_windowsz)
     _desktop_width = video_info->current_w;
     _desktop_height = video_info->current_h;
 
+#if !SDL_VERSION_ATLEAST(2,0,0)
     SDL_EnableUNICODE(true);
+#endif
 
     SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
     glDebug("SDL_GL_DOUBLEBUFFER");
@@ -331,6 +333,7 @@ int SDLWrapper::init(coord_def *m_windowsz)
     SDL_GL_SetAttribute(SDL_GL_ALPHA_SIZE, 8);
     glDebug("SDL_GL_ALPHA_SIZE 8");
 
+#if !SDL_VERSION_ATLEAST(2,0,0)
     if (Options.tile_key_repeat_delay > 0)
     {
         const int repdelay    = Options.tile_key_repeat_delay;
@@ -344,6 +347,7 @@ int SDLWrapper::init(coord_def *m_windowsz)
             printf("Failed to set key repeat mode: %s\n", SDL_GetError());
 #endif
     }
+#endif
 
 #ifdef USE_GLES
 #ifdef __ANDROID__

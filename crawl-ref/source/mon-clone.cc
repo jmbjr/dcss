@@ -5,6 +5,7 @@
 
 #include "AppHdr.h"
 
+#include "act-iter.h"
 #include "arena.h"
 #include "artefact.h"
 #include "directn.h"
@@ -17,7 +18,6 @@
 #include "mon-behv.h"
 #include "mon-clone.h"
 #include "mon-enum.h"
-#include "mon-iter.h"
 #include "mon-place.h"
 #include "mon-stuff.h"
 #include "mon-util.h"
@@ -57,14 +57,14 @@ static bool _monster_clone_exists(monster* mons)
 
 static bool _mons_is_illusion(monster* mons)
 {
-    return (mons->type == MONS_PLAYER_ILLUSION
-            || mons->type == MONS_MARA_FAKE
-            || mons->props.exists(clone_slave_key));
+    return mons->type == MONS_PLAYER_ILLUSION
+           || mons->type == MONS_MARA_FAKE
+           || mons->props.exists(clone_slave_key);
 }
 
 static bool _mons_is_illusion_cloneable(monster* mons)
 {
-    return (!_mons_is_illusion(mons) && !_monster_clone_exists(mons));
+    return !_mons_is_illusion(mons) && !_monster_clone_exists(mons);
 }
 
 static bool _player_is_illusion_cloneable()
@@ -162,7 +162,6 @@ static enchant_type _player_duration_to_mons_enchantment(duration_type dur)
     case DUR_MIGHT:     return ENCH_MIGHT;
     case DUR_BERSERK:   return ENCH_BERSERK;
     case DUR_POISONING: return ENCH_POISON;
-    case DUR_SWIFTNESS: return ENCH_SWIFT;
 
     default:            return ENCH_NONE;
     }
@@ -196,8 +195,7 @@ void mons_summon_illusion_from(monster* mons, actor *foe,
                 mgen_data(MONS_PLAYER_ILLUSION, SAME_ATTITUDE(mons), mons,
                           6, spell_cast, mons->pos(), mons->foe, 0)))
         {
-            mpr("There is a horrible, sudden wrenching feeling in your soul!",
-                MSGCH_WARN);
+            mprf(MSGCH_WARN, "There is a horrible, sudden wrenching feeling in your soul!");
 
             // Change type from player ghost.
             clone->type = MONS_PLAYER_ILLUSION;

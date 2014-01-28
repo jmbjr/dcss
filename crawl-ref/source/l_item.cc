@@ -341,7 +341,7 @@ static int l_item_do_subtype(lua_State *ls)
                          || item->sub_type == POT_GAIN_DEXTERITY
                          || item->sub_type == POT_GAIN_INTELLIGENCE)
                 {
-                   s = "gain ability";
+                    s = "gain ability";
                 }
 #endif
                 else if (item->sub_type == POT_CURE_MUTATION)
@@ -481,7 +481,7 @@ IDEF(equip_type)
     else if (item->base_type == OBJ_ARMOUR)
         eq = get_armour_slot(*item);
     else if (item->base_type == OBJ_JEWELLERY)
-        eq = item->sub_type >= AMU_RAGE? EQ_AMULET : EQ_RINGS;
+        eq = item->sub_type >= AMU_RAGE ? EQ_AMULET : EQ_RINGS;
 
     if (eq != EQ_NONE)
     {
@@ -629,6 +629,58 @@ IDEF(god_gift)
         return 0;
 
     lua_pushboolean(ls, origin_is_god_gift(*item));
+
+    return 1;
+}
+
+IDEF(fully_identified)
+{
+    if (!item || !item->defined())
+        return 0;
+
+    lua_pushboolean(ls, fully_identified(*item));
+
+    return 1;
+}
+
+IDEF(plus)
+{
+    if (!item || !item->defined())
+        return 0;
+
+    if (item_ident(*item, ISFLAG_KNOW_PLUSES)
+        && (item->base_type == OBJ_WEAPONS || item->base_type == OBJ_ARMOUR
+            || item->base_type == OBJ_WANDS
+            || item->base_type == OBJ_JEWELLERY
+               && (item->sub_type == RING_PROTECTION
+                   || item->sub_type == RING_STRENGTH
+                   || item->sub_type == RING_SLAYING
+                   || item->sub_type == RING_EVASION
+                   || item->sub_type == RING_DEXTERITY
+                   || item->sub_type == RING_INTELLIGENCE)))
+    {
+        lua_pushnumber(ls, item->plus);
+    }
+    else
+        lua_pushnil(ls);
+
+    return 1;
+}
+
+IDEF(plus2)
+{
+    if (!item || !item->defined())
+        return 0;
+
+    if (item_ident(*item, ISFLAG_KNOW_PLUSES)
+        && (item->base_type == OBJ_WEAPONS
+            || item->base_type == OBJ_JEWELLERY
+               && item->sub_type == RING_SLAYING))
+    {
+        lua_pushnumber(ls, item->plus2);
+    }
+    else
+        lua_pushnil(ls);
 
     return 1;
 }
@@ -809,6 +861,18 @@ IDEF(ego_type)
     }
 
     lua_pushstring(ls, ego_type_string(*item).c_str());
+    return 1;
+}
+
+IDEF(ego_type_terse)
+{
+    if (CLua::get_vm(ls).managed_vm && !item_ident(*item, ISFLAG_KNOW_TYPE))
+    {
+        lua_pushstring(ls, "unknown");
+        return 1;
+    }
+
+    lua_pushstring(ls, ego_type_string(*item, true).c_str());
     return 1;
 }
 
@@ -1051,6 +1115,9 @@ static ItemAccessor item_attrs[] =
     { "branded",           l_item_branded },
     { "snakable",          l_item_snakable },
     { "god_gift",          l_item_god_gift },
+    { "fully_identified",  l_item_fully_identified },
+    { "plus",              l_item_plus },
+    { "plus2",             l_item_plus2 },
     { "class",             l_item_class },
     { "subtype",           l_item_subtype },
     { "cursed",            l_item_cursed },
@@ -1085,6 +1152,7 @@ static ItemAccessor item_attrs[] =
     { "base_type",         l_item_base_type },
     { "sub_type",          l_item_sub_type },
     { "ego_type",          l_item_ego_type },
+    { "ego_type_terse",    l_item_ego_type_terse },
     { "artefact_name",     l_item_artefact_name },
     { "is_cursed",         l_item_is_cursed },
 };

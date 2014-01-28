@@ -5,6 +5,7 @@
 #include "coord.h"
 #include "directn.h"
 #include "env.h"
+#include "los.h"
 #include "mon-place.h"
 #include "mon-stuff.h"
 #include "mon-util.h"
@@ -64,10 +65,10 @@ int mons_tracking_range(const monster* mon)
             range++;
     }
 
-    if (you.penance[GOD_ASHENZARI])
+    if (player_under_penance(GOD_ASHENZARI))
         range *= 5;
 
-    if (mons_foe_is_marked(mon))
+    if (mons_foe_is_marked(mon) || mon->has_ench(ENCH_HAUNTING))
         range *= 5;
 
     return range;
@@ -415,6 +416,15 @@ bool monster_pathfind::traversable(const coord_def& p)
     if (opc_immob(p) == OPC_OPAQUE
         && grd(p) != DNGN_CLOSED_DOOR && grd(p) != DNGN_SEALED_DOOR)
     {
+        // XXX: Ugly hack to make thorn hunters use their briars for defensive
+        //      cover instead of just pathing around them.
+        if (mons && mons->type == MONS_THORN_HUNTER
+            && monster_at(p)
+            && monster_at(p)->type == MONS_BRIAR_PATCH)
+        {
+            return true;
+        }
+
         return false;
     }
 

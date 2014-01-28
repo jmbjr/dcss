@@ -270,7 +270,7 @@ void DungeonRegion::draw_minibars()
 
         ShapeBuffer buff;
 
-        if (!on_screen(you.pos()))
+        if (!you.on_current_level || !on_screen(you.pos()))
             return;
 
         // FIXME: to_screen_coords could be made into two versions: one
@@ -351,11 +351,11 @@ void DungeonRegion::on_resize()
 
 // FIXME: If the player is targeted, the game asks the player to target
 // something with the mouse, then targets the player anyway and treats
-// mouse click as if it hadn't come during targetting (moves the player
+// mouse click as if it hadn't come during targeting (moves the player
 // to the clicked cell, whatever).
-static void _add_targetting_commands(const coord_def& pos)
+static void _add_targeting_commands(const coord_def& pos)
 {
-    // Force targetting cursor back onto center to start off on a clean
+    // Force targeting cursor back onto center to start off on a clean
     // slate.
     macro_buf_add_cmd(CMD_TARGET_FIND_YOU);
 
@@ -387,7 +387,7 @@ static bool _is_appropriate_spell(spell_type spell, const actor* target)
     ASSERT(is_valid_spell(spell));
 
     const unsigned int flags    = get_spell_flags(spell);
-    const bool         targeted = flags & SPFLAG_TARGETTING_MASK;
+    const bool         targeted = flags & SPFLAG_TARGETING_MASK;
 
     // We don't handle grid targeted spells yet.
     if (flags & SPFLAG_GRID)
@@ -417,8 +417,8 @@ static bool _is_appropriate_spell(spell_type spell, const actor* target)
         if (flags & SPFLAG_NOT_SELF)
             return false;
 
-        return ((flags & (SPFLAG_HELPFUL | SPFLAG_ESCAPE | SPFLAG_RECOVERY))
-                || !targeted);
+        return (flags & (SPFLAG_HELPFUL | SPFLAG_ESCAPE | SPFLAG_RECOVERY))
+               || !targeted;
     }
 
     if (!targeted)
@@ -429,7 +429,7 @@ static bool _is_appropriate_spell(spell_type spell, const actor* target)
 
     bool friendly = target->as_monster()->wont_attack();
 
-    return (friendly == helpful);
+    return friendly == helpful;
 }
 
 static bool _is_appropriate_evokable(const item_def& item,
@@ -450,7 +450,7 @@ static bool _is_appropriate_evokable(const item_def& item,
     if (!item_type_known(item))
         return true;
 
-    // Random effects are always (in)apropriate for all targets.
+    // Random effects are always (in)appropriate for all targets.
     if (item.sub_type == WAND_RANDOM_EFFECTS)
         return true;
 
@@ -512,7 +512,7 @@ static item_def* _get_evokable_item(const actor* target)
     if (sel.empty())
         return NULL;
 
-    return (const_cast<item_def*>(sel[0].item));
+    return const_cast<item_def*>(sel[0].item);
 }
 
 static bool _evoke_item_on_target(actor* target)
@@ -540,13 +540,13 @@ static bool _evoke_item_on_target(actor* target)
 
     macro_buf_add_cmd(CMD_EVOKE);
     macro_buf_add(index_to_letter(item->link)); // Inventory letter.
-    _add_targetting_commands(target->pos());
+    _add_targeting_commands(target->pos());
     return true;
 }
 
 static bool _spell_in_range(spell_type spell, actor* target)
 {
-    if (!(get_spell_flags(spell) & SPFLAG_TARGETTING_MASK))
+    if (!(get_spell_flags(spell) & SPFLAG_TARGETING_MASK))
         return true;
 
     int range = calc_spell_range(spell);
@@ -564,7 +564,7 @@ static bool _spell_in_range(spell_type spell, actor* target)
         break;
     }
 
-    return (range >= grid_distance(you.pos(), target->pos()));
+    return range >= grid_distance(you.pos(), target->pos());
 }
 
 static actor* _spell_target = NULL;
@@ -593,7 +593,8 @@ static bool _cast_spell_on_target(actor* target)
             // Prevent the spell letter from being recorded twice.
             pause_all_key_recorders pause;
 
-            letter = list_spells(true, false, true, _spell_selector);
+            letter = list_spells(true, false, true, "Your Spells",
+                                 _spell_selector);
         }
 
         _spell_target = NULL;
@@ -623,8 +624,8 @@ static bool _cast_spell_on_target(actor* target)
     macro_buf_add_cmd(CMD_FORCE_CAST_SPELL);
     macro_buf_add(letter);
 
-    if (get_spell_flags(spell) & SPFLAG_TARGETTING_MASK)
-        _add_targetting_commands(target->pos());
+    if (get_spell_flags(spell) & SPFLAG_TARGETING_MASK)
+        _add_targeting_commands(target->pos());
 
     return true;
 }
@@ -646,8 +647,8 @@ static bool _have_appropriate_spell(const actor* target)
 
 static bool _can_fire_item()
 {
-    return (you.species != SP_FELID
-            && you.m_quiver->get_fire_item() != -1);
+    return you.species != SP_FELID
+           && you.m_quiver->get_fire_item() != -1;
 }
 
 static bool _handle_distant_monster(monster* mon, unsigned char mod)
@@ -667,7 +668,7 @@ static bool _handle_distant_monster(monster* mon, unsigned char mod)
                      && !mon->wont_attack()))
     {
         macro_buf_add_cmd(CMD_FIRE);
-        _add_targetting_commands(mon->pos());
+        _add_targeting_commands(mon->pos());
         return true;
     }
 
@@ -683,7 +684,7 @@ static bool _handle_distant_monster(monster* mon, unsigned char mod)
         if (dist > 2 && weapon && weapon_reach(*weapon) >= dist)
         {
             macro_buf_add_cmd(CMD_EVOKE_WIELDED);
-            _add_targetting_commands(mon->pos());
+            _add_targeting_commands(mon->pos());
             return true;
         }
     }
@@ -905,7 +906,7 @@ int DungeonRegion::handle_mouse(MouseEvent &event)
         case MouseEvent::RIGHT:
             if (!(event.mod & MOD_SHIFT))
                 return command_to_key(CMD_RESISTS_SCREEN); // Character overview.
-            if (you.religion != GOD_NO_GOD)
+            if (!you_worship(GOD_NO_GOD))
                 return command_to_key(CMD_DISPLAY_RELIGION); // Religion screen.
 
             // fall through...
@@ -971,7 +972,7 @@ bool DungeonRegion::on_screen(const coord_def &gc) const
     int x = gc.x - m_cx_to_gx;
     int y = gc.y - m_cy_to_gy;
 
-    return (x >= 0 && x < mx && y >= 0 && y < my);
+    return x >= 0 && x < mx && y >= 0 && y < my;
 }
 
 void DungeonRegion::place_cursor(cursor_type type, const coord_def &gc)
@@ -1064,7 +1065,10 @@ bool DungeonRegion::update_tip_text(string &tip)
             tip += tile_debug_string(cell.tile.fg, cell.tile.bg, cell.tile.cloud, 'V');
         }
 
-        tip += make_stringf("\nFLV: floor: %d (%s) (%d)\n     wall:  %d (%s) (%d)\n     feat:  %d (%s) (%d)\n",
+        tip += make_stringf("\nFLV: floor: %d (%s) (%d)"
+                            "\n     wall:  %d (%s) (%d)"
+                            "\n     feat:  %d (%s) (%d)"
+                            "\n  special:  %d\n",
                             env.tile_flv(gc).floor,
                             tile_dngn_name(env.tile_flv(gc).floor),
                             env.tile_flv(gc).floor_idx,
@@ -1073,7 +1077,8 @@ bool DungeonRegion::update_tip_text(string &tip)
                             env.tile_flv(gc).wall_idx,
                             env.tile_flv(gc).feat,
                             tile_dngn_name(env.tile_flv(gc).feat),
-                            env.tile_flv(gc).feat_idx);
+                            env.tile_flv(gc).feat_idx,
+                            env.tile_flv(gc).special);
 
         ret = true;
     }
@@ -1257,7 +1262,7 @@ bool tile_dungeon_tip(const coord_def &gc, string &tip)
         cmd.push_back(CMD_RESISTS_SCREEN);
 
         // Religion.
-        if (you.religion != GOD_NO_GOD)
+        if (!you_worship(GOD_NO_GOD))
         {
             _add_tip(tip, "[Shift + R-Click] Religion (%)");
             cmd.push_back(CMD_DISPLAY_RELIGION);
@@ -1292,14 +1297,11 @@ bool DungeonRegion::update_alt_text(string &alt)
         return false;
 
     describe_info inf;
+    dungeon_feature_type feat = env.map_knowledge(gc).feat();
     if (you.see_cell(gc))
-        get_square_desc(gc, inf, true, false);
-    else if (grid_appearance(gc) != DNGN_FLOOR
-             && !feat_is_wall(grid_appearance(gc))
-             && !feat_is_tree(grid_appearance(gc)))
-    {
+        get_square_desc(gc, inf);
+    else if (feat != DNGN_FLOOR && !feat_is_wall(feat) && !feat_is_tree(feat))
         get_feature_desc(gc, inf);
-    }
     else
     {
         // For plain floor, output the stash description.

@@ -52,7 +52,7 @@ static int _get_next_part(int cat, int part, int inc)
         max_part = tile_player_count(offset);
     }
 
-    ASSERT(inc > -max_part);
+    ASSERT(inc > -max_part || inc == -1);
 
     // Translate the "none" value into something we can do modulo math with.
     if (part == 0)
@@ -165,7 +165,6 @@ void DollEditRegion::render()
         tile_name_y = (edit_doll_line + 1) * 32.0f;
         m_font_buf.add("Equip", VColour::white, tile_name_x, tile_name_y);
     }
-
 
     set_transform();
     m_shape_buf.draw();

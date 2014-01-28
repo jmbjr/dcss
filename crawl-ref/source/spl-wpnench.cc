@@ -16,7 +16,6 @@
 #include "shout.h"
 #include "skills2.h"
 
-
 // We need to know what brands equate with what missile brands to know if
 // we should disallow temporary branding or not.
 static special_missile_type _convert_to_missile(brand_type which_brand)
@@ -30,7 +29,6 @@ static special_missile_type _convert_to_missile(brand_type which_brand)
     case SPWPN_FREEZING: return SPMSL_FROST;
     case SPWPN_VENOM: return SPMSL_POISONED;
     case SPWPN_CHAOS: return SPMSL_CHAOS;
-    case SPWPN_RETURNING: return SPMSL_RETURNING;
     default: return SPMSL_NORMAL; // there are no equivalents for the rest
                                   // of the ammo brands.
     }
@@ -58,7 +56,6 @@ static bool _ok_for_launchers(brand_type which_brand)
     case SPWPN_FLAME:
     case SPWPN_VENOM:
     //case SPWPN_PAIN: -- no pain missile type yet
-    case SPWPN_RETURNING:
     case SPWPN_CHAOS:
     case SPWPN_VORPAL:
         return true;
@@ -78,16 +75,12 @@ spret_type brand_weapon(brand_type which_brand, int power, bool fail)
     bool temp_brand = you.duration[DUR_WEAPON_BRAND];
     item_def& weapon = *you.weapon();
 
-    // Can't brand non-weapons, but can brand some launchers (see later).
-    if (weapon.base_type != OBJ_WEAPONS)
+    if (!is_brandable_weapon(weapon, true))
     {
-        mpr("This isn't a weapon.");
-        return SPRET_ABORT;
-    }
-
-    if (weapon.sub_type == WPN_BLOWGUN || is_artefact(weapon))
-    {
-        mpr("You cannot enchant this weapon.");
+        if (weapon.base_type != OBJ_WEAPONS)
+            mpr("This isn't a weapon.");
+        else
+            mpr("You cannot enchant this weapon.");
         return SPRET_ABORT;
     }
 
@@ -216,11 +209,6 @@ spret_type brand_weapon(brand_type which_brand, int power, bool fail)
 
     case SPWPN_CHAOS:
         msg += " glistens with random hues.";
-        break;
-
-    case SPWPN_RETURNING:
-        msg += " wiggles in your " + you.hand_name(false) + ".";
-        duration_affected = 5;
         break;
 
     default:

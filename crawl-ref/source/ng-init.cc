@@ -18,7 +18,9 @@
 #include "maps.h"
 #include "player.h"
 #include "random.h"
+#include "random-weight.h"
 #include "religion.h"
+#include "spl-util.h"
 #include "state.h"
 #include "store.h"
 #include "stuff.h"
@@ -51,47 +53,52 @@ static uint8_t _random_potion_description()
 // Determine starting depths of branches.
 void initialise_branch_depths()
 {
-    root_branch = BRANCH_MAIN_DUNGEON;
+    root_branch = BRANCH_DUNGEON;
 
-    for (int branch = BRANCH_ECUMENICAL_TEMPLE; branch < NUM_BRANCHES; ++branch)
-    {
-        const Branch *b = &branches[branch];
-        if (branch_is_unfinished(b->id))
-            startdepth[branch] = -1;
-        else
-            startdepth[branch] = random_range(b->mindepth, b->maxdepth);
-    }
-
-    // You will get one of Shoals/Swamp and one of Spider/Snake.
-    // This way you get one "water" branch and one "poison" branch.
-    const branch_type disabled_branch[] =
-    {
-        random_choose(BRANCH_SWAMP, BRANCH_SHOALS, -1),
-        random_choose(BRANCH_SNAKE_PIT, BRANCH_SPIDER_NEST, -1),
-        random_choose(BRANCH_CRYPT, BRANCH_FOREST, -1),
-    };
-
-    for (unsigned int i = 0; i < ARRAYSZ(disabled_branch); ++i)
-    {
-        dprf("Disabling branch: %s", branches[disabled_branch[i]].shortname);
-        startdepth[disabled_branch[i]] = -1;
-    }
+    for (int br = 0; br < NUM_BRANCHES; ++br)
+        brentry[br].clear();
 
     if (crawl_state.game_is_sprint())
     {
         brdepth.init(-1);
-        brdepth[BRANCH_MAIN_DUNGEON] = 1;
+        brdepth[BRANCH_DUNGEON] = 1;
         return;
     }
 
     if (crawl_state.game_is_zotdef())
     {
-        root_branch = BRANCH_HALL_OF_ZOT;
+        root_branch = BRANCH_ZOT;
         brdepth.init(-1);
-        brdepth[BRANCH_HALL_OF_ZOT] = 1;
+        brdepth[BRANCH_ZOT] = 1;
         brdepth[BRANCH_BAZAAR] = 1;
         return;
     }
+
+    for (int branch = 0; branch < NUM_BRANCHES; ++branch)
+    {
+        const Branch *b = &branches[branch];
+        ASSERT(b->id == branch);
+        if (!branch_is_unfinished(b->id) && b->parent_branch != NUM_BRANCHES)
+        {
+            brentry[branch] = level_id(b->parent_branch,
+                                       random_range(b->mindepth, b->maxdepth));
+        }
+    }
+
+    // You will get one of Shoals/Swamp and one of Spider/Snake.
+    // This way you get one "water" branch and one "poison" branch.
+    branch_type disabled_branch[] =
+    {
+        random_choose(BRANCH_SWAMP, BRANCH_SHOALS, -1),
+        random_choose(BRANCH_SNAKE, BRANCH_SPIDER, -1),
+    };
+
+    for (unsigned int i = 0; i < ARRAYSZ(disabled_branch); ++i)
+    {
+        dprf("Disabling branch: %s", branches[disabled_branch[i]].shortname);
+        brentry[disabled_branch[i]].clear();
+    }
+    brentry[BRANCH_FOREST].clear();
 
     for (int i = 0; i < NUM_BRANCHES; i++)
         brdepth[i] = branches[i].numlevels;
@@ -99,13 +106,33 @@ void initialise_branch_depths()
 
 #define MAX_OVERFLOW_LEVEL 9
 
+static void _use_overflow_temple(vector<god_type> temple_gods)
+{
+    CrawlVector &overflow_temples
+        = you.props[OVERFLOW_TEMPLES_KEY].get_vector();
+
+    const unsigned int level = random_range(2, MAX_OVERFLOW_LEVEL);
+
+    // List of overflow temples on this level.
+    CrawlVector &level_temples = overflow_temples[level - 1].get_vector();
+
+    CrawlHashTable temple;
+
+    CrawlVector &gods = temple[TEMPLE_GODS_KEY].new_vector(SV_BYTE);
+
+    for (unsigned int i = 0; i < temple_gods.size(); i++)
+        gods.push_back((char) temple_gods[i]);
+
+    level_temples.push_back(temple);
+}
+
 // Determine which altars go into the Ecumenical Temple, which go into
 // overflow temples, and on what level the overflow temples are.
 void initialise_temples()
 {
     //////////////////////////////////////////
     // First determine main temple map to use.
-    level_id ecumenical(BRANCH_ECUMENICAL_TEMPLE, 1);
+    level_id ecumenical(BRANCH_TEMPLE, 1);
 
     map_def *main_temple = NULL;
     for (int i = 0; i < 10; i++)
@@ -167,8 +194,7 @@ void initialise_temples()
     // Now set up the overflow temples.
 
     vector<god_type> god_list = temple_god_list();
-
-    random_shuffle(god_list.begin(), god_list.end());
+    shuffle_array(god_list);
 
     vector<god_type> overflow_gods;
 
@@ -192,84 +218,127 @@ void initialise_temples()
         = you.props[OVERFLOW_TEMPLES_KEY].new_vector(SV_VEC);
     overflow_temples.resize(MAX_OVERFLOW_LEVEL);
 
+    // Count god overflow temple weights.
+    int overflow_weights[NUM_GODS + 1];
+    overflow_weights[0] = 0;
+
+    for (unsigned int i = 1; i < NUM_GODS; i++)
+    {
+        string mapname = make_stringf("temple_overflow_generic_%d", i);
+        mapref_vector maps = find_maps_for_tag(mapname);
+        if (!maps.empty())
+        {
+            int chance = 0;
+            for (mapref_vector::iterator map = maps.begin();
+                 map != maps.end(); map++)
+            {
+                // XXX: this should handle level depth better
+                chance += (*map)->weight(level_id(BRANCH_DUNGEON,
+                                                  MAX_OVERFLOW_LEVEL));
+            }
+            overflow_weights[i] = chance;
+        }
+        else
+            overflow_weights[i] = 0;
+    }
+
+    // Try to find combinations of overflow gods that have specialised
+    // overflow vaults.
+multi_overflow:
+    for (unsigned int i = 1, size = 1 << overflow_gods.size();
+         i <= size; i++)
+    {
+        unsigned int num = count_bits(i);
+
+        // TODO: possibly make this place single-god vaults too?
+        // XXX: upper limit on num here because this code gets really
+        // slow otherwise.
+        if (num <= 1 || num > 3)
+            continue;
+
+        vector<god_type> this_temple_gods;
+        vector<god_type> new_overflow_gods;
+
+        string tags = make_stringf("temple_overflow_%d", num);
+        for (unsigned int j = 0; j < overflow_gods.size(); j++)
+        {
+            if (i & (1 << j))
+            {
+                string name = replace_all(god_name(overflow_gods[j]), " ", "_");
+                lowercase(name);
+                tags = tags + " temple_overflow_" + name;
+                this_temple_gods.push_back(overflow_gods[j]);
+            }
+            else
+                new_overflow_gods.push_back(overflow_gods[j]);
+        }
+
+        mapref_vector maps = find_maps_for_tag(tags);
+        if (maps.empty())
+            continue;
+
+        if (overflow_weights[num] > 0)
+        {
+            int chance = 0;
+            for (mapref_vector::iterator map = maps.begin(); map != maps.end();
+                 map++)
+            {
+                chance += (*map)->weight(level_id(BRANCH_DUNGEON,
+                                                  MAX_OVERFLOW_LEVEL));
+            }
+            if (!x_chance_in_y(chance, overflow_weights[num] + chance))
+                continue;
+        }
+
+        _use_overflow_temple(this_temple_gods);
+
+        overflow_gods = new_overflow_gods;
+
+        goto multi_overflow;
+    }
+
     // NOTE: The overflow temples don't have to contain only one
     // altar; they can contain any number of altars, so long as there's
     // at least one vault definition with the tag "overflow_temple_num"
     // (where "num" is the number of altars).
-    for (unsigned int i = 0; i < overflow_gods.size(); i++)
+    for (unsigned int i = 0, size = overflow_gods.size(); i < size; i++)
     {
-        const unsigned int level = random_range(2, MAX_OVERFLOW_LEVEL);
+        unsigned int remaining_size = size - i;
+        // At least one god.
+        vector<god_type> this_temple_gods;
+        this_temple_gods.push_back(overflow_gods[i]);
 
-        // List of overflow temples on this level.
-        CrawlVector &level_temples
-            = overflow_temples[level - 1].get_vector();
-
-        CrawlHashTable temple;
-
-        CrawlVector &gods
-            = temple[TEMPLE_GODS_KEY].new_vector(SV_BYTE);
-
-        // Only single-altar overflow temples for now.
-        gods.push_back((char) overflow_gods[i]);
-
-        level_temples.push_back(temple);
-    }
-}
-
-static int _get_random_porridge_desc()
-{
-    return PDESCQ(PDQ_GLUGGY, one_chance_in(3) ? PDC_BROWN
-                                               : PDC_WHITE);
-}
-
-static int _get_random_coagulated_blood_desc()
-{
-    potion_description_qualifier_type qualifier = PDQ_NONE;
-    while (true)
-    {
-        switch (random2(4))
+        // Maybe place a larger overflow temple.
+        if (remaining_size > 1 && one_chance_in(remaining_size + 1))
         {
-        case 0:
-            qualifier = PDQ_GLUGGY;
-            break;
-        case 1:
-            qualifier = PDQ_LUMPY;
-            break;
-        case 2:
-            qualifier = PDQ_SEDIMENTED;
-            break;
-        case 3:
-            qualifier = PDQ_VISCOUS;
-            break;
+            vector<pair<unsigned int, int> > num_weights;
+            unsigned int num_gods = 1;
+
+            // Randomly choose from the sizes which have maps.
+            for (unsigned int j = 2; j <= remaining_size; j++)
+            {
+                if (overflow_weights[j] > 0)
+                {
+                    num_weights.push_back(
+                        pair<unsigned int, int>(j, overflow_weights[j]));
+                }
+            }
+            if (!num_weights.empty())
+                num_gods = *(random_choose_weighted(num_weights));
+
+            // Add any extra gods (the first was added already).
+            for (; num_gods > 1; i++, num_gods--)
+                this_temple_gods.push_back(overflow_gods[i + 1]);
         }
-        potion_description_colour_type colour = (coinflip() ? PDC_RED
-                                                            : PDC_BROWN);
 
-        int desc = PDESCQ(qualifier, colour);
-
-        if (you.item_description[IDESC_POTIONS][POT_BLOOD] != desc)
-            return desc;
+        _use_overflow_temple(this_temple_gods);
     }
-}
-
-static int _get_random_blood_desc()
-{
-    return PDESCQ(coinflip() ? PDQ_NONE :
-                  coinflip() ? PDQ_VISCOUS
-                             : PDQ_SEDIMENTED, PDC_RED);
 }
 
 void initialise_item_descriptions()
 {
     // Must remember to check for already existing colours/combinations.
     you.item_description.init(255);
-
-    you.item_description[IDESC_POTIONS][POT_PORRIDGE]
-        = _get_random_porridge_desc();
-    you.item_description[IDESC_POTIONS][POT_BLOOD]
-        = _get_random_blood_desc();
-    you.item_description[IDESC_POTIONS][POT_BLOOD_COAGULATED]
-        = _get_random_coagulated_blood_desc();
 
     // The order here must match that of IDESC in describe.h
     const int max_item_number[6] = { NUM_WANDS,

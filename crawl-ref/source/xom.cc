@@ -10,6 +10,7 @@
 #include <algorithm>
 
 #include "acquire.h"
+#include "act-iter.h"
 #include "areas.h"
 #include "artefact.h"
 #include "beam.h"
@@ -36,7 +37,6 @@
 #include "mgen_data.h"
 #include "misc.h"
 #include "mon-behv.h"
-#include "mon-iter.h"
 #include "mon-place.h"
 #include "mon-stuff.h"
 #include "mon-util.h"
@@ -56,7 +56,6 @@
 #include "spl-cast.h"
 #include "spl-goditem.h"
 #include "spl-miscast.h"
-#include "spl-summoning.h"
 #include "spl-transloc.h"
 #include "spl-util.h"
 #include "stairs.h"
@@ -99,7 +98,7 @@ static const spell_type _xom_nontension_spells[] =
 static const spell_type _xom_tension_spells[] =
 {
     SPELL_BLINK, SPELL_CONFUSING_TOUCH, SPELL_CAUSE_FEAR, SPELL_ENGLACIATION,
-    SPELL_DISPERSAL, SPELL_STONESKIN, SPELL_RING_OF_FLAMES,
+    SPELL_DISPERSAL, SPELL_STONESKIN, SPELL_RING_OF_FLAMES, SPELL_DISCORD,
     SPELL_OLGREBS_TOXIC_RADIANCE, SPELL_FIRE_BRAND, SPELL_FREEZING_AURA,
     SPELL_POISON_WEAPON, SPELL_LETHAL_INFUSION, SPELL_EXCRUCIATING_WOUNDS,
     SPELL_WARP_BRAND, SPELL_TUKIMAS_DANCE, SPELL_SUMMON_BUTTERFLIES,
@@ -149,7 +148,7 @@ static const char *describe_xom_mood()
 const string describe_xom_favour()
 {
     string favour;
-    if (you.religion != GOD_XOM)
+    if (!you_worship(GOD_XOM))
         favour = "a very buggy toy of Xom.";
     else if (you.gift_timeout < 1)
         favour = "a BORING thing.";
@@ -159,12 +158,13 @@ const string describe_xom_favour()
     return favour;
 }
 
+#define XOM_SPEECH(x) x
 static string _get_xom_speech(const string key)
 {
     string result = getSpeakString("Xom " + key);
 
     if (result.empty())
-        result = getSpeakString("Xom general effect");
+        result = getSpeakString("Xom " XOM_SPEECH("general effect"));
 
     if (result.empty())
         return "Xom makes something happen.";
@@ -174,22 +174,22 @@ static string _get_xom_speech(const string key)
 
 static bool _xom_is_bored()
 {
-    return (you.religion == GOD_XOM && !you.gift_timeout);
+    return you_worship(GOD_XOM) && !you.gift_timeout;
 }
 
 static bool _xom_feels_nasty()
 {
     // Xom will only directly kill you with a bad effect if you're under
     // penance from him, or if he's bored.
-    return (you.penance[GOD_XOM] || _xom_is_bored());
+    return you.penance[GOD_XOM] || _xom_is_bored();
 }
 
 bool xom_is_nice(int tension)
 {
-    if (you.penance[GOD_XOM])
+    if (player_under_penance(GOD_XOM))
         return false;
 
-    if (you.religion == GOD_XOM)
+    if (you_worship(GOD_XOM))
     {
         // If you.gift_timeout is 0, then Xom is BORED.  He HATES that.
         if (!you.gift_timeout)
@@ -225,7 +225,7 @@ static void _xom_is_stimulated(int maxinterestingness,
                                const char *message_array[],
                                bool force_message)
 {
-    if (you.religion != GOD_XOM || maxinterestingness <= 0)
+    if (!you_worship(GOD_XOM) || maxinterestingness <= 0)
         return;
 
     // Xom is not directly stimulated by his own acts.
@@ -273,7 +273,7 @@ void xom_is_stimulated(int maxinterestingness, xom_message_type message_type,
 void xom_is_stimulated(int maxinterestingness, const string& message,
                        bool force_message)
 {
-    if (you.religion != GOD_XOM)
+    if (!you_worship(GOD_XOM))
         return;
 
     const char *message_array[6];
@@ -291,8 +291,8 @@ void xom_tick()
     {
         // Xom semi-randomly drifts your piety.
         const string old_xom_favour = describe_xom_favour();
-        const bool good = (you.piety == HALF_MAX_PIETY? coinflip()
-                                                      : you.piety > HALF_MAX_PIETY);
+        const bool good = (you.piety == HALF_MAX_PIETY ? coinflip()
+                                                       : you.piety > HALF_MAX_PIETY);
         int size = abs(you.piety - HALF_MAX_PIETY);
 
         // Piety slowly drifts towards the extremes.
@@ -316,7 +316,7 @@ void xom_tick()
             // doesn't really matter.
             you.piety = HALF_MAX_PIETY + (good ? size : -size);
         }
-#ifdef DEBUG_DIAGNOSTICS
+#ifdef DEBUG_XOM
         snprintf(info, INFO_SIZE, "xom_tick(), delta: %d, piety: %d",
                  delta, you.piety);
         take_note(Note(NOTE_MESSAGE, 0, 0, info), true);
@@ -409,7 +409,7 @@ static int _exploration_estimate(bool seen_only = false, bool debug = false)
         }
 
         bool open = true;
-        if (feat_is_solid(grd(pos)) && !feat_is_closed_door(grd(pos)))
+        if (cell_is_solid(pos) && !feat_is_closed_door(grd(pos)))
         {
             open = false;
             for (adjacent_iterator ai(pos); ai; ++ai)
@@ -470,8 +470,8 @@ static bool _spell_weapon_check(const spell_type spell)
         // The wielded weapon must be a non-branded non-launcher
         // non-artefact!
         const item_def& weapon = *you.weapon();
-        return (!is_artefact(weapon) && !is_range_weapon(weapon)
-                && get_weapon_brand(weapon) == SPWPN_NORMAL);
+        return !is_artefact(weapon) && !is_range_weapon(weapon)
+               && get_weapon_brand(weapon) == SPWPN_NORMAL;
     }
     default:
         return true;
@@ -799,7 +799,8 @@ static int _xom_give_item(int power, bool debug = false)
         if (debug)
             return XOM_GOOD_ACQUIREMENT;
 
-        const object_class_type types[] = {
+        const object_class_type types[] =
+        {
             OBJ_WEAPONS, OBJ_ARMOUR, OBJ_JEWELLERY,  OBJ_BOOKS,
             OBJ_STAVES,  OBJ_WANDS,  OBJ_MISCELLANY, OBJ_FOOD,  OBJ_GOLD,
             OBJ_MISSILES
@@ -822,14 +823,14 @@ static int _xom_give_item(int power, bool debug = false)
 
 static bool _choose_mutatable_monster(const monster* mon)
 {
-    return (mon->alive() && mon->can_safely_mutate()
-            && !mon->submerged());
+    return mon->alive() && mon->can_safely_mutate()
+           && !mon->submerged();
 }
 
 static bool _choose_enchantable_monster(const monster* mon)
 {
-    return (mon->alive() && !mon->wont_attack()
-            && !mons_immune_magic(mon));
+    return mon->alive() && !mon->wont_attack()
+           && !mons_immune_magic(mon);
 }
 
 static bool _is_chaos_upgradeable(const item_def &item,
@@ -903,7 +904,7 @@ static bool _choose_chaos_upgrade(const monster* mon)
 {
     // Only choose monsters that will attack.
     if (!mon->alive() || mons_attitude(mon) != ATT_HOSTILE
-        || mons_is_fleeing(mon) || mons_is_panicking(mon))
+        || mons_is_fleeing(mon))
     {
         return false;
     }
@@ -1029,33 +1030,22 @@ static void _do_chaos_upgrade(item_def &item, const monster* mon)
     }
 }
 
-static monster_type _xom_random_demon(int sever, bool use_greater_demons = true)
+static monster_type _xom_random_demon(int sever)
 {
     const int roll = random2(1000 - (MAX_PIETY - sever) * 5);
 #ifdef DEBUG_DIAGNOSTICS
     mprf(MSGCH_DIAGNOSTICS, "_xom_random_demon(); sever = %d, roll: %d",
          sever, roll);
 #endif
-    monster_type dct =
-        (roll >= 850) ? RANDOM_DEMON_GREATER :
-        (roll >= 340) ? RANDOM_DEMON_COMMON
-                      : RANDOM_DEMON_LESSER;
+    monster_type dct = (roll >= 340) ? RANDOM_DEMON_COMMON
+                                     : RANDOM_DEMON_LESSER;
 
     monster_type demon = MONS_PROGRAM_BUG;
 
-    // Sometimes, send a holy warrior instead.
-    if (dct == RANDOM_DEMON_GREATER && coinflip())
-        demon = random_choose(MONS_DAEVA, MONS_ANGEL, -1);
+    if (dct == RANDOM_DEMON_COMMON && one_chance_in(10))
+        demon = MONS_CHAOS_SPAWN;
     else
-    {
-        if (dct == RANDOM_DEMON_GREATER && !use_greater_demons)
-            dct = RANDOM_DEMON_COMMON;
-
-        if (dct == RANDOM_DEMON_COMMON && one_chance_in(10))
-            demon = MONS_CHAOS_SPAWN;
-        else
-            demon = summon_any_demon(dct);
-    }
+        demon = summon_any_demon(dct);
 
     return demon;
 }
@@ -1091,7 +1081,7 @@ static int _xom_do_potion(bool debug = false)
         {
         case POT_CURING:
             if (you.duration[DUR_POISONING] || you.rotting || you.disease
-                || you.duration[DUR_CONF] || you.duration[DUR_MISLED])
+                || you.duration[DUR_CONF])
             {
                 break;
             }
@@ -1120,6 +1110,9 @@ static int _xom_do_potion(bool debug = false)
     if (pot == POT_BERSERK_RAGE)
         you.berserk_penalty = NO_BERSERK_PENALTY;
 
+    if (pot == POT_INVISIBILITY)
+        you.attribute[ATTR_INVIS_UNCANCELLABLE] = 1;
+
     // Take a note.
     string potion_msg = "potion effect ";
     switch (pot)
@@ -1138,7 +1131,7 @@ static int _xom_do_potion(bool debug = false)
     }
     take_note(Note(NOTE_XOM_EFFECT, you.piety, -1, potion_msg.c_str()), true);
 
-    potion_effect(pot, 150, false, false, false);
+    potion_effect(pot, 150, nullptr, false, false);
     level_change(); // potion_effect() doesn't do this anymore
 
     return XOM_GOOD_POTION;
@@ -1147,7 +1140,7 @@ static int _xom_do_potion(bool debug = false)
 static int _xom_confuse_monsters(int sever, bool debug = false)
 {
     bool rc = false;
-    for (monster_iterator mi(you.get_los()); mi; ++mi)
+    for (monster_near_iterator mi(you.pos()); mi; ++mi)
     {
         if (mi->wont_attack()
             || !mons_class_is_confusable(mi->type)
@@ -1204,19 +1197,6 @@ static int _xom_send_allies(int sever, bool debug = false)
     if (numdemons > maxdemons)
         numdemons = maxdemons;
 
-    int numdifferent = 0;
-
-    // If we have a mix of demons and non-demons, there's a chance
-    // that one or both of the factions may be hostile.
-    int hostiletype = random_choose_weighted(3, 0,  // both friendly
-                                             4, 1,  // one hostile
-                                             4, 2,  // other hostile
-                                             1, 3,  // both hostile
-                                             0);
-
-    vector<bool> is_demonic(numdemons, false);
-    vector<monster*> summons(numdemons);
-
     int num_actually_summoned = 0;
 
     for (int i = 0; i < numdemons; ++i)
@@ -1230,77 +1210,18 @@ static int _xom_send_allies(int sever, bool debug = false)
         // they should still show as Xom's fault if one of them kills you.
         mg.non_actor_summoner = "Xom";
 
-        summons[i] = create_monster(mg);
-
-        if (summons[i])
-        {
+        if (create_monster(mg))
             num_actually_summoned++;
-            is_demonic[i] = (mons_class_holiness(mon_type) == MH_DEMONIC);
-
-            // If it's not a demon, Xom got it someplace else, so use
-            // different messages below.
-            if (!is_demonic[i])
-                numdifferent++;
-        }
     }
 
     if (num_actually_summoned)
     {
-        const bool only_holy    = (numdifferent == num_actually_summoned);
-        const bool only_demonic = (numdifferent == 0);
-
-        if (only_holy)
-        {
-            god_speaks(GOD_XOM,
-                       _get_xom_speech("multiple holy summons").c_str());
-        }
-        else if (only_demonic)
-        {
-            god_speaks(GOD_XOM,
-                       _get_xom_speech("multiple summons").c_str());
-        }
-        else
-        {
-            god_speaks(GOD_XOM,
-                       _get_xom_speech("multiple mixed summons").c_str());
-        }
-
-        // If we have only non-demons, there's a chance that they
-        // may be hostile.
-        if (only_holy && one_chance_in(4))
-            hostiletype = 2;
-        // If we have only demons, they'll always be friendly.
-        else if (only_demonic)
-            hostiletype = 0;
-
-        for (int i = 0; i < numdemons; ++i)
-        {
-            if (!summons[i])
-                continue;
-
-            if (hostiletype != 0)
-            {
-                // Mark factions hostile as appropriate.
-                if (hostiletype == 3
-                    || (is_demonic[i] && hostiletype == 1)
-                    || (!is_demonic[i] && hostiletype == 2))
-                {
-                    summons[i]->attitude = ATT_HOSTILE;
-                    // XXX: Need to reset summon quota here?
-                    behaviour_event(summons[i], ME_ALERT, &you);
-                }
-            }
-
-            player_angers_monster(summons[i]);
-        }
+        god_speaks(GOD_XOM, _get_xom_speech("multiple summons").c_str());
 
         // Take a note.
         static char summ_buf[80];
-        snprintf(summ_buf, sizeof(summ_buf), "summons %d %s%s%s",
+        snprintf(summ_buf, sizeof(summ_buf), "summons %d friendly demon%s",
                  num_actually_summoned,
-                 hostiletype == 0 ? "friendly " :
-                 hostiletype == 3 ? "hostile " : "",
-                 only_demonic ? "demon" : "monster",
                  num_actually_summoned > 1 ? "s" : "");
 
         take_note(Note(NOTE_XOM_EFFECT, you.piety, -1, summ_buf), true);
@@ -1317,36 +1238,19 @@ static int _xom_send_one_ally(int sever, bool debug = false)
         return XOM_GOOD_SINGLE_ALLY;
 
     const monster_type mon_type = _xom_random_demon(sever);
-    const bool is_demonic = (mons_class_holiness(mon_type) == MH_DEMONIC);
 
-    // If we have a non-demon, Xom got it someplace else, so use
-    // different messages below.
-    bool different = !is_demonic;
-
-    beh_type beha = BEH_FRIENDLY;
-
-    // There's a chance that a non-demon may be hostile.
-    if (different && one_chance_in(4))
-        beha = BEH_HOSTILE;
-
-    mgen_data mg(mon_type, beha, (beha == BEH_FRIENDLY) ? &you : 0, 6,
-                 MON_SUMM_AID, you.pos(), MHITYOU, MG_FORCE_BEH, GOD_XOM);
+    mgen_data mg(mon_type, BEH_FRIENDLY, &you, 6, MON_SUMM_AID,
+                 you.pos(), MHITYOU, MG_FORCE_BEH, GOD_XOM);
 
     mg.non_actor_summoner = "Xom";
 
     if (monster *summons = create_monster(mg))
     {
-        if (different)
-            god_speaks(GOD_XOM, _get_xom_speech("single holy summon").c_str());
-        else
-            god_speaks(GOD_XOM, _get_xom_speech("single summon").c_str());
-
-        player_angers_monster(summons);
+        god_speaks(GOD_XOM, _get_xom_speech("single summon").c_str());
 
         // Take a note.
         static char summ_buf[80];
-        snprintf(summ_buf, sizeof(summ_buf), "summons %s %s",
-                 beha == BEH_FRIENDLY ? "friendly" : "hostile",
+        snprintf(summ_buf, sizeof(summ_buf), "summons friendly %s",
                  summons->name(DESC_PLAIN).c_str());
         take_note(Note(NOTE_XOM_EFFECT, you.piety, -1, summ_buf), true);
 
@@ -1367,11 +1271,10 @@ static int _xom_polymorph_nearby_monster(bool helpful, bool debug = false)
         if (mon && (!mons_is_plant(mon) || one_chance_in(6)))
         {
             if (debug)
-                return (helpful ? XOM_GOOD_POLYMORPH : XOM_BAD_POLYMORPH);
+                return helpful ? XOM_GOOD_POLYMORPH : XOM_BAD_POLYMORPH;
 
-            const char* lookup = (helpful ? "good monster polymorph"
-                                          : "bad monster polymorph");
-            god_speaks(GOD_XOM, _get_xom_speech(lookup).c_str());
+            god_speaks(GOD_XOM, helpful ? _get_xom_speech("good monster polymorph").c_str()
+                                        : _get_xom_speech("bad monster polymorph").c_str());
 
             bool see_old = you.can_see(mon);
             string old_name = mon->full_name(DESC_PLAIN);
@@ -1413,7 +1316,7 @@ static int _xom_polymorph_nearby_monster(bool helpful, bool debug = false)
                 take_note(Note(NOTE_XOM_EFFECT, you.piety, -1, poly.c_str()),
                           true);
             }
-            return (helpful ? XOM_GOOD_POLYMORPH : XOM_BAD_POLYMORPH);
+            return helpful ? XOM_GOOD_POLYMORPH : XOM_BAD_POLYMORPH;
         }
     }
 
@@ -1483,7 +1386,7 @@ static bool _art_is_safe(item_def item)
     int prop_int = artefact_wpn_property(item, ARTP_INTELLIGENCE);
     int prop_dex = artefact_wpn_property(item, ARTP_DEXTERITY);
 
-    return (prop_str >= 0 && prop_int >= 0 && prop_dex >= 0);
+    return prop_str >= 0 && prop_int >= 0 && prop_dex >= 0;
 }
 
 static int _xom_swap_weapons(bool debug = false)
@@ -1505,11 +1408,12 @@ static int _xom_swap_weapons(bool debug = false)
     }
 
     vector<monster* > mons_wpn;
-    for (monster_iterator mi(&you); mi; ++mi)
+    for (monster_near_iterator mi(&you, LOS_NO_TRANS); mi; ++mi)
     {
         if (!wpn || mi->wont_attack() || mi->is_summoned()
             || mons_itemuse(*mi) < MONUSE_STARTING_EQUIPMENT
-            || (mi->flags & MF_HARD_RESET))
+            || (mi->flags & MF_HARD_RESET)
+            || !feat_has_solid_floor(grd(mi->pos())))
         {
             continue;
         }
@@ -1566,7 +1470,7 @@ static int _xom_swap_weapons(bool debug = false)
     unwind_var<int> save_speedinc(mon->speed_increment);
     if (!mon->pickup_item(mitm[index], false, true))
     {
-        mpr("Monster wouldn't take item.", MSGCH_ERROR);
+        mprf(MSGCH_ERROR, "Monster wouldn't take item.");
         mon->inv[MSLOT_WEAPON] = monwpn;
         mon->equip(mitm[monwpn], MSLOT_WEAPON, 0);
         unlink_item(index);
@@ -1632,11 +1536,11 @@ static int _xom_swap_weapons(bool debug = false)
 // hostile monsters around.
 static int _xom_rearrange_pieces(int sever, bool debug = false)
 {
-    if (player_stair_delay())
+    if (player_stair_delay() || monster_at(you.pos()))
         return XOM_DID_NOTHING;
 
     vector<monster* > mons;
-    for (monster_iterator mi(&you); mi; ++mi)
+    for (monster_near_iterator mi(&you, LOS_NO_TRANS); mi; ++mi)
         mons.push_back(*mi);
 
     if (mons.empty())
@@ -1694,7 +1598,8 @@ static int _xom_random_stickable(const int HD)
     // XXX: Unify this with the list in spl-summoning:_snakable_weapon().
     // It has everything but demon tridents and bardiches, and puts the
     // giant club types at the end as special cases.
-    static const int arr[] = {
+    static const int arr[] =
+    {
         WPN_CLUB,    WPN_SPEAR,      WPN_TRIDENT,      WPN_HALBERD,
         WPN_SCYTHE,  WPN_GLAIVE,     WPN_QUARTERSTAFF,
         WPN_BLOWGUN, WPN_BOW,        WPN_LONGBOW,      WPN_GIANT_CLUB,
@@ -1720,12 +1625,12 @@ static int _xom_random_stickable(const int HD)
 static int _xom_snakes_to_sticks(int sever, bool debug = false)
 {
     bool action = false;
-    for (monster_iterator mi(you.get_los()); mi; ++mi)
+    for (monster_near_iterator mi(you.pos()); mi; ++mi)
     {
         if (mi->attitude != ATT_HOSTILE)
             continue;
 
-        if (mons_genus(mi->type) == MONS_ADDER)
+        if (mons_genus(mi->type) == MONS_SNAKE)
         {
             if (!action)
             {
@@ -1778,7 +1683,7 @@ static int _xom_snakes_to_sticks(int sever, bool debug = false)
 static int _xom_animate_monster_weapon(int sever, bool debug = false)
 {
     vector<monster* > mons_wpn;
-    for (monster_iterator mi(&you); mi; ++mi)
+    for (monster_near_iterator mi(&you, LOS_NO_TRANS); mi; ++mi)
     {
         if (mi->wont_attack() || mi->is_summoned()
             || mons_itemuse(*mi) < MONUSE_STARTING_EQUIPMENT
@@ -1855,10 +1760,10 @@ static int _xom_give_mutations(bool good, bool debug = false)
     if (you.can_safely_mutate())
     {
         if (debug)
-            return (good ? XOM_GOOD_MUTATION : XOM_BAD_MUTATION);
+            return good ? XOM_GOOD_MUTATION : XOM_BAD_MUTATION;
 
-        const char* lookup = (good ? "good mutations" : "random mutations");
-        god_speaks(GOD_XOM, _get_xom_speech(lookup).c_str());
+        god_speaks(GOD_XOM, good ? _get_xom_speech("good mutations").c_str()
+                                 : _get_xom_speech("random mutations").c_str());
 
         const int num_tries = random2(4) + 1;
 
@@ -1894,7 +1799,7 @@ static int _xom_give_mutations(bool good, bool debug = false)
     }
 
     if (rc)
-        return (good ? XOM_GOOD_MUTATION : XOM_BAD_MUTATION);
+        return good ? XOM_GOOD_MUTATION : XOM_BAD_MUTATION;
 
     return XOM_DID_NOTHING;
 }
@@ -1906,7 +1811,7 @@ static int _xom_throw_divine_lightning(bool debug = false)
 
     // Make sure there's at least one enemy within the lightning radius.
     bool found_hostile = false;
-    for (radius_iterator ri(you.pos(), 2, true, true, true); ri; ++ri)
+    for (radius_iterator ri(you.pos(), 2, C_ROUND, LOS_SOLID, true); ri; ++ri)
     {
         if (monster* mon = monster_at(*ri))
         {
@@ -1978,13 +1883,13 @@ static int _xom_change_scenery(bool debug = false)
     vector<coord_def> candidates;
     vector<coord_def> closed_doors;
     vector<coord_def> open_doors;
-    for (radius_iterator ri(you.get_los()); ri; ++ri)
+    for (radius_iterator ri(you.pos(), LOS_DEFAULT); ri; ++ri)
     {
         if (!you.see_cell(*ri))
             continue;
 
         dungeon_feature_type feat = grd(*ri);
-        if (feat >= DNGN_FOUNTAIN_BLUE && feat <= DNGN_DRY_FOUNTAIN_BLOOD)
+        if (feat >= DNGN_FOUNTAIN_BLUE && feat <= DNGN_DRY_FOUNTAIN)
             candidates.push_back(*ri);
         else if (feat_is_closed_door(feat))
         {
@@ -2003,7 +1908,7 @@ static int _xom_change_scenery(bool debug = false)
             {
                 // If it's a gate, add all doors belonging to the gate.
                 set<coord_def> all_door;
-                find_connected_identical(*ri, grd(*ri), all_door);
+                find_connected_identical(*ri, all_door);
                 for (set<coord_def>::const_iterator dc = all_door.begin();
                      dc != all_door.end(); ++dc)
                 {
@@ -2030,7 +1935,7 @@ static int _xom_change_scenery(bool debug = false)
                 // Check whether any of the doors belonging to a gate is
                 // blocked by an item or monster.
                 set<coord_def> all_door;
-                find_connected_identical(*ri, grd(*ri), all_door);
+                find_connected_identical(*ri, all_door);
                 bool is_blocked = false;
                 for (set<coord_def>::const_iterator dc = all_door.begin();
                      dc != all_door.end(); ++dc)
@@ -2101,9 +2006,6 @@ static int _xom_change_scenery(bool debug = false)
     if (debug)
         return XOM_GOOD_SCENERY;
 
-    const int fountain_diff = (DNGN_DRY_FOUNTAIN_BLUE - DNGN_FOUNTAIN_BLUE);
-
-    int fountains_flow  = 0;
     int fountains_blood = 0;
     int doors_open      = 0;
     int doors_close     = 0;
@@ -2125,19 +2027,7 @@ static int _xom_change_scenery(bool debug = false)
             if (you.see_cell(pos))
                 doors_close++;
             break;
-        case DNGN_DRY_FOUNTAIN_BLUE:
-        case DNGN_DRY_FOUNTAIN_SPARKLING:
-        case DNGN_DRY_FOUNTAIN_BLOOD:
-        {
-            if (x_chance_in_y(fountains_flow, 5))
-                continue;
-
-            grd(pos) = (dungeon_feature_type) (grd(pos) - fountain_diff);
-            set_terrain_changed(pos);
-            if (you.see_cell(pos))
-                fountains_flow++;
-            break;
-        }
+        case DNGN_DRY_FOUNTAIN:
         case DNGN_FOUNTAIN_BLUE:
             if (x_chance_in_y(fountains_blood, 3))
                 continue;
@@ -2151,30 +2041,17 @@ static int _xom_change_scenery(bool debug = false)
             break;
         }
     }
-    if (!doors_open && !doors_close && !fountains_flow && !fountains_blood)
+    if (!doors_open && !doors_close && !fountains_blood)
         return XOM_DID_NOTHING;
 
     god_speaks(GOD_XOM, speech.c_str());
 
     vector<string> effects, terse;
-    if (fountains_flow > 0)
-    {
-        snprintf(info, INFO_SIZE,
-                 "%s fountain%s start%s reflowing",
-                 fountains_flow == 1 ? "A" : "Some",
-                 fountains_flow == 1 ? ""  : "s",
-                 fountains_flow == 1 ? "s" : "");
-        effects.push_back(info);
-        terse.push_back(make_stringf("%d fountains restart", fountains_flow));
-    }
     if (fountains_blood > 0)
     {
         snprintf(info, INFO_SIZE,
-                 "%s%s fountain%s start%s gushing blood",
+                 "%s fountain%s start%s gushing blood",
                  fountains_blood == 1 ? "a" : "some",
-                 fountains_flow > 0 ? (fountains_blood == 1 ? "nother"
-                                                            : " other")
-                                    : "",
                  fountains_blood == 1 ? ""  : "s",
                  fountains_blood == 1 ? "s" : "");
 
@@ -2238,7 +2115,7 @@ static int _xom_change_scenery(bool debug = false)
 static int _xom_inner_flame(int sever, bool debug = false)
 {
     bool rc = false;
-    for (monster_iterator mi(you.get_los()); mi; ++mi)
+    for (monster_near_iterator mi(you.pos()); mi; ++mi)
     {
         if (mi->wont_attack()
             || mons_immune_magic(*mi)
@@ -2281,25 +2158,31 @@ static int _xom_enchant_monster(bool helpful, bool debug = false)
         return XOM_DID_NOTHING;
 
     if (debug)
-        return (helpful ? XOM_GOOD_ENCHANT_MONSTER : XOM_BAD_ENCHANT_MONSTER);
+        return helpful ? XOM_GOOD_ENCHANT_MONSTER : XOM_BAD_ENCHANT_MONSTER;
 
-    const char* lookup = (helpful ? "good enchant monster"
-                                  : "bad enchant monster");
-    god_speaks(GOD_XOM, _get_xom_speech(lookup).c_str());
+    god_speaks(GOD_XOM, helpful ? _get_xom_speech("good enchant monster").c_str()
+                                : _get_xom_speech("bad enchant monster").c_str());
 
     beam_type ench;
 
     if (helpful) // To the player, not the monster.
     {
-        beam_type enchantments[] = {
-            BEAM_PETRIFY, BEAM_SLOW, BEAM_PARALYSIS, BEAM_ENSLAVE,
+        beam_type enchantments[] =
+        {
+            BEAM_PETRIFY,
+            BEAM_SLOW,
+            BEAM_PARALYSIS,
+            BEAM_ENSLAVE,
         };
         ench = RANDOM_ELEMENT(enchantments);
     }
     else
     {
-        beam_type enchantments[] = {
-            BEAM_HASTE, BEAM_MIGHT, BEAM_INVISIBILITY
+        beam_type enchantments[] =
+        {
+            BEAM_HASTE,
+            BEAM_MIGHT,
+            BEAM_INVISIBILITY,
         };
         ench = RANDOM_ELEMENT(enchantments);
     }
@@ -2313,7 +2196,7 @@ static int _xom_enchant_monster(bool helpful, bool debug = false)
     take_note(Note(NOTE_XOM_EFFECT, you.piety, -1, ench_buf),
               true);
 
-    return (helpful ? XOM_GOOD_ENCHANT_MONSTER : XOM_BAD_ENCHANT_MONSTER);
+    return helpful ? XOM_GOOD_ENCHANT_MONSTER : XOM_BAD_ENCHANT_MONSTER;
 }
 
 // The nicer stuff.  Note: these things are not necessarily nice.
@@ -2475,7 +2358,7 @@ static void _xom_zero_miscast()
     // Dungeon feature dependent stuff.
 
     FixedBitVector<NUM_FEATURES> in_view;
-    for (radius_iterator ri(you.get_los()); ri; ++ri)
+    for (radius_iterator ri(you.pos(), LOS_DEFAULT); ri; ++ri)
         in_view.set(grd(*ri));
 
     if (in_view[DNGN_LAVA])
@@ -2527,9 +2410,7 @@ static void _xom_zero_miscast()
         priority.push_back("The water in the fountain briefly glows.");
     }
 
-    if (in_view[DNGN_DRY_FOUNTAIN_BLUE]
-        || in_view[DNGN_DRY_FOUNTAIN_SPARKLING]
-        || in_view[DNGN_PERMADRY_FOUNTAIN])
+    if (in_view[DNGN_DRY_FOUNTAIN])
     {
         priority.push_back("Water briefly sprays from the dry fountain.");
         priority.push_back("Dust puffs up from the dry fountain.");
@@ -2819,10 +2700,10 @@ static int _xom_miscast(const int max_level, const bool nasty,
 
     const char* speeches[4] =
     {
-        "zero miscast effect",
-        "minor miscast effect",
-        "medium miscast effect",
-        "major miscast effect"
+        XOM_SPEECH("zero miscast effect"),
+        XOM_SPEECH("minor miscast effect"),
+        XOM_SPEECH("medium miscast effect"),
+        XOM_SPEECH("major miscast effect"),
     };
 
     const char* causes[4] =
@@ -2940,12 +2821,14 @@ static int _xom_player_confusion_effect(int sever, bool debug = false)
         return XOM_BAD_CONFUSION;
 
     bool rc = false;
+    const bool conf = you.confused();
 
-    // Looks like this will *always* succeed?
-    if (confuse_player(random2(sever) + 1, false))
+    if (confuse_player(min(random2(sever) + 1, 20), true))
     {
-        // FIXME: Message order is a bit off here.
         god_speaks(GOD_XOM, _get_xom_speech("confusion").c_str());
+        mprf(MSGCH_WARN, "You are %sconfused.",
+             conf ? "more " : "");
+
         rc = true;
 
         // Sometimes Xom gets carried away and starts confusing
@@ -2953,7 +2836,7 @@ static int _xom_player_confusion_effect(int sever, bool debug = false)
         bool mons_too = false;
         if (coinflip())
         {
-            for (monster_iterator mi(you.get_los()); mi; ++mi)
+            for (monster_near_iterator mi(you.pos()); mi; ++mi)
             {
                 if (!mons_class_is_confusable(mi->type)
                     || one_chance_in(20))
@@ -2979,7 +2862,7 @@ static int _xom_player_confusion_effect(int sever, bool debug = false)
         take_note(Note(NOTE_XOM_EFFECT, you.piety, -1, conf_msg.c_str()), true);
     }
 
-    return (rc ? XOM_BAD_CONFUSION : XOM_DID_NOTHING);
+    return rc ? XOM_BAD_CONFUSION : XOM_DID_NOTHING;
 }
 
 static bool _valid_floor_grid(coord_def pos)
@@ -2987,7 +2870,7 @@ static bool _valid_floor_grid(coord_def pos)
     if (!in_bounds(pos))
         return false;
 
-    return (grd(pos) == DNGN_FLOOR);
+    return grd(pos) == DNGN_FLOOR;
 }
 
 bool move_stair(coord_def stair_pos, bool away, bool allow_under)
@@ -3053,7 +2936,7 @@ bool move_stair(coord_def stair_pos, bool away, bool allow_under)
     ray_def ray;
     if (!find_ray(begin, towards, ray, opc_solid_see))
     {
-        mpr("Couldn't find ray between player and stairs.", MSGCH_ERROR);
+        mprf(MSGCH_ERROR, "Couldn't find ray between player and stairs.");
         return stairs_moved;
     }
 
@@ -3088,7 +2971,7 @@ bool move_stair(coord_def stair_pos, bool away, bool allow_under)
             return stairs_moved;
         }
 
-        mpr("Ray didn't cross stairs.", MSGCH_ERROR);
+        mprf(MSGCH_ERROR, "Ray didn't cross stairs.");
     }
 
     if (away && past_stairs <= 0)
@@ -3209,7 +3092,7 @@ static int _xom_repel_stairs(bool debug = false)
         you.duration[DUR_REPEL_STAIRS_CLIMB] = 500;
     }
 
-    random_shuffle(stairs_avail.begin(), stairs_avail.end());
+    shuffle_array(stairs_avail);
     int count_moved = 0;
     for (unsigned int i = 0; i < stairs_avail.size(); i++)
         if (move_stair(stairs_avail[i], true, true))
@@ -3248,7 +3131,7 @@ static int _xom_colour_smoke_trail(bool debug = false)
 
 static int _xom_draining_torment_effect(int sever, bool debug = false)
 {
-    // Drains stats or experience, or torments the player.
+    // Drains stats or skills, or torments the player.
     const string speech = _get_xom_speech("draining or torment");
     const bool nasty = _xom_feels_nasty();
     const string aux = "the vengeance of Xom";
@@ -3269,7 +3152,7 @@ static int _xom_draining_torment_effect(int sever, bool debug = false)
             return XOM_DID_NOTHING;
 
         god_speaks(GOD_XOM, speech.c_str());
-        lose_stat(stat, loss, true, aux.c_str());
+        lose_stat(stat, loss, false, aux.c_str());
 
         // Take a note.
         const char* sstr[3] = { "Str", "Int", "Dex" };
@@ -3283,18 +3166,14 @@ static int _xom_draining_torment_effect(int sever, bool debug = false)
     }
     else if (coinflip())
     {
-        // XP drain effect (25%).
-        if (player_prot_life() < 3 && (nasty || you.experience > 0))
+        // Draining effect (25%).
+        if (player_prot_life() < 3)
         {
             if (debug)
                 return XOM_BAD_DRAINING;
             god_speaks(GOD_XOM, speech.c_str());
 
-            drain_exp(true, NON_MONSTER, aux.c_str());
-            if (random2(sever) > 3 && (nasty || you.experience > 0))
-                drain_exp(true, NON_MONSTER, aux.c_str());
-            if (random2(sever) > 3 && (nasty || you.experience > 0))
-                drain_exp(true, NON_MONSTER, aux.c_str());
+            drain_exp(true, 100);
 
             take_note(Note(NOTE_XOM_EFFECT, you.piety, -1, "draining"), true);
             return XOM_BAD_DRAINING;
@@ -3403,7 +3282,7 @@ static int _xom_summon_hostiles(int sever, bool debug = false)
 
 static bool _has_min_banishment_level()
 {
-    return (you.experience_level >= 9);
+    return you.experience_level >= 9;
 }
 
 // Rolls whether banishment will be averted.
@@ -3417,7 +3296,7 @@ static bool _will_not_banish()
 static bool _allow_xom_banishment()
 {
     // Always allowed if under penance.
-    if (you.penance[GOD_XOM])
+    if (player_under_penance(GOD_XOM))
         return true;
 
     // If Xom is bored, banishment becomes viable earlier.
@@ -3452,9 +3331,9 @@ int xom_maybe_reverts_banishment(bool xom_banished, bool debug)
         if (!debug)
         {
             more();
-            const char* lookup = (xom_banished ? "revert own banishment"
-                                               : "revert other banishment");
-            god_speaks(GOD_XOM, _get_xom_speech(lookup).c_str());
+            god_speaks(GOD_XOM, xom_banished
+                ? _get_xom_speech("revert own banishment").c_str()
+                : _get_xom_speech("revert other banishment").c_str());
             down_stairs(DNGN_EXIT_ABYSS);
             take_note(Note(NOTE_XOM_EFFECT, you.piety, -1,
                            "revert banishment"), true);
@@ -3505,7 +3384,7 @@ static int _xom_blink_monsters(bool debug = false)
     // Sometimes blink towards the player, sometimes randomly. It might
     // end up being helpful instead of dangerous, but Xom doesn't mind.
     const bool blink_to_player = _xom_feels_nasty() || coinflip();
-    for (monster_iterator mi(you.get_los()); mi; ++mi)
+    for (monster_near_iterator mi(you.pos()); mi; ++mi)
     {
         if (blinks >= 5)
             break;
@@ -3699,7 +3578,8 @@ static int _xom_is_bad(int sever, int tension, bool debug = false)
 
 static void _handle_accidental_death(const int orig_hp,
     const FixedVector<int8_t, NUM_STATS> orig_stat_loss,
-    const FixedVector<uint8_t, NUM_MUTATIONS> &orig_mutation)
+    const FixedVector<uint8_t, NUM_MUTATIONS> &orig_mutation,
+    const transformation_type orig_form)
 {
     // Did ouch() return early because the player died from the Xom
     // effect, even though neither is the player under penance nor is
@@ -3712,7 +3592,7 @@ static void _handle_accidental_death(const int orig_hp,
         return;
     }
 
-    string speech_type = "accidental homicide";
+    string speech_type = XOM_SPEECH("accidental homicide");
 
     const dungeon_feature_type feat = grd(you.pos());
 
@@ -3722,7 +3602,7 @@ static void _handle_accidental_death(const int orig_hp,
         case KILLED_BY_LEAVING:
         case KILLED_BY_WINNING:
         case KILLED_BY_QUITTING:
-            speech_type = "weird death";
+            speech_type = XOM_SPEECH("weird death");
             break;
 
         case KILLED_BY_LAVA:
@@ -3754,64 +3634,37 @@ static void _handle_accidental_death(const int orig_hp,
         break;
     }
 
-    mpr("You die...");
+    canned_msg(MSG_YOU_DIE);
     god_speaks(GOD_XOM, _get_xom_speech(speech_type).c_str());
     god_speaks(GOD_XOM, _get_xom_speech("resurrection").c_str());
 
+    int pre_mut_hp = you.hp;
     if (you.hp <= 0)
+        you.hp = 9999; // avoid spurious recursive deaths if heavily rotten
+
+    // If any mutation has changed, death was because of it.
+    for (int i = 0; i < NUM_MUTATIONS; ++i)
+    {
+        if (orig_mutation[i] > you.mutation[i])
+            mutate((mutation_type)i, "Xom's lifesaving", true, true, true);
+        else if (orig_mutation[i] < you.mutation[i])
+            delete_mutation((mutation_type)i, "Xom's lifesaving", true, true, true);
+    }
+
+    if (pre_mut_hp <= 0)
         you.hp = min(orig_hp, you.hp_max);
-
-    // MUT_THIN_SKELETON can statkill you by str, undo it if necessary
-    /*while (you.strength() <= 0 && you.mutation[MUT_THIN_SKELETON] > orig_mutation[MUT_THIN_SKELETON])
-        delete_mutation(MUT_THIN_SKELETON, true, true, true);*/
-
-    // MUT_ROUGH_BLACK_SCALES can statkill you by dex, undo it if necessary
-    while (you.dex() <= 0 && you.mutation[MUT_ROUGH_BLACK_SCALES] > orig_mutation[MUT_ROUGH_BLACK_SCALES])
-    {
-        delete_mutation(MUT_ROUGH_BLACK_SCALES, "Xom's lifesaving",
-                        true, true, true);
-    }
-
-    while (you.dex() <= 0
-           && you.mutation[MUT_FLEXIBLE_WEAK] <
-                  orig_mutation[MUT_FLEXIBLE_WEAK])
-    {
-        mutate(MUT_FLEXIBLE_WEAK, "Xom's lifesaving", true, true, true);
-    }
-
-    while (you.strength() <= 0
-           && you.mutation[MUT_FLEXIBLE_WEAK] >
-                  orig_mutation[MUT_FLEXIBLE_WEAK])
-    {
-        delete_mutation(MUT_FLEXIBLE_WEAK, "Xom's lifesaving", true, true, true);
-    }
-    while (you.strength() <= 0
-           && you.mutation[MUT_STRONG_STIFF] <
-                  orig_mutation[MUT_STRONG_STIFF])
-    {
-        mutate(MUT_STRONG_STIFF, "Xom's lifesaving", true, true, true);
-    }
-
-    mutation_type bad_muts[3]  = {MUT_WEAK, MUT_DOPEY, MUT_CLUMSY};
-    mutation_type good_muts[3] = {MUT_STRONG, MUT_CLEVER, MUT_AGILE};
 
     for (int i = 0; i < 3; ++i)
     {
-        while (you.stat(static_cast<stat_type>(i)) <= 0)
-        {
-            mutation_type good = good_muts[i];
-            mutation_type bad  = bad_muts[i];
-            if (you.mutation[bad] > orig_mutation[bad]
-                || you.mutation[good] < orig_mutation[good])
-            {
-                mutate(good, "Xom's lifesaving", true, true, true);
-            }
-            else
-            {
-                you.stat_loss[i] = orig_stat_loss[i];
-                break;
-            }
-        }
+        if (you.stat(static_cast<stat_type>(i)) <= 0)
+            you.stat_loss[i] = orig_stat_loss[i];
+    }
+
+    if (orig_form != you.form)
+    {
+        dprf("Trying emergency untransformation.");
+        you.transform_uncancellable = false;
+        transform(10, orig_form, true);
     }
 
     if (is_feat_dangerous(feat) && !crawl_state.game_is_sprint())
@@ -3840,15 +3693,9 @@ int xom_acts(bool niceness, int sever, int tension, bool debug)
         ASSERT(you.wizard);
         ASSERT(!you.did_escape_death());
         if (is_feat_dangerous(grd(you.pos())))
-        {
-            mpr("Player is standing in deadly terrain, skipping Xom act.",
-                MSGCH_DIAGNOSTICS);
-        }
+            mprf(MSGCH_DIAGNOSTICS, "Player is standing in deadly terrain, skipping Xom act.");
         else
-        {
-            mpr("Player is already dead, skipping Xom act.",
-                MSGCH_DIAGNOSTICS);
-        }
+            mprf(MSGCH_DIAGNOSTICS, "Player is already dead, skipping Xom act.");
         return XOM_PLAYER_DEAD;
     }
     else if (_player_is_dead())
@@ -3887,6 +3734,7 @@ int xom_acts(bool niceness, int sever, int tension, bool debug)
 #endif
 
     const int  orig_hp       = you.hp;
+    const transformation_type orig_form = you.form;
     const FixedVector<int8_t, NUM_STATS> orig_stat_loss = you.stat_loss;
 
     const FixedVector<uint8_t, NUM_MUTATIONS> orig_mutation
@@ -3912,7 +3760,7 @@ int xom_acts(bool niceness, int sever, int tension, bool debug)
             take_note(Note(NOTE_MESSAGE, 0, 0, "suppress good act because of "
                            "zero tension"), true);
 #endif
-            return (debug ? XOM_GOOD_NOTHING : XOM_DID_NOTHING);
+            return debug ? XOM_GOOD_NOTHING : XOM_DID_NOTHING;
         }
 
         // Good stuff.
@@ -3944,7 +3792,7 @@ int xom_acts(bool niceness, int sever, int tension, bool debug)
                      tension);
             take_note(Note(NOTE_MESSAGE, 0, 0, info), true);
 #endif
-            return (debug ? XOM_BAD_NOTHING : XOM_DID_NOTHING);
+            return debug ? XOM_BAD_NOTHING : XOM_DID_NOTHING;
         }
 
         // Bad mojo.
@@ -3955,9 +3803,9 @@ int xom_acts(bool niceness, int sever, int tension, bool debug)
             return result;
     }
 
-    _handle_accidental_death(orig_hp, orig_stat_loss, orig_mutation);
+    _handle_accidental_death(orig_hp, orig_stat_loss, orig_mutation, orig_form);
 
-    if (you.religion == GOD_XOM && one_chance_in(5))
+    if (you_worship(GOD_XOM) && one_chance_in(5))
     {
         const string old_xom_favour = describe_xom_favour();
         you.piety = random2(MAX_PIETY + 1);
@@ -4044,7 +3892,7 @@ static bool _death_is_funny(const kill_method_type killed_by)
 
 void xom_death_message(const kill_method_type killed_by)
 {
-    if (you.religion != GOD_XOM && (!you.worshipped[GOD_XOM] || coinflip()))
+    if (!you_worship(GOD_XOM) && (!you.worshipped[GOD_XOM] || coinflip()))
         return;
 
     const int death_tension = get_tension(GOD_XOM);
@@ -4086,7 +3934,7 @@ static int _death_is_worth_saving(const kill_method_type killed_by,
 
     // Don't protect the player from these.
     case KILLED_BY_SELF_AIMED:
-    case KILLED_BY_TARGETTING:
+    case KILLED_BY_TARGETING:
         return false;
 
     // Only if not caused by equipment.
@@ -4125,7 +3973,7 @@ bool xom_saves_your_life(const int dam, const int death_source,
                          const kill_method_type death_type, const char *aux,
                          bool see_source)
 {
-    if (you.religion != GOD_XOM || _xom_feels_nasty())
+    if (!you_worship(GOD_XOM) || _xom_feels_nasty())
         return false;
 
     // If this happens, don't bother.
@@ -4145,10 +3993,11 @@ bool xom_saves_your_life(const int dam, const int death_source,
         return false;
 
     // Fake death message.
-    mpr("You die...");
+    canned_msg(MSG_YOU_DIE);
     more();
 
     const string key = _get_death_type_keyword(death_type);
+    // XOM_SPEECH("life saving actor") or XOM_SPEECH("life saving general")
     string speech = _get_xom_speech("life saving " + key);
     god_speaks(GOD_XOM, speech.c_str());
 
@@ -4193,9 +4042,9 @@ static bool _sort_xom_effects(const xom_effect_count &a,
                               const xom_effect_count &b)
 {
     if (a.count == b.count)
-        return (a.effect < b.effect);
+        return a.effect < b.effect;
 
-    return (a.count > b.count);
+    return a.count > b.count;
 }
 
 static const string _xom_effect_to_name(int effect)
@@ -4288,7 +4137,7 @@ void debug_xom_effects()
     fprintf(ostat, "%s\n", mpr_monster_list().c_str());
     fprintf(ostat, " --> Tension: %d\n", tension);
 
-    if (you.penance[GOD_XOM])
+    if (player_under_penance(GOD_XOM))
         fprintf(ostat, "You are under Xom's penance!\n");
     else if (_xom_is_bored())
         fprintf(ostat, "Xom is BORED.\n");

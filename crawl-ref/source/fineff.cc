@@ -84,7 +84,8 @@ bool blood_fineff::mergeable(const final_effect &fe) const
 bool deferred_damage_fineff::mergeable(const final_effect &fe) const
 {
     const deferred_damage_fineff *o = dynamic_cast<const deferred_damage_fineff *>(&fe);
-    return o && att == o->att && def == o->def;
+    return o && att == o->att && def == o->def
+           && attacker_effects == o->attacker_effects && fatal == o->fatal;
 }
 
 bool starcursed_merge_fineff::mergeable(const final_effect &fe) const
@@ -132,7 +133,6 @@ void deferred_damage_fineff::merge(const final_effect &fe)
     ASSERT(mergeable(*ddamfe));
     damage += ddamfe->damage;
 }
-
 
 void lightning_fineff::fire()
 {
@@ -282,7 +282,20 @@ void blood_fineff::fire()
 void deferred_damage_fineff::fire()
 {
     if (actor *df = defender())
-        df->hurt(attacker(), damage);
+    {
+        if (!fatal)
+        {
+            // Cap non-fatal damage by the defender's hit points
+            // FIXME: Consider adding a 'fatal' parameter to ::hurt
+            //        to better interact with damage reduction/boosts
+            //        which may be applied later.
+            int df_hp = df->is_player() ? you.hp
+                                        : df->as_monster()->hit_points;
+            damage = min(damage, df_hp - 1);
+        }
+
+        df->hurt(attacker(), damage, BEAM_MISSILE, true, attacker_effects);
+    }
 }
 
 void starcursed_merge_fineff::fire()
@@ -294,7 +307,7 @@ void starcursed_merge_fineff::fire()
 
 void delayed_action_fineff::fire()
 {
-    if (final_msg.length())
+    if (final_msg)
         mpr(final_msg);
     add_daction(action);
 }

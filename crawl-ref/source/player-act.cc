@@ -18,13 +18,14 @@
 #include "food.h"
 #include "goditem.h"
 #include "hints.h"
-#include "itemname.h"
 #include "itemprop.h"
 #include "items.h"
 #include "libutil.h"
 #include "misc.h"
 #include "monster.h"
+#include "spl-damage.h"
 #include "state.h"
+#include "stuff.h"
 #include "terrain.h"
 #include "transform.h"
 #include "traps.h"
@@ -71,6 +72,7 @@ void player::moveto(const coord_def &c, bool clear_net)
     set_position(c);
 
     clear_far_constrictions();
+    end_searing_ray();
 }
 
 bool player::move_to_pos(const coord_def &c, bool clear_net)
@@ -102,7 +104,7 @@ void player::set_position(const coord_def &c)
     {
         reset_prev_move();
 
-        if (you.duration[DUR_QUAD_DAMAGE])
+        if (duration[DUR_QUAD_DAMAGE])
             invalidate_agrid(true);
 
         if (player_has_orb())
@@ -133,12 +135,13 @@ bool player::floundering() const
 bool player::extra_balanced() const
 {
     const dungeon_feature_type grid = grd(pos());
-    return (species == SP_GREY_DRACONIAN
-               || grid == DNGN_SHALLOW_WATER
-                   && (species == SP_NAGA // tails, not feet
-                       || body_size(PSIZE_BODY) >= SIZE_LARGE)
-                   && (form == TRAN_LICH || form == TRAN_STATUE
-                       || !form_changed_physiology()));
+    return species == SP_GREY_DRACONIAN
+              || grid == DNGN_SHALLOW_WATER
+                  && (species == SP_NAGA // tails, not feet
+                      || body_size(PSIZE_BODY) >= SIZE_LARGE)
+                  && (form == TRAN_LICH || form == TRAN_STATUE
+                      || form == TRAN_SHADOW
+                      || !form_changed_physiology());
 }
 
 int player::get_experience_level() const
@@ -159,7 +162,7 @@ bool player::is_habitable_feat(dungeon_feature_type actual_grid) const
     if (airborne() || species == SP_DJINNI)
         return true;
 
-    if (actual_grid == DNGN_LAVA
+    if (actual_grid == DNGN_LAVA && species != SP_LAVA_ORC
         || actual_grid == DNGN_DEEP_WATER && !can_swim())
     {
         return false;
@@ -175,8 +178,8 @@ size_type player::body_size(size_part_type psize, bool base) const
     else
     {
         size_type tf_size = transform_size(form, psize);
-        return (tf_size == SIZE_CHARACTER ? species_size(species, psize)
-                                          : tf_size);
+        return tf_size == SIZE_CHARACTER ? species_size(species, psize)
+                                         : tf_size;
     }
 }
 
@@ -193,6 +196,7 @@ int player::body_weight(bool base) const
         weight *= 2;
         break;
     case TRAN_LICH:
+    case TRAN_SHADOW:
         weight /= 2;
         break;
     default:
@@ -204,7 +208,7 @@ int player::body_weight(bool base) const
 
 int player::total_weight() const
 {
-    return (body_weight() + burden);
+    return body_weight() + burden;
 }
 
 int player::damage_type(int)
@@ -226,9 +230,9 @@ brand_type player::damage_brand(int)
     brand_type ret = SPWPN_NORMAL;
     const int wpn = equip[EQ_WEAPON];
 
-    if (wpn != -1 && !you.melded[EQ_WEAPON])
+    if (wpn != -1 && !melded[EQ_WEAPON])
     {
-        if (!is_range_weapon(inv[wpn]) && !you.suppressed())
+        if (!is_range_weapon(inv[wpn]))
             ret = get_weapon_brand(inv[wpn]);
     }
     else if (duration[DUR_CONFUSING_TOUCH])
@@ -267,7 +271,7 @@ brand_type player::damage_brand(int)
 }
 
 // Returns the item in the given equipment slot, NULL if the slot is empty.
-// eq must be in [EQ_WEAPON, EQ_RING_EIGHT], or bad things will happen.
+// eq must be in [EQ_WEAPON, EQ_RING_AMULET], or bad things will happen.
 item_def *player::slot_item(equipment_type eq, bool include_melded) const
 {
     ASSERT_RANGE(eq, EQ_WEAPON, NUM_EQUIP);
@@ -275,16 +279,30 @@ item_def *player::slot_item(equipment_type eq, bool include_melded) const
     const int item = equip[eq];
     if (item == -1 || !include_melded && melded[eq])
         return NULL;
-    return (const_cast<item_def *>(&inv[item]));
+    return const_cast<item_def *>(&inv[item]);
 }
 
 // Returns the item in the player's weapon slot.
 item_def *player::weapon(int /* which_attack */) const
 {
-    if (you.melded[EQ_WEAPON])
+    if (melded[EQ_WEAPON])
         return NULL;
 
     return slot_item(EQ_WEAPON, false);
+}
+
+// Give hands required to wield weapon.
+hands_reqd_type player::hands_reqd(const item_def &item) const
+{
+    if (species == SP_FORMICID)
+    {
+        if (weapon_size(item) >= SIZE_BIG)
+            return HANDS_TWO;
+        else
+            return HANDS_ONE;
+    }
+    else
+        return actor::hands_reqd(item);
 }
 
 bool player::can_wield(const item_def& item, bool ignore_curse,
@@ -299,7 +317,7 @@ bool player::can_wield(const item_def& item, bool ignore_curse,
 
     // Unassigned means unarmed combat.
     const bool two_handed = item.base_type == OBJ_UNASSIGNED
-                            || hands_reqd(item, body_size()) == HANDS_TWO;
+                            || hands_reqd(item) == HANDS_TWO;
 
     if (two_handed && !ignore_shield && player_wearing_slot(EQ_SHIELD))
         return false;
@@ -312,6 +330,9 @@ bool player::could_wield(const item_def &item, bool ignore_brand,
 {
     if (species == SP_FELID)
         return false;
+    if (species == SP_FORMICID)
+        return true;
+
     if (body_size(PSIZE_TORSO, ignore_transform) < SIZE_LARGE
             && (item_mass(item) >= 500
                 || item.base_type == OBJ_WEAPONS
@@ -344,7 +365,7 @@ bool player::could_wield(const item_def &item, bool ignore_brand,
 }
 
 // Returns the shield the player is wearing, or NULL if none.
-item_def *player::shield()
+item_def *player::shield() const
 {
     return slot_item(EQ_SHIELD, false);
 }
@@ -413,18 +434,19 @@ string player::hand_name(bool plural, bool *can_plural) const
     else if (form == TRAN_JELLY)
         str = "bump"; // not even pseudopods...
     else if (form == TRAN_LICH || form == TRAN_STATUE
+             || form == TRAN_SHADOW
              || !form_changed_physiology())
     {
         if (species == SP_FELID)
             str = "paw";
-        else if (you.has_usable_claws())
+        else if (has_usable_claws())
             str = "claw";
-        else if (you.has_usable_tentacles())
+        else if (has_usable_tentacles())
             str = "tentacle";
     }
 
     if (str.empty())
-        return (plural ? "hands" : "hand");
+        return plural ? "hands" : "hand";
 
     if (plural && *can_plural)
         str = pluralise(str);
@@ -450,13 +472,14 @@ string player::foot_name(bool plural, bool *can_plural) const
     else if (form == TRAN_JELLY)
         str = "underside", *can_plural = false;
     else if (form == TRAN_LICH || form == TRAN_STATUE
+             || form == TRAN_SHADOW
              || !form_changed_physiology())
     {
         if (player_mutation_level(MUT_HOOVES) >= 3)
             str = "hoof";
-        else if (you.has_usable_talons())
+        else if (has_usable_talons())
             str = "talon";
-        else if (you.has_usable_tentacles())
+        else if (has_usable_tentacles())
         {
             str         = "tentacles";
             *can_plural = false;
@@ -466,6 +489,10 @@ string player::foot_name(bool plural, bool *can_plural) const
             str         = "underbelly";
             *can_plural = false;
         }
+        else if (species == SP_FELID)
+            str = "paw";
+        else if (species == SP_DJINNI)
+            str = "underside", *can_plural = false;
         else if (fishtail)
         {
             str         = "tail";
@@ -474,7 +501,7 @@ string player::foot_name(bool plural, bool *can_plural) const
     }
 
     if (str.empty())
-        return (plural ? "feet" : "foot");
+        return plural ? "feet" : "foot";
 
     if (plural && *can_plural)
         str = pluralise(str);
@@ -504,6 +531,8 @@ string player::arm_name(bool plural, bool *can_plural) const
 
     if (form == TRAN_LICH)
         adj = "bony";
+    else if (form == TRAN_SHADOW)
+        adj = "shadowy";
 
     if (!adj.empty())
         str = adj + " " + str;
@@ -649,7 +678,7 @@ bool player::can_go_berserk(bool intentional, bool potion, bool quiet) const
         return false;
     }
 
-    if (beheld() && !player_equip_unrand_effect(UNRAND_DEMON_AXE))
+    if (beheld() && !player_equip_unrand(UNRAND_DEMON_AXE))
     {
         if (verbose)
             mpr("You are too mesmerised to rage.");
@@ -665,20 +694,19 @@ bool player::can_go_berserk(bool intentional, bool potion, bool quiet) const
         return false;
     }
 
-    if (!you.can_bleed(false))
+    if (you.species == SP_DJINNI)
     {
-        // XXX: This message assumes that you're undead.
         if (verbose)
-            mpr("You cannot raise a blood rage in your lifeless body.");
+            mpr("Only creatures of flesh and blood can berserk.");
 
-        // or else you won't notice -- no message here
         return false;
     }
 
-    if (you.species == SP_GARGOYLE && you.petrifying())
+    if (is_lifeless_undead())
     {
         if (verbose)
-            mpr("You cannot rage while you turn to stone.");
+            mpr("You cannot raise a blood rage in your lifeless body.");
+
         return false;
     }
 
@@ -686,31 +714,27 @@ bool player::can_go_berserk(bool intentional, bool potion, bool quiet) const
     // trigger when the player attempts to activate berserk,
     // auto-iding at that point, but also killing the berserk and
     // wasting a turn.
-    if (you.stasis(false))
+    if (stasis(false))
     {
         if (verbose)
-        {
-            const item_def *amulet = you.slot_item(EQ_AMULET, false);
-            mprf("You cannot go berserk with %s on.",
-                 amulet? amulet->name(DESC_YOUR).c_str() : "your amulet");
-        }
+            mpr("You cannot go berserk while under stasis.");
         return false;
     }
 
-    if (!intentional && !potion && you.clarity())
+    if (!intentional && !potion && clarity())
     {
         if (verbose)
         {
             mpr("You're too calm and focused to rage.");
-            if (!you.clarity(false))
+            if (!clarity(false))
                 maybe_id_clarity();
         }
 
         return false;
     }
 
-    ASSERT(HUNGER_STARVING - 100 + BERSERK_NUTRITION < 2066);
-    if (you.hunger <= 2066)
+    COMPILE_CHECK(HUNGER_STARVING - 100 + BERSERK_NUTRITION < HUNGER_VERY_HUNGRY);
+    if (hunger <= HUNGER_VERY_HUNGRY)
     {
         if (verbose)
             mpr("You're too hungry to go berserk.");
@@ -720,27 +744,73 @@ bool player::can_go_berserk(bool intentional, bool potion, bool quiet) const
     return true;
 }
 
+bool player::can_jump(bool quiet) const
+{
+    if (duration[DUR_EXHAUSTED])
+    {
+        if (!quiet)
+            mpr("You're too exhausted to jump.");
+        return false;
+    }
+
+    if (in_water())
+    {
+        if (!quiet)
+            mpr("You can't jump while in water.");
+        return false;
+    }
+    if (feat_is_lava(grd(pos())))
+    {
+        if (!quiet)
+            mpr("You can't jump while standing in lava.");
+        return false;
+    }
+    if (liquefied_ground())
+    {
+        if (!quiet)
+            mpr("You can't jump while stuck in this mess.");
+        return false;
+    }
+    if (is_constricted())
+    {
+        if (!quiet)
+            mpr("You can't jump while being constricted.");
+        return false;
+    }
+    if (form == TRAN_TREE || form == TRAN_WISP)
+    {
+        if (!quiet)
+            canned_msg(MSG_PRESENT_FORM);
+        return false;
+    }
+    return true;
+}
+
+bool player::can_jump() const
+{
+    return can_jump(false);
+}
 bool player::berserk() const
 {
-    return (duration[DUR_BERSERK]);
+    return duration[DUR_BERSERK];
 }
 
 bool player::can_cling_to_walls() const
 {
-    return you.form == TRAN_SPIDER;
+    return form == TRAN_SPIDER || player_equip_unrand(UNRAND_SPIDER);
 }
 
 bool player::is_web_immune() const
 {
     // Spider form
-    return can_cling_to_walls();
+    return form == TRAN_SPIDER;
 }
 
 bool player::shove(const char* feat_name)
 {
     for (distance_iterator di(pos()); di; ++di)
         if (in_bounds(*di) && !actor_at(*di) && !is_feat_dangerous(grd(*di))
-            && you.can_pass_through_feat(grd(*di)))
+            && can_pass_through_feat(grd(*di)))
         {
             moveto(*di);
             if (*feat_name)
@@ -753,5 +823,5 @@ bool player::shove(const char* feat_name)
 
 int player::constriction_damage() const
 {
-    return roll_dice(2, div_rand_round(you.strength(), 5));
+    return roll_dice(2, div_rand_round(strength(), 5));
 }

@@ -2,10 +2,10 @@ Guide to Crawl's options
 ========================
 
 This document explains all of the options in the latest version of
-Dungeon Crawl Stone Soup. If you get stuck or some things won't seem to
-work properly, ask for help on the newsgroup rec.games.roguelike.misc.
-Please flag queries with '-crawl-', as other roguelikes are discussed
-there as well.
+Dungeon Crawl Stone Soup. If you get stuck or some things don't seem to
+work properly, ask for help in ##crawl on freenode, or on the Crawl
+forums at http://crawl.develz.org/tavern/.
+
 The contents of this text are:
 
 0-  Generalities.
@@ -17,16 +17,16 @@ The contents of this text are:
 1-  Starting Screen.
                 name, remember_name, weapon, species, background,
                 random_pick, good_random, restart_after_game,
-                default_manual_training
+                default_manual_training, autopickup_starting_ammo
 2-  File System and Sound.
                 crawl_dir, morgue_dir, save_dir, macro_dir, sound
 3-  Interface.
 3-a     Dropping and Picking up.
                 autopickup, autopickup_exceptions, default_autopickup,
                 autopickup_no_burden, pickup_thrown, chunks_autopickup,
-                assign_item_slot, drop_mode, pickup_mode, drop_filter,
-                default_friendly_pickup
-3-b     Targetting.
+                assign_item_slot, drop_mode, pickup_menu, pickup_menu_limit,
+                drop_filter, default_friendly_pickup
+3-b     Targeting.
                 default_target, target_unshifted_dirs, darken_beyond_range
 3-c     Passive Sightings (detected and remembered entities).
                 detected_monster_colour, detected_item_colour,
@@ -53,11 +53,12 @@ The contents of this text are:
 3-h     Command Enhancements.
                 auto_list, auto_switch, easy_open, easy_unequip,
                 equip_unequip, easy_confirm, allow_self_target,
-                confirm_butcher, prefer_safe_chunks, easy_eat_chunks,
-                easy_eat_gourmand, easy_eat_contaminated, auto_drop_chunks,
+                confirm_butcher, easy_eat_chunks, auto_drop_chunks,
                 prompt_for_swap, easy_quit_item_prompts,
                 easy_exit_menu, sort_menus, spell_slot, autofight_stop,
-                autofight_throw, autofight_throw_nomove
+                autofight_throw, autofight_throw_nomove, autofight_fire_stop,
+                autofight_caught, automagic_enable, automagic_slot,
+                automagic_fight, automagic_stop
 3-i     Message and Display Improvements.
                 hp_warning, mp_warning, hp_colour, mp_colour, stat_colour,
                 status_caption_colour, enemy_hp_colour, clear_messages,
@@ -66,7 +67,7 @@ The contents of this text are:
                 item_stack_summary_minimum,
                 mlist_min_height, msg_min_height, msg_max_height,
                 messages_at_top, skill_focus,
-                mlist_allow_alternate_layout, mlist_targetting,
+                mlist_allow_alternate_layout, mlist_targeting,
                 menu_colour, message_colour, force_more_message,
                 msg_condense_repeats, msg_condense_short, show_travel_trail,
                 monster_list_colour
@@ -104,7 +105,9 @@ The contents of this text are:
                 tile_font_tip_size, tile_font_lbl_size,
                 tile_font_ft_light, tile_show_minihealthbar,
                 tile_show_minimagicbar, tile_show_demon_tier,
-                tile_layout_priority, tile_force_regenerate_levels
+                tile_water_anim, tile_layout_priority,
+                tile_realtime_anim, tile_display_mode,
+                tile_level_map_hide_messages, tile_level_map_hide_sidebar
 4-  Character Dump.
 4-a     Saving.
                 dump_on_save
@@ -116,7 +119,7 @@ The contents of this text are:
                 user_note_prefix, note_items, note_monsters,
                 note_hp_percent, note_skill_levels, note_all_skill_levels,
                 note_skill_max, note_xom_effects, note_messages,
-                note_chat_messages
+                note_chat_messages, note_dgl_messages
 5-  Miscellaneous.
 5-a     All OS.
                 mouse_input, wiz_mode, char_set, colour, cset, feature,
@@ -245,7 +248,7 @@ It is possible to reset, add items to, or remove items from such an option.
    Empty the list:
       drop_filter =
 
-The "listopt = value" syntax first clears the list, then adds values.  In
+The "listopt = value" syntax first clears the list, then adds values. In
 previous versions of Crawl it was a synonym for +=, and only bare
 "listopt =" cleared the list.
 
@@ -308,19 +311,25 @@ remember_name = true
         simply reuse your old name if remember_name is set.
 
 weapon = (short sword | falchion | quarterstaff | hand axe | spear | mace
-          | trident | unarmed | random)
+          | trident | unarmed | random | viable)
         Specifying the weapon option allows you to bypass the weapon
         selection screen. Tridents and falchions are restricted to only
         fighters and gladiators, quarterstaves are restricted to gladiators,
         and unarmed is restricted to races with claws. The standard weapon
         prompt will be shown if an illegal choice for the selected
-        background is specified.
+        background is specified. The "viable" option makes a random choice
+        from among the "good" weapons for the chosen character.
 
-species = (Human |...| Vampire | random)
-        The usual abbreviations (Hu, HE, etc.) work.
+species = (Human |...| Vampire | random | viable)
+        The usual abbreviations (Hu, HE, etc.) work. Because species and
+        background selections from options are applied before player choices,
+        "viable" is essentially the same as "random" unless the background
+        option is also set.
 
-background = (Fighter |...| Wanderer | random)
-        Here again the abbreviations (Fi, Wz, Pr, etc.) can be used.
+background = (Fighter |...| Wanderer | random | viable)
+        Here again the abbreviations (Fi, Wz, Pr, etc.) can be used. The same
+        caveat applies to "viable": it is only really meaningful if the
+        species option is also set.
 
 random_pick = false
         The random_pick option will randomly generate a character.
@@ -329,8 +338,8 @@ random_pick = false
 
 good_random = true
         Whenever random_pick is used, species or background are set
-        random, or a remembered random choice is executed in the
-        character selection, the game will only pick good combinations.
+        random, or a remembered random choice is executed in the character
+        selection, the game will only pick good (viable) combinations.
 
 restart_after_game = true/false
         When a game ends, Crawl will return to the main menu if
@@ -340,6 +349,13 @@ restart_after_game = true/false
 default_manual_training = false
         When set to true, new characters will start with skill training
         set to manual mode instead of automatic mode.
+
+autopickup_starting_ammo = true
+        When set, at game start, autopickup is forced on (as per the \
+        menu) for the player's starting ammunition type (including stones
+        for Earth Elementalists). Even when this option is set, autopickup
+        of those items can be disabled from the \ menu once the game has
+        begun.
 
 2-  File System.
 ================
@@ -490,15 +506,19 @@ drop_mode = (multi | single)
         the inventory listing, but equipped items will be dropped last,
         and may be dropped out of order.
 
-pickup_mode = (multi | single | auto:X)
-        Single is the classical behaviour (and default): when picking up
-        items, you are prompted for them one by one. Multi makes a menu
-        appear, where you can choose which items to pick up. Note that
-        no matter how many items you choose, picking up will always take
-        one turn.
-        If pickup_mode is auto:X, where X is some number (for example,
-        auto:5), then pickup will give a menu if there are at least X
-        items on your square, and will prompt one by one otherwise.
+pickup_menu = true
+        When true (the default), makes a menu appear, where you can
+        choose which items to pick up. Note that no matter how many
+        items you choose, picking up will always take one turn.
+        Setting this to false invokes another behaviour: when picking up
+        items, if there are at least 4 items on your square, the menu will
+        appear, and you are prompted one by one otherwise.
+        This number can be adjusted with the pickup_menu_limit option.
+
+pickup_menu_limit = 4
+        The number of items on your square that will activate menu for pickup
+        when pickup_menu is set to false.  If zero, never use the menu.
+        If negative, use the value of item_stack_summary_minimum instead.
 
 drop_filter += <regex>, <regex>, ...
         (List option)
@@ -547,16 +567,16 @@ default_friendly_pickup = (friend | player | none | all)
         Also, friendly jellies won't ever eat any items, regardless of
         this option.
 
-3-b     Targetting.
+3-b     Targeting.
 -------------------
 
 default_target = true
-        If set to true (the default), targetting will start on either
+        If set to true (the default), targeting will start on either
         your previous target (if it is still visible) or the closest
         monster (if not) rather than on the character. If no monsters
-        are in view, targetting will start on the character regardless.
+        are in view, targeting will start on the character regardless.
 
-        If default_target = false, the targetting cursor will always
+        If default_target = false, the targeting cursor will always
         start aimed at the character.
 
         default_target is mutually exclusive with
@@ -564,18 +584,18 @@ default_target = true
         disable target_unshifted_dirs.
 
 target_unshifted_dirs = false
-        If set to true, targetting will use the old Stone Soup 0.1 /
-        Crawl 4.0 targetting keymap where unshifted direction keys fire
+        If set to true, targeting will use the old Stone Soup 0.1 /
+        Crawl 4.0 targeting keymap where unshifted direction keys fire
         in that direction immediately. The default is to use the new
-        targetting keymap where unshifted direction keys move the
-        targetting cursor (and shifted directions fire in the given
+        targeting keymap where unshifted direction keys move the
+        targeting cursor (and shifted directions fire in the given
         direction immediately).
 
         If you use target_unshifted_dirs, default_target will be
         automatically disabled.
 
 darken_beyond_range = true
-        If set to true, everything beyond range when targetting will be
+        If set to true, everything beyond range when targeting will be
         coloured grey. Setting this to false will also suppress the brief
         flash if there are no visible monsters within range, both for
         ASCII and the Tiles version.
@@ -765,8 +785,8 @@ travel_delay = 20 (defaults to -1 for online servers)
 explore_delay = -1
         How long auto-explore waits after each move (milliseconds). Depends on
         platform. In particular, setting travel_delay = -1 and
-        explore_delay = 20 means you will see the invividual moves of
-        autoexplore, but not the invidivual moves of other forms of travel.
+        explore_delay = 20 means you will see the individual moves of
+        autoexplore, but not the individual moves of other forms of travel.
         Setting to -1 means the auto-explore delay will be the same as
         travel_delay.
 
@@ -853,8 +873,7 @@ explore_stop_pickup_ignore += <regex>, <regex>, ...
         then picking up any items matching any of the regexes in the list
         will *not* stop auto-explore.
 
-        This options has no affect on items which were thrown by the
-        player.
+        This option has no effect on items which were thrown by the player.
 
 explore_wall_bias = 0
         Adjusts how much autoexplore favours attempting to discover room
@@ -948,7 +967,7 @@ runrest_ignore_monster ^= <regex>:<distance>, <regex>:<distance>, ...
         activity if the distance between you and the monster is less than the
         specified number. E.g. with
              runrest_ignore_monster ^= fish:3
-        all of big fish, jellyfish, giant goldfish and lavafish will be
+        all of big fish, jellyfish, giant goldfish and lava fish will be
         considered safe for travel, explore and resting as long as the
         distance is at least 3. If a monster matches multiple expressions,
         its distance is compared with the first match.
@@ -1020,12 +1039,12 @@ easy_confirm = (none | safe | all)
         questions.
 
 allow_self_target = (yes | no | prompt)
-        Allow targetting yourself with risky magic (e.g., the spell
+        Allow targeting yourself with risky magic (e.g., the spell
         Bolt of Fire or a wand of slowing.)
         When set to 'yes', you are a valid target. When set to 'no',
         you cannot target yourself with such spells. When set to
         'prompt' (the default), you will be required to confirm
-        self-targetting. This option has no effect on area-effect
+        self-targeting. This option has no effect on area-effect
         spells, such as Mephitic Cloud, where you are always a valid target.
 
 confirm_butcher = (always | never | auto)
@@ -1035,34 +1054,12 @@ confirm_butcher = (always | never | auto)
         even if there are multiple corpses on the square. If always, you will
         be prompted before butchering any number of corpses.
 
-prefer_safe_chunks = true
-        The (e)at command will prompt for all chunks on the floor and in your
-        inventory, sorted by age. If this option is set to true, clean chunks
-        will be offered before contaminated ones even if the latter are older.
-        Rotten chunks will be offered after clean or contaminated ones.
-        Poisonous, mutagenic, rot-inducing, and chunks forbidden by
-        your religion will always be offered last.
-
 easy_eat_chunks = false
         If this is set to true then when using the (e)at command, the
         game will automatically determine the oldest chunk that is safe
         to eat, and eat it without prompting.
-        If prefer_safe_chunks is set to false you will be prompted if
-        the oldest chunk happens to be contaminated, and you will always
-        be prompted for harmful chunks.
+        You will always be prompted to eat harmful chunks.
         Note that this option is ignored for each of the undead species.
-
-easy_eat_gourmand = false
-        If both this and easy_eat_chunks are true, and you're wearing an
-        amulet of the Gourmand, then religion-safe contaminated chunks will
-        be eaten without prompting. If prefer_safe_chunks is true then this
-        will only be done if you have no safe chunks to eat, but if it's
-        false then you'll auto-eat older contaminated chunks before fresher
-        safe chunks.
-
-easy_eat_contaminated = false
-        Like easy_eat_gourmand, but always in effect, not just when you're
-        wearing an amulet of the Gourmand.
 
 auto_eat_chunks = false
         Setting this option to true will allow you to automatically eat a chunk
@@ -1080,7 +1077,7 @@ auto_drop_chunks = (never | rotten | yes)
 prompt_for_swap = true
         If true, then if an auto-switch butchery is interrupted by a
         hostile monster, the game will ask if you wish to switch back to
-        your weapon. It will also prompt you if after butchery is interupted
+        your weapon. It will also prompt you if after butchery is interrupted
         you teleport or change levels and find yourself near hostile monsters.
 
 easy_quit_item_prompts = true
@@ -1254,9 +1251,39 @@ autofight_throw = false
         launcher (a bow, crossbow, sling or blowgun) will be considered.
 
 autofight_throw_nomove = true
-        This works same as above, except that only for ===hit_adjacent
-        rather than ===hit_closest; this is usually bound to shift-Tab.
+        This works same as above, except that only for
+        ===hit_closest_nomove rather than ===hit_closest; this is usually
+        bound to shift-Tab.
 
+autofight_fire_stop = false
+        When firing missiles or throwing objects using autofight, if this
+        option is true, shots will stop at the target (like "f.") rather than
+        continuing past. Note that this setting may be decidedly suboptimal
+        for missiles of penetration.
+
+autofight_caught = false
+        If true, autofight will attempt to escape webs or nets that are
+        holding you, even if no enemies are in view.
+
+automagic_enable = false
+        If true, the autofight function will resort to casting an assigned
+        spell at a target. Initial spell slot is a.
+
+automagic_slot = a
+        Setting this changes the initial spell slot for automagic. Can be
+        changed for games in progress in-game by setting a macro to call
+        ===am_set_spell.
+
+automagic_fight = false
+        Setting this to true causes melee combat when trying to cast a spell
+        that you either do not have enough magic points for, or are below
+        the set threshold. If false, a message will appear and no further
+        action is taken.
+
+automagic_stop = 0
+        Similar to autofight_stop, if magic points are below this number
+        (percentage of total), casting is prevented. What happens depends
+        on automagic_fight setting.
 
 3-i     Messages and Display Enhancements.
 ------------------------------------------
@@ -1317,7 +1344,7 @@ small_more = false
         small_more = true, it is just the bottom left character if
         clear_messages is not set.
 
-show_inventory_weights = false
+show_inventory_weights = true
         When this is set to true, inventory listings will mention the
         weight of each item.
         Note: This option doesn't currently work for Tiles unless you use
@@ -1382,9 +1409,9 @@ mlist_allow_alternate_layout = false
         than using the fixed position below the stat area.
         This option is not supported in the tiles build.
 
-mlist_targetting = false
+mlist_targeting = false
         Using the monster list you can directly target monsters in
-        targetting mode. There's a toggle that allows you to turn this
+        targeting mode. There's a toggle that allows you to turn this
         feature on and off. This option controls the initial setting
         at game start or reload.
 
@@ -1552,7 +1579,7 @@ fire_items_start = a
         missiles to fire. The default is a.
 
 fire_order  = launcher, return
-fire_order += javelin / dart / stone / rock / spear / net / handaxe / dagger
+fire_order += javelin / tomahawk / dart / stone / rock / net
 fire_order += inscribed
         (Ordered list option)
         Controls the order of items autoselected for firing. Items
@@ -1597,24 +1624,29 @@ CHANNEL_NAME can currently be one of these:
    recovery        = recovery from disease/stat loss/poison conditions
    talk            = monsters talking
    talk_visual     = monster performing some action that the player sees
+   timed_portal    = portal timeout messages
+   sound           = other sounds
    intrinsic_gain  = level/stat/species power gains
    mutation        = gain/lose mutations
    monster_spell   = messages about monsters gesturing or casting spells
    monster_enchant = messages pertaining to monster enchantments
    friend_spell    = as monster_spell, but only for friendly monsters
    friend_enchant  = as monster_enchant, but only for friendly monsters
+   friend_action   = other actions by friendly monsters
    monster_damage  = messages telling how damaged a monster is
+   monster_target  = messages marking the monster as a target (unused)
+   banishment      = messages about banishing and being banished to the Abyss
    rotten_meat     = messages about chunks/corpses becoming rotten
    equipment       = messages indicating worn/wielded equipment
-   floor           = messages when looking at or walking over a floor
-                     item
-   multiturn       = indicates long actions (wearing armour, dissecting
-                     etc.)
+   floor           = messages when looking at or walking over a floor item
+   multiturn       = indicates long actions (wearing armour, dissecting etc.)
    examine         = messages from examining your surroundings
    examine_filter  = boring messages from examining your surroundings
    diagnostics     = debugging messages
    error           = error messages
    tutorial        = messages from the tutorial
+   orb             = messages about the Orb of Zot
+   hell_effect     = messages about environmental effects of the Hells
 
 The channel options are
    mute      = show no messages from channel (dangerous, be careful!)
@@ -1693,7 +1725,7 @@ bindkey = [^D] CMD_BUTCHER
         ^X meaning Ctrl-X. After that name the command to be bound to
         that key. You can bind several commands to the same key, as long
         as they take effect in different areas of the game, i.e. one
-        targetting command and one for the main game. Likewise, you can
+        targeting command and one for the main game. Likewise, you can
         bind the same command to different keys.
         For a full list of possible commands, see keybind.txt.
 
@@ -1802,12 +1834,12 @@ tile_window_height = 0
         The width and height of the window, in pixels. If set to zero, it
         will auto-size the window.
 
-tile_map_pixels = 3
+tile_map_pixels = 0
         The maximum number of pixels each minimap square should take up. If you
         have a low resolution, and feel like the inventory is too small, you
         can try setting this to 1 to get more space for the inventory. The
-        downside is that traveling by clicking on the minimap becomes much
-        harder.
+        downside is that travelling by clicking on the minimap becomes much
+        harder. If set to zero, it will auto-size the minimap.
 
 tile_cell_pixels = 32
         The width and height of tiles in the dungeon view. If you want
@@ -1817,7 +1849,7 @@ tile_cell_pixels = 32
         the screen.
 
 tile_filter_scaling = false
-        Used in conjonction with tile_cell_pixels. Setting it to true filter
+        Used in conjunction with tile_cell_pixels. Setting it to true filter
         the textures resulting in a smoother but blurrier image.
 
 tile_force_overlay = false
@@ -1850,7 +1882,8 @@ tile_font_stat_size = 16
 tile_font_msg_size  = 14
 tile_font_tip_size  = 15
 tile_font_lbl_size  = 14
-        Font size for the screen regions listed above.
+        Font size for the screen regions listed above. If set to zero (default),
+        size will be based on screen size.
 
 tile_font_ft_light = false
         Selects 'light' font hinting.
@@ -1864,6 +1897,9 @@ tile_show_demon_tier = true
         Will overlay demon tiles with an icon intended to represent their
         tier (or difficulty rank) among demons, as is the case for non-Tiles
         builds.
+
+tile_water_anim = true
+        If disabled, animation of liquids will be suppressed.
 
 tile_layout_priority = minimap, inventory, gold_turn, command, spell, monster
         (Ordered list option)
@@ -1879,12 +1915,21 @@ tile_layout_priority = minimap, inventory, gold_turn, command, spell, monster
         between the stat area and the tabs. The memorisation and skill tabs can
         be added to the list too, but are not by default.
 
-tile_force_regenerate_levels = false
-        If set to true, this will cause the tiles information of existing
-        levels to be regenerated when loading the level, thus repairing
-        save files where this information has become corrupted. This
-        shouldn't be ever needed anymore.
+tile_realtime_anim = false
+        If enabled, tile animations will run in real time and will not be tied
+        to player actions.
+        This option is only available on WebTiles.
 
+tile_display_mode = (tiles | glyphs | hybrid)
+        Controls how the dungeon is rendered. You can use normal tiles (default)
+        or make it look like the console version by using glyphs. Hybrid
+        overlays icons on top of the glyph view.
+        This option is only available on WebTiles.
+
+tile_level_map_hide_messages = true
+tile_level_map_hide_sidebar = false
+        Controls what screen elements are hidden when using the level map.
+        These options are only available on WebTiles.
 
 4-  Character Dump.
 ===================
@@ -1991,7 +2036,9 @@ You can use the command ':' for manually adding notes.
 
 user_note_prefix = <string>
         Prefixes manually added notes with the given string, to make
-        them easier to find.
+        them easier to find. It is not currently possible to add a
+        space at the end of this or any option, but you can use the
+        Unicode non-breaking space character ' ' instead.
 
 note_items += <regex>, <regex>, ...
         (List option)
@@ -2046,8 +2093,13 @@ note_messages += <regex>, <regex>, ...
              note_messages += Your scales start
 
 note_chat_messages = false
-        If set to false, this will disable logging of chat messages
-        from other players. (This setting only applies on the online
+        If set to false, this will disable logging of webtiles chat
+        messages from other players. (This setting only applies on the
+        online servers).
+
+note_dgl_messages = true
+        If set to false, this will disable logging of DGL messages
+        sent by other players. (This setting only applies on the online
         servers).
 
 
@@ -2117,9 +2169,9 @@ cset = <dungeon_character_name : symbol>
         The possible entries for dungeon_character_name are:
            wall, wall_magic, floor, floor_magic, door_open, door_closed,
            trap, stairs_down, stairs_up, grate, altar, arch, fountain, wavy,
-           statue, invis_exposed, item_detected, item_orb, item_weapon,
-           item_armour, item_wand, item_food, item_scroll, item_ring,
-           item_potion, item_missile, item_book, item_stave,
+           statue, invis_exposed, item_detected, item_orb, item_rune,
+           item_weapon, item_armour, item_wand, item_food, item_scroll,
+           item_ring, item_potion, item_missile, item_book, item_stave,
            item_miscellany, item_corpse, item_gold, item_amulet, cloud,
            tree, fired_flask, fired_bolt, fired_chunk, fired_book,
            fired_weapon, fired_zap, fired_burst, fired_stick, fired_trinket,
@@ -2275,7 +2327,7 @@ background_colour = black
 
 use_fake_cursor = true
         If true, Crawl draws the cursor explicitly on the level-map and
-        targetting screens instead of relying on the term to draw the
+        targeting screens instead of relying on the term to draw the
         cursor. Use this if your term cannot show a cursor over
         darkgrey/black squares.
         On non-Unix builds this option defaults to false.
@@ -2356,7 +2408,7 @@ autopickup = $?+"/
 autopickup = $?+"/!%
 : end
 
-Options can be rerefenced by lua via "options.option_name". For
+Options can be referenced by lua via "options.option_name". For
 example:
 
 :if string.find(options.autopickup, "!") then

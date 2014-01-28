@@ -13,8 +13,10 @@ misc/cursor CURSOR
 %sdir player/base
 human_f HUMAN
 human_m
-human_dark_f
-human_dark_m
+human2_f
+human2_m
+human3_f
+human3_m
 elf_m ELF
 elf_f
 deep_elf_f DEEP_ELF
@@ -68,7 +70,13 @@ octopode2
 octopode3
 octopode4
 octopode5
-djinni DJINNI
+%rim 0
+djinni_f DJINNI
+djinni_m
+%rim 1
+formicid FORMICID
+vine_stalker_f VINE_STALKER
+vine_stalker_m
 
 # draconians
 draconian_f DRACONIAN DRACONIAN_FIRST
@@ -124,14 +132,20 @@ tengu_winged_f
 tengu_winged_m
 tengu_wingless_brown_f
 tengu_wingless_brown_m
-merfolk_m MERFOLK
-merfolk_f
-merfolk_water_m MERFOLK_WATER
-merfolk_water_f
+merfolk_f MERFOLK
+merfolk_m
+merfolk_water_f MERFOLK_WATER
+merfolk_water_m
 vampire_f VAMPIRE
 vampire_m
 deep_dwarf_m DEEP_DWARF
 deep_dwarf_f
+gargoyle_m GARGOYLE
+gargoyle_f
+gargoyle_red_m
+gargoyle_red_f
+gargoyle_brown_m
+gargoyle_brown_f
 %sdir player/felids
 %rim 0
 cat1 FELID
@@ -209,6 +223,7 @@ mesh_red MESH_RED
 mesh_black MESH_BLACK
 mesh_white MESH_WHITE
 mesh_blue MESH_BLUE LAST_NORM
+spider SPIDER
 
 ## Mutations
 hooves HOOVES
@@ -361,6 +376,7 @@ karate KARATE
 karate2 KARATE2
 leather_heavy LEATHER_HEAVY
 troll_hide TROLL_HIDE
+troll_leather TROLL_LEATHER
 green_chain GREEN_CHAIN
 metal_blue METAL_BLUE
 green_susp GREEN_SUSP
@@ -428,6 +444,7 @@ vanhel1 VANHEL
 maxwell MAXWELL
 lears_chain_mail LEARS_CHAIN_MAIL
 faerie_dragon_armour FAERIE_DRAGON_ARMOUR
+moon_troll_leather_armour MOON_TROLL_LEATHER_ARMOUR
 %end_ctg
 
 ### Arms
@@ -478,7 +495,7 @@ sword_of_power SWORD_OF_POWER
 knife_of_accuracy KNIFE_OF_ACCURACY
 vampires_tooth VAMPIRES_TOOTH
 spriggans_knife SPRIGGANS_KNIFE
-cutlass CUTLASS
+capt_cutlass CAPT_CUTLASS
 ## blunt
 wucad_mu WUCAD_MU
 mace_of_variability MACE_OF_VARIABILITY
@@ -487,6 +504,7 @@ undeadhunter UNDEADHUNTER
 eos EOS
 snakebite SNAKEBITE
 shillelagh SHILLELAGH
+dark_maul DARK_MAUL
 ## polearms
 trident_octopus_king TRIDENT_OCTOPUS_KING
 glaive_of_prune GLAIVE_OF_PRUNE
@@ -523,33 +541,32 @@ short_sword_slant SHORT_SWORD_SLANT
 short_sword_slant2
 short_sword_two SHORT_SWORD2
 sword_thief SWORD_THIEF
-long_sword LONG_SWORD
+bastard_sword BASTARD_SWORD
+bastard_sword2
+bastard_sword3
+bastard_sword_blessed BASTARD_SWORD_BLESSED
 long_sword_slant LONG_SWORD_SLANT
 long_sword_slant2
 blessed_blade BLESSED_BLADE
-great_sword GREAT_SWORD
 great_sword_slant GREAT_SWORD_SLANT
 great_sword_slant2
+claymore CLAYMORE
+claymore2
+claymore_blessed CLAYMORE_BLESSED
 katana_slant KATANA_SLANT
 scimitar SCIMITAR
 scimitar2
 falchion FALCHION
 falchion2
-double_sword DOUBLE_SWORD
-double_sword2
-triple_sword TRIPLE_SWORD
-triple_sword2
 sword_two SWORD2
-sword_tri SWORD_TRI
 broadsword BROADSWORD
 black_sword BLACK_SWORD
 sword_black SWORD_BLACK
 sword_twist SWORD_TWIST
 knife KNIFE
-sword_seven SWORD_SEVEN
 heavy_sword HEAVY_SWORD
-sabre SABRE
-sabre2
+cutlass CUTLASS
+cutlass2
 sword_three SWORD3
 sword_breaker SWORD_BREAKER
 sword_jag SWORD_JAG
@@ -592,8 +609,6 @@ hammer_two HAMMER2
 flail_stick FLAIL_STICK
 flail_ball FLAIL
 flail_ball2
-flail_spike SPIKED_FLAIL
-flail_spike2
 flail_great GREAT_FLAIL
 flail_great2
 flail_stick_slant FLAIL_STICK_SLANT
@@ -668,16 +683,16 @@ staff_fork STAFF_FORK
 
 ## rods
 # These 10 rods correspond to the same order as item/rod/
-rod_brown ROD_BROWN
-rod_moon
-rod_aries
-rod_blue
-rod_magenta
-rod_hammer
-rod_thick
-rod_ruby
-rod_forked
+rod_ruby ROD_FIRST
+rod_brown
 rod_emerald
+rod_hammer
+rod_blue
+rod_thick
+rod_moon
+rod_magenta
+rod_forked
+rod_aries
 
 ## axes
 axe_small AXE_SMALL
@@ -855,9 +870,20 @@ torch2 TORCH2
 
 bladehands BLADEHAND
 
+# The 1-2 "typos" are intentional; the equivalent tiles above have no
+# enums and become TILEP_GREAT_FLAIL_1 and TILEP_GREAT_MACE_1 respectively.
 dagger DAGGER
-sabre SABRE
+cutlass CUTLASS
 short_sword_slant SHORT_SWORD_SLANT
+flail_great GREAT_FLAIL
+flail_great2 GREAT_FLAIL_1
+great_mace GREAT_MACE
+great_mace2 GREAT_MACE_1
+giant_club GIANT_CLUB
+giant_club_slant GIANT_CLUB_SLANT
+giant_club_spike GIANT_CLUB_SPIKE
+giant_club_spike_slant GIANT_CLUB_SPIKE_SLANT
+giant_club_plain GIANT_CLUB_PLAIN
 %end_ctg
 
 ###Hair
@@ -867,6 +893,7 @@ short_black SHORT_BLACK
 short_red SHORT_RED
 short_yellow SHORT_YELLOW
 short_white SHORT_WHITE
+short_brown SHORT_BROWN
 long_black LONG_BLACK
 long_red LONG_RED
 long_yellow LONG_YELLOW
@@ -879,6 +906,16 @@ elf_black ELF_BLACK
 elf_red ELF_RED
 elf_yellow ELF_YELLOW
 elf_white ELF_WHITE
+elf_brown ELF_BROWN
+curly_yellow CURLY_YELLOW
+full_brown FULL_BROWN
+mountain_man MOUNTAIN_MAN
+part_blue PART_BLUE
+part2_red PART2_RED
+ribbons_black RIBBONS_BLACK
+hightail HIGHTAIL
+queue QUEUE
+headband HEADBAND
 aragorn ARAGORN
 arwen ARWEN
 boromir BOROMIR
@@ -890,12 +927,24 @@ sam SAM
 pigtail_red PIGTAIL_RED
 pigtails_brown PIGTAILS_BROWN
 pigtails_yellow PIGTAILS_YELLOW
+pigtails_green PIGTAILS_GREEN
 ponytail_yellow PONYTAIL_YELLOW
 knot_red KNOT_RED
 brown1 BROWN1
 brown2 BROWN2
 green GREEN
 tengu_comb TENGU_COMB
+spriggan1 SPRIGGAN1
+spriggan2 SPRIGGAN2
+spriggan3 SPRIGGAN3
+hightails_brown HIGHTAILS_BROWN
+topknot TOPKNOT
+topknot2 TOPKNOT2
+sweep SWEEP
+chopsticks CHOPSTICKS
+troll TROLL
+djinn1 DJINN1
+djinn2 DJINN2
 %end_ctg
 
 ###Beard
@@ -932,15 +981,18 @@ stubble_brown STUBBLE_BROWN
 stubble_green STUBBLE_GREEN
 stubble_red STUBBLE_RED
 stubble_white STUBBLE_WHITE
+muttonchops_green MUTTONCHOPS_GREEN
+bushy_green BUSHY_GREEN
 pj PJ
+wizard WIZARD
 %end_ctg
 
 ###Helms
 %parts_ctg HELM
 %sdir player/head
 
-## Caps
-cone_blue CONE_BLUE CAP_FIRST_NORM
+## Hats
+cone_blue CONE_BLUE HAT_FIRST_NORM
 straw STRAW
 cap_blue CAP_BLUE
 feather_green FEATHER_GREEN
@@ -949,10 +1001,8 @@ feather_blue FEATHER_BLUE
 feather_yellow FEATHER_YELLOW
 feather_white FEATHER_WHITE
 bandana_ybrown BANDANA_YBROWN
-hat_black HAT_BLACK CAP_LAST_NORM
-
-## Wizard hats
-gandalf WIZARD_GRAY WHAT_FIRST_NORM
+hat_black HAT_BLACK
+gandalf WIZARD_GRAY
 wizard_blue WIZARD_BLUE
 wizard_purple WIZARD_PURPLE
 wizard_bluegreen WIZARD_BLUEGREEN
@@ -964,7 +1014,7 @@ wizard_red WIZARD_RED
 wizard_white WIZARD_WHITE
 turban_white TURBAN_WHITE
 turban_brown TURBAN_BROWN
-turban_purple TURBAN_PURPLE WHAT_LAST_NORM
+turban_purple TURBAN_PURPLE HAT_LAST_NORM
 
 ## Mutations
 horns1 HORNS1
@@ -1002,12 +1052,13 @@ taiso_yellow
 taiso_red
 taiso_white
 
-## Unrand caps
+## Unrand caps and hats
 bear BEAR
 dyrovepreva DYROVEPREVA
+wizard_lightgreen WIZARD_LIGHTGREEN
 
 ## All helmets below (HELM_OFS and greater) hide hair.
-iron1 HELM_IRON HELM_OFS
+iron1 HELM_IRON HELM_OFS FIRST_NORM
 helm_red HELM_RED
 horned HELM_HORNED
 helm_gimli HELM_GIMLI
@@ -1038,7 +1089,7 @@ fhelm_horn2 FHELM_HORN2
 horn_evil FHELM_EVIL
 helm_plume FHELM_PLUME
 mummy FHELM_MUMMY
-isildur FHELM_ISILDUR
+isildur FHELM_ISILDUR LAST_NORM
 art_dragonhelm ART_DRAGONHELM
 
 healer FHELM_HEALER

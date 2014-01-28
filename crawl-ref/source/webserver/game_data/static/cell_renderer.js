@@ -1,14 +1,15 @@
 define(["jquery", "./view_data", "./tileinfo-main", "./tileinfo-player",
-        "./tileinfo-icons", "./tileinfo-dngn", "./enums",
-        "./map_knowledge", "./tileinfos", "./player"],
-function ($, view_data, main, tileinfo_player, icons, dngn, enums, map_knowledge, tileinfos, player) {
+        "./tileinfo-icons", "./tileinfo-dngn", "./enums", "./map_knowledge",
+        "./tileinfos", "./player", "./options", "contrib/jquery.json"],
+function ($, view_data, main, tileinfo_player, icons, dngn, enums,
+          map_knowledge, tileinfos, player, options) {
+    "use strict";
+
     function DungeonCellRenderer()
     {
         this.set_cell_size(32, 32);
-        this.display_mode = "tiles";
         this.glyph_mode_font_size = 24;
         this.glyph_mode_font = "monospace";
-        this.smooth_scaling = false;
     }
 
     var fg_term_colours, bg_term_colours;
@@ -71,37 +72,8 @@ function ($, view_data, main, tileinfo_player, icons, dngn, enums, map_knowledge
 
     function obj_to_str(o)
     {
-        var parse = function (_o)
-        {
-            var a = [], t;
-
-            for (var p in _o)
-            {
-                if (_o.hasOwnProperty(p))
-                {
-                    t = _o[p];
-
-                    if (t && typeof t == "object")
-                    {
-                        a[a.length]= p + ":{ " + arguments.callee(t).join(", ") + "}";
-                    }
-                    else
-                    {
-                        if (typeof t == "string")
-                        {
-                            a[a.length] = [ p+ ": \"" + t + "\"" ];
-                        }
-                        else
-                        {
-                            a[a.length] = [ p+ ": " + t];
-                        }
-                    }
-                }
-            }
-            return a;
-        }
-        return "{" + parse(o).join(", ") + "}";
-    };
+        return $.toJSON(o);
+    }
 
     $.extend(DungeonCellRenderer.prototype, {
         init: function(element)
@@ -161,7 +133,7 @@ function ($, view_data, main, tileinfo_player, icons, dngn, enums, map_knowledge
 
             if (!cell)
             {
-                if (this.display_mode != "glyphs")
+                if (options.get("tile_display_mode") != "glyphs")
                     this.render_flash(x, y);
 
                 this.render_cursors(cx, cy, x, y);
@@ -179,7 +151,7 @@ function ($, view_data, main, tileinfo_player, icons, dngn, enums, map_knowledge
             map_cell.g = map_cell.g || ' ';
             if (map_cell.col == undefined) map_cell.col = 7;
 
-            if (this.display_mode == "glyphs")
+            if (options.get("tile_display_mode") == "glyphs")
             {
                 this.render_glyph(x, y, map_cell);
 
@@ -188,7 +160,7 @@ function ($, view_data, main, tileinfo_player, icons, dngn, enums, map_knowledge
             }
 
             // cell is basically a packed_cell + doll + mcache entries
-            if (this.display_mode == "tiles")
+            if (options.get("tile_display_mode") == "tiles")
                 this.draw_background(x, y, cell);
 
             var fg_idx = cell.fg.value;
@@ -269,7 +241,7 @@ function ($, view_data, main, tileinfo_player, icons, dngn, enums, map_knowledge
                 }
             }
 
-            if (is_in_water && this.display_mode == "tiles")
+            if (is_in_water && options.get("tile_display_mode") == "tiles")
             {
                 this.ctx.save();
                 try
@@ -298,7 +270,7 @@ function ($, view_data, main, tileinfo_player, icons, dngn, enums, map_knowledge
                     this.ctx.restore();
                 }
             }
-            else if (this.display_mode == "tiles")
+            else if (options.get("tile_display_mode") == "tiles")
             {
                 this.ctx.save();
                 try
@@ -348,8 +320,8 @@ function ($, view_data, main, tileinfo_player, icons, dngn, enums, map_knowledge
 
             this.render_cursors(cx, cy, x, y);
 
-            if (fg_idx == tileinfo_player.PLAYER &&
-                this.display_mode != "glyphs")
+            if (cx == player.pos.x && cy == player.pos.y
+                && map_knowledge.player_on_level())
             {
                 this.draw_minibars(x, y);
             }
@@ -372,18 +344,20 @@ function ($, view_data, main, tileinfo_player, icons, dngn, enums, map_knowledge
         // adapted from DungeonRegion::draw_minibars in tilereg_dgn.cc
         draw_minibars: function(x, y)
         {
+            var show_health = options.get("tile_show_minihealthbar");
+            var show_magic = options.get("tile_show_minimagicbar");
+
             // don't draw if hp and mp is full
-            if (player.hp == player.hp_max
-                && player.mp == player.mp_max)
-            {
+            if ((player.hp == player.hp_max || !show_health) &&
+                (player.mp == player.mp_max || !show_magic))
                 return;
-            }
 
             var bar_height = Math.floor(this.cell_height/16);
             var hp_bar_offset = bar_height;
 
             // TODO: use different colors if heavily wounded, like in the tiles version
-            if (player.mp_max > 0) {
+            if (player.mp_max > 0 && show_magic)
+            {
                 var mp_percent = player.mp / player.mp_max;
                 if (mp_percent < 0) mp_percent = 0;
 
@@ -398,16 +372,19 @@ function ($, view_data, main, tileinfo_player, icons, dngn, enums, map_knowledge
                 hp_bar_offset += bar_height;
             }
 
-            var hp_percent = player.hp / player.hp_max;
-            if (hp_percent < 0) hp_percent = 0;
+            if (show_health)
+            {
+                var hp_percent = player.hp / player.hp_max;
+                if (hp_percent < 0) hp_percent = 0;
 
-            this.ctx.fillStyle = hp_spend;
-            this.ctx.fillRect(x, y + this.cell_height - hp_bar_offset,
-                              this.cell_width, bar_height);
+                this.ctx.fillStyle = hp_spend;
+                this.ctx.fillRect(x, y + this.cell_height - hp_bar_offset,
+                                  this.cell_width, bar_height);
 
-            this.ctx.fillStyle = healthy;
-            this.ctx.fillRect(x, y + this.cell_height - hp_bar_offset,
-                              this.cell_width * hp_percent, bar_height);
+                this.ctx.fillStyle = healthy;
+                this.ctx.fillRect(x, y + this.cell_height - hp_bar_offset,
+                                  this.cell_width * hp_percent, bar_height);
+            }
         },
 
         render_cell: function()
@@ -510,6 +487,8 @@ function ($, view_data, main, tileinfo_player, icons, dngn, enums, map_knowledge
         // Much of the following is more or less directly copied from tiledgnbuf.cc
         draw_blood_overlay: function(x, y, cell, is_wall)
         {
+            var offset;
+
             if (cell.liquefied && !is_wall)
             {
                 offset = cell.flv.s % dngn.tile_count(dngn.LIQUEFACTION);
@@ -637,8 +616,6 @@ function ($, view_data, main, tileinfo_player, icons, dngn, enums, map_knowledge
                         this.draw_dngn(dngn.HEAT_AURA + cell.heat_aura - 1, x, y);
                     if (cell.silenced)
                         this.draw_dngn(dngn.SILENCED, x, y);
-                    if (cell.suppressed)
-                        this.draw_dngn(dngn.SUPPRESSED, x, y);
                     if (cell.halo == enums.HALO_RANGE)
                         this.draw_dngn(dngn.HALO_RANGE, x, y);
                     if (cell.halo == enums.HALO_UMBRA)
@@ -662,6 +639,9 @@ function ($, view_data, main, tileinfo_player, icons, dngn, enums, map_knowledge
                     this.draw_dngn(dngn.RAY, x, y);
                 else if (bg.RAY_OOR)
                     this.draw_dngn(dngn.RAY_OUT_OF_RANGE, x, y);
+                else if (bg.LANDING)
+                    this.draw_dngn(dngn.LANDING, x, y);
+
             }
         },
 
@@ -673,7 +653,7 @@ function ($, view_data, main, tileinfo_player, icons, dngn, enums, map_knowledge
             var fg_idx = cell.fg.value;
             var is_in_water = in_water(cell);
 
-            if (fg_idx && fg_idx <= main.MAIN_MAX && this.display_mode == "tiles")
+            if (fg_idx && fg_idx <= main.MAIN_MAX && options.get("tile_display_mode") == "tiles")
             {
                 var base_idx = cell.base;
                 if (is_in_water)
@@ -719,7 +699,7 @@ function ($, view_data, main, tileinfo_player, icons, dngn, enums, map_knowledge
                     this.draw_main(fg_idx, x, y);
                 }
             }
-            else if (this.display_mode == "hybrid")
+            else if (options.get("tile_display_mode") == "hybrid")
             {
                 this.render_glyph(x, y, map_cell, true);
             }
@@ -846,6 +826,8 @@ function ($, view_data, main, tileinfo_player, icons, dngn, enums, map_knowledge
                 this.draw_icon(icons.ANIMATED_WEAPON, x, y);
             if (fg.SUMMONED)
                 this.draw_icon(icons.SUMMONED, x, y);
+            if (fg.PERM_SUMMON)
+                this.draw_icon(icons.PERM_SUMMON, x, y);
 
             if (bg.UNSEEN && (bg.value || fg.value))
                 this.draw_icon(icons.MESH, x, y);
@@ -906,16 +888,19 @@ function ($, view_data, main, tileinfo_player, icons, dngn, enums, map_knowledge
             else if (fg.MDAM_ADEAD)
                 this.draw_icon(icons.MDAM_ALMOST_DEAD, x, y);
 
-            if (fg.DEMON_1)
-                this.draw_icon(icons.DEMON_NUM1, x, y);
-            else if (fg.DEMON_2)
-                this.draw_icon(icons.DEMON_NUM2, x, y);
-            else if (fg.DEMON_3)
-                this.draw_icon(icons.DEMON_NUM3, x, y);
-            else if (fg.DEMON_4)
-                this.draw_icon(icons.DEMON_NUM4, x, y);
-            else if (fg.DEMON_5)
-                this.draw_icon(icons.DEMON_NUM5, x, y);
+            if (options.get("tile_show_demon_tier") === true)
+            {
+                if (fg.DEMON_1)
+                    this.draw_icon(icons.DEMON_NUM1, x, y);
+                else if (fg.DEMON_2)
+                    this.draw_icon(icons.DEMON_NUM2, x, y);
+                else if (fg.DEMON_3)
+                    this.draw_icon(icons.DEMON_NUM3, x, y);
+                else if (fg.DEMON_4)
+                    this.draw_icon(icons.DEMON_NUM4, x, y);
+                else if (fg.DEMON_5)
+                    this.draw_icon(icons.DEMON_NUM5, x, y);
+            }
         },
 
 
@@ -944,9 +929,11 @@ function ($, view_data, main, tileinfo_player, icons, dngn, enums, map_knowledge
 
             var w = info.ex - info.sx;
             var h = info.ey - info.sy;
-            this.ctx.imageSmoothingEnabled = this.smooth_scaling;
-            this.ctx.webkitImageSmoothingEnabled = this.smooth_scaling;
-            this.ctx.mozImageSmoothingEnabled = this.smooth_scaling;
+            this.ctx.imageSmoothingEnabled = options.get("tile_filter_scaling");
+            this.ctx.webkitImageSmoothingEnabled =
+                options.get("tile_filter_scaling");
+            this.ctx.mozImageSmoothingEnabled =
+                options.get("tile_filter_scaling");
             this.ctx.drawImage(img,
                                info.sx, info.sy + sy - pos_sy_adjust,
                                w, h + ey - pos_ey_adjust,

@@ -4,7 +4,7 @@
 import os, re, sys, codecs, difflib
 from optparse import OptionParser
 from subprocess import Popen, PIPE, call
-from textwrap import TextWrapper
+from textwrap import TextWrapper, _whitespace
 from collections import defaultdict, OrderedDict, Counter
 from platform import system
 from unicodedata import east_asian_width
@@ -20,14 +20,14 @@ parser.add_option("-d", "--diff", help="Diff format (unified, context, n)",
                   default='n')
 parser.add_option("-f", "--force", action="store_true",
                   help="Overwrite files even if no change detected")
-parser.add_option("-i", "--invalidate", action="store_true",
-                  help="On merge, remove invalidated entries")
 parser.add_option("-l", "--language", help="Specify which languages to work on")
 parser.add_option("-r", "--resource", help="Specify which resources to work on")
 parser.add_option("-s", "--source", help="Work on source files (same as -l en)",
                   action="store_true")
 parser.add_option("-t", "--translations", help="Work on translations",
                   action="store_true")
+parser.add_option("-a", "--auto_fix", action="store_true",
+                  help="Apply some automatic fixes to punctuation")
 
 (options, args) = parser.parse_args()
 cmd = args[0] if args else ''
@@ -64,6 +64,7 @@ cmd_re = re.compile('<(\w)>') # used to find the key in menu command strings
 # Those languages have special wrapping with fullwidth character support
 east_asian_languages = {'ja', 'ko', 'zh'}
 no_space_languages = {'ja', 'zh'}
+east_asian_punctuation = u'、。，！：；）'
 
 # This object serves as an intermediate step between txt and ini files.
 # Entries are in a raw format: no wrapping, every new line is significant.
@@ -96,7 +97,7 @@ def merge_ini():
 def setup_transifex():
     """Initialize the transifex config file"""
     
-    os.chdir(os.path.join(git_root, tx_path))
+    os.chdir(tx_abs_path)
     call_tx(['init'])
     tx_set = ['set', '--auto-local', '-s', 'en_AU', '-t', 'INI', '--execute']
     for res in res_index.default_resources:
@@ -143,6 +144,8 @@ def unwrap(text, no_space):
     text = text.replace("\n}}", "\\n}}")
     text = text.replace("\n{{", "\\n{{")
 
+    text = text.replace(u"—\n—", u"——")
+    text = text.replace(">\n<", "><")
     text = text.replace("\n", " ")
     text = text.replace("\\n", "\n")
 
@@ -166,6 +169,8 @@ def wrap(text, eac, no_space):
     lines = []
     for line in text.splitlines():
         if line:
+            # This allows breaking lines between tags
+            line = line.replace("><", ">\f<")
             if no_space:
                 # Need to rstrip the lines because when the wrapper tries to
                 # add a single character to the end of the line, it might fail
@@ -177,6 +182,29 @@ def wrap(text, eac, no_space):
                 lines += wrapper.wrap(line)
         elif not lines or lines[-1] != '': # remove consecutive empty lines
             lines += ['']
+
+    lines[:] = [line.replace(">\f<", "><") for line in lines]
+
+# Languages which have no spaces are split on punctuation which make them
+# sometimes wrapped to the bebinning of the next line. Since it's quite ugly,
+# we manually move them back to the end of the previous line.
+    if eac or no_space:
+        fixed_lines = []
+        for line in lines:
+            while line and line[0] in east_asian_punctuation and fixed_lines \
+                  and fixed_lines[-1][-1] != line[0]:
+                fixed_lines[-1] += line[0]
+                line = line[1:]
+                if line:
+                    line = line.lstrip()
+                else:
+                    line = None
+                    break
+
+            if line is not None:
+                fixed_lines.append(line)
+        lines = fixed_lines
+
     return "\n".join(lines)
 
 def diff(val, new_val):
@@ -209,7 +237,63 @@ def change_counter(c):
                      for k in sorted(res_index.changes)])
 
 def wide_char(c):
-    return east_asian_width(c) in 'WFA'
+    return c != u'—' and east_asian_width(c) in 'WFA'
+
+def auto_fix(s, lang):
+    """Use with care, it can break things"""
+    s = auto_fix.re_hyphen.sub(u"\\1—\\2", s)
+    s = auto_fix.re_ns.sub(u" \\1", s)
+    if lang == 'fr': # Those ones can break languages which use »« for quotes
+        s = auto_fix.re_ns_opening_quote.sub(u"« ", s)
+        s = auto_fix.re_ns_closing_quote.sub(u" »", s)
+        s = auto_fix.re_missing_space.sub(u" \\1", s)
+        s = auto_fix.re_missing_space2.sub(u"« ", s)
+
+    if s.find('{{') == -1: # Don't mess with lua strings
+        s = auto_fix.re_ascii_single_quotes.sub(u"‘\\1’", s)
+        s = auto_fix.re_ascii_double_quotes.sub(u"“\\1”", s)
+
+    # replace english quotes by localized ones
+    if lang == 'fr':
+        s = auto_fix.re_english_double_quotes.sub(u"« \\1 »", s)
+        s = auto_fix.re_english_single_quotes.sub(u"“\\1”", s)
+    elif lang == 'de' or lang == 'cs':
+        s = auto_fix.re_english_single_quotes.sub(u"‚\\1‘", s)
+        s = auto_fix.re_english_double_quotes.sub(u"„\\1“", s)
+    elif lang == 'da':
+        s = auto_fix.re_english_single_quotes.sub(u"„\\1“", s)
+        s = auto_fix.re_english_double_quotes.sub(u"»\\1«", s)
+    elif lang == 'el' or lang == 'es' or lang == 'it' or lang == 'pt':
+        s = auto_fix.re_english_double_quotes.sub(u"«\\1»", s)
+        s = auto_fix.re_english_single_quotes.sub(u"“\\1”", s)
+    elif lang == 'fi':
+        s = auto_fix.re_english_single_quotes.sub(u"’\\1’", s)
+        s = auto_fix.re_english_double_quotes.sub(u"”\\1”", s)
+    elif lang == 'ja':
+        s = auto_fix.re_english_single_quotes.sub(u"『\\1』", s)
+        s = auto_fix.re_english_double_quotes.sub(u"「\\1」", s)
+    elif lang == 'lt':
+        s = auto_fix.re_english_single_quotes.sub(u"„\\1”", s)
+        s = auto_fix.re_english_double_quotes.sub(u"„\\1”", s)
+    elif lang == 'lv' or lang == 'ru':
+        s = auto_fix.re_english_double_quotes.sub(u"«\\1»", s)
+        s = auto_fix.re_english_single_quotes.sub(u"„\\1”", s)
+    elif lang == 'pl' or lang == 'hu':
+        s = auto_fix.re_english_single_quotes.sub(u"»\\1«", s)
+        s = auto_fix.re_english_double_quotes.sub(u"„\\1”", s)
+    return s
+
+auto_fix.re_hyphen = re.compile("(\s)[-–](\s)") # Replace hyphens by em dashes
+auto_fix.re_ns = re.compile("\s([!?:;])")
+auto_fix.re_ns_opening_quote = re.compile(u"«\s")
+auto_fix.re_ns_closing_quote = re.compile(u"\s»")
+auto_fix.re_missing_space = re.compile(u"(?<=\w)([!?:;»](?!\d))", re.U)
+auto_fix.re_missing_space2 = re.compile(u"«(?=\w)", re.U)
+
+auto_fix.re_ascii_single_quotes = re.compile(u"(?<=\W)'(.*?)'(?=\W)", re.S)
+auto_fix.re_ascii_double_quotes = re.compile(u'"(.*?)"', re.S)
+auto_fix.re_english_single_quotes = re.compile(u'‘([^‚‘’]*?)’', re.S)
+auto_fix.re_english_double_quotes = re.compile(u'“(.*?)”', re.S)
 
 """Subclasses to properly handle wrapping fullwidth unicode character which take
 2 columns to be displayed on a terminal
@@ -236,8 +320,7 @@ class FullWidthTextWrapper(TextWrapper):
         if 'no_space' in kwargs:
             kwargs.pop('no_space')
             # Those languages don't use spaces. Break lines on punctuation.
-            self.wordsep_simple_re = re.compile(r'(\s+|[^\s\w]*\w+[^0-9\W]'
-                                                u'[、。])')
+            self.wordsep_simple_re = re.compile(u'([\s%s]+)|(—)(?=—)' % east_asian_punctuation)
         TextWrapper.__init__(self, **kwargs)
 
     def _split(self, text):
@@ -247,7 +330,7 @@ class ResourceIndex():
     """Class which holds current language / resource settings and serves as an
     iterator for ResourceCollection.
     self.changes holds a list of the types of change currently selected
-    (changed, new, quote or removed). This is used to select which value to
+    (changed, new or removed). This is used to select which value to
     display when iterating through entries for showing a diff or writing a
     resource file.
     Note that not selecting "removed" only affects diffs and temporary files
@@ -269,7 +352,7 @@ class ResourceIndex():
             (basename, ext) = os.path.splitext(f)
             if ext.lower() == '.txt':
                 self.default_resources.append(basename)
-            elif os.path.isdir(f) and f != 'en':
+            elif os.path.isdir(f) and f != 'en' and len(f) == 2:
                 self.default_languages.append(f)
 
         if options.source:
@@ -280,6 +363,29 @@ class ResourceIndex():
             self.languages = self.default_languages[1:]
         else:
             self.languages = self.default_languages[:]
+
+        self.lang_region = dict()
+        for lang in self.default_languages:
+            if lang == 'cs':
+                region = 'CZ'
+            elif lang == 'da':
+                region = 'DK'
+            elif lang == 'el':
+                region = 'GR'
+            elif lang == 'hi':
+                region = 'IN'
+            elif lang == 'ja':
+                region = 'JP'
+            elif lang == 'ko':
+                region = 'KR'
+            elif lang == 'zh':
+                region = 'CN'
+            else:
+                region = lang.upper()
+            if lang == 'en':
+                self.lang_region[lang] = lang
+            else:
+                self.lang_region[lang] = lang + "_" + region
 
         if options.resource:
             self.set_resources(options.resource)
@@ -416,7 +522,7 @@ class ResourceFile():
         self.language = lang
         self.resource = res
         self.path = res + "." + self.ext
-        self.path = os.path.join(lang, self.path)
+        self.path = os.path.join(self.lang_dir, self.path)
         self.git_path = os.path.join(descript_git_path, self.path).replace("\\", "/")
         self.mtime = 0
         self.modified = False
@@ -425,18 +531,20 @@ class ResourceFile():
 
     def __setitem__(self, key, value):
         """Called by the subclass which has already done the conversion.
-        Determine the change type and store the new value in the apropriate
+        Determine the change type and store the new value in the appropriate
         dict of self.diff"""
         if key not in self.entries:
-            if key.find(':') != -1 and key.split(':')[1] == 'quote':
-                change_t = 'quote'
-            else:
-                change_t = 'new'
+            change_t = 'new'
         elif value != self.entries[key]:
             change_t = 'changed'
         else:
             return
         self.diff[change_t][key] = value
+
+        # If the key was previously removed and edited back in
+        # delete it from the 'removed' dict
+        if key in self.diff['removed']:
+            del self.diff['removed'][key]
 
     def items(self, diff_only):
         """Returns an iterator to a list of (key, value) tuples, depending on
@@ -448,16 +556,8 @@ class ResourceFile():
         items = []
         for key in self.source_keys():
             found_diff = False
-            # we sort res_index.changes to make sure quotes are treated last.
-            # Conveniently, q comes after c and n.
-            for change_t in sorted(res_index.changes):
+            for change_t in res_index.changes:
                 if change_t == 'removed' or change_t not in self.diff: continue
-                if change_t == 'quote':
-                    # Here, we search only for new quotes.
-                    quote_key = key + ':quote'
-                    if quote_key in self.diff['quote'] \
-                       and quote_key not in self.source_keys():
-                       items.append((quote_key, self.diff['quote'][quote_key]))
                 if key in self.diff[change_t]:
                     items.append((key, self.diff[change_t][key]))
                     found_diff = True
@@ -498,7 +598,15 @@ class ResourceFile():
         this resource file. This list is used as a reference when iterating
         through keys. It helps keep the order consistent and translations can't
         exist if there isn't a source associated to them anyway."""
-        return self.source_res.entries.keys()
+        keys = self.source_res.entries.keys()
+
+        # To allow submitting new quotes from another resource, they are sorted
+        if self.resource == 'quotes' and 'new' in self.diff:
+            for k in self.diff['new']:
+                if k not in keys:
+                    keys.append(k)
+            keys.sort()
+        return keys
 
     def diff_txt(self, diff_format):
         """When diff_format is True, returns a string with a diff for each new
@@ -527,6 +635,10 @@ class ResourceFile():
                 diff_txt += self.separator()
 
         return diff_txt
+
+    def load(self):
+        if not self.entries and not self.diff:
+            self.read_file()
 
     def read_file(self):
         """Called by the subclasses to handle the basic checks. Returns the
@@ -558,18 +670,15 @@ class ResourceFile():
         for (key, value) in self.entries.items():
             entries[key] = self.raw_entry(value)
             
-    def update(self):
+    def update(self, update_removed_keys = True):
         """Update the resource file with the content of raw_entries. New values
         will be converted in the resource format and stored in the appropriate
         diff dictionary by the __setitem__ methods"""
         entries = raw_entries[(self.lang(), self.resource)]
         for key in self.source_keys():
-            # Those 2 lines have been used once to move the quotes out of their own file.
-            # if self.resource != 'quotes' and key in raw_entries[(self.lang(), 'quotes')]:
-                # self[key + ":quote"] = raw_entries[(self.lang(), 'quotes')][key]
             if key not in entries: continue
             self[key] = entries[key]
-        if self.lang() != 'en' or self.ext == 'ini':
+        if update_removed_keys and (self.lang() != 'en' or self.ext == 'ini'):
             self.update_removed_keys()
 
     def write_file(self):
@@ -588,8 +697,7 @@ class ResourceFile():
         and allow editing (useful to fix renamed keys)."""
         entries = raw_entries[(self.lang(), self.resource)]
         for k in self.entries.keys():
-            if k not in self.source_keys() \
-               or options.invalidate and k not in entries:
+            if k not in self.source_keys() or k not in entries:
                 self.diff['removed'][k] = self.entries[k]
 
     def edit_file(self):
@@ -611,7 +719,7 @@ class ResourceFile():
         tmp_res.read_file()
         tmp_res.merge_file()
         os.remove(tmp.name)
-        self.update()
+        self.update(False)
         return True
 
 class TxtFile(ResourceFile):
@@ -621,9 +729,11 @@ class TxtFile(ResourceFile):
         if lang:
             self.entries = dict()
             self.source_res = txt_files[('', res)]
+            self.lang_dir = lang
         else:
             self.entries = OrderedDict()
             self.source_res = self
+            self.lang_dir = ''
         self.key_comment = dict()
         self.value_comment = dict()
         self.ext = 'txt'
@@ -638,23 +748,42 @@ class TxtFile(ResourceFile):
         for tag, tag_value in entry.tags.items():
             # If it has a quote tag, we store the new quote in its own entry
             if tag == 'quote':
-                quote_key = key + ':quote'
-                quote_value = wrap(tag_value, self.eac, self.no_space) + "\n"
-                ResourceFile.__setitem__(self, quote_key, quote_value)
+                e = Entry()
+                e.value = tag_value
+                quote_res = txt_files[(self.language, 'quotes')]
+                quote_res.load()
+                quote_res[key] = e
+
+                # add the quote resource to the index
+                if 'quotes' not in res_index.resources:
+                    res_index.resources.append('quotes')
+
                 # If we're adding a foreign quote and the source doesn't have
                 # one, we also create it in the corresponding source
-                if self.language and quote_key not in self.source_keys():
-                    ResourceFile.__setitem__(self.source_res, quote_key, quote_value)
+                if self.language and key not in quote_res.source_res.entries:
+                    en_quote_res = txt_files[('', 'quotes')]
+                    en_quote_res.load()
+                    en_quote_res[key] = e
+
+                    # Add english to the index
                     if 'en' not in res_index.languages:
                         res_index.languages.insert(0, 'en')
+
             elif tag_value is True:
                 value += ":%s\n" % tag
             else:
                 value += ":%s %s\n" % (tag, tag_value)
-        if entry['nowrap']:
-            value += entry.value
+
+        if options.auto_fix:
+            raw_value = auto_fix(entry.value, self.lang())
         else:
-            value += wrap(entry.value, self.eac, self.no_space)
+            raw_value = entry.value
+
+        if entry['nowrap']:
+            value += raw_value
+        else:
+            value += wrap(raw_value, self.eac, self.no_space)
+
         value += "\n"
         ResourceFile.__setitem__(self, key, value)
 
@@ -724,6 +853,7 @@ class IniFile(ResourceFile):
         self.entries = dict()
         self.source_res = txt_files[('', res)]
         self.ext = 'ini'
+        self.lang_dir = res_index.lang_region[lang]
         ResourceFile.__init__(self, lang, res)
 
     def __setitem__(self, key, e):
@@ -863,7 +993,7 @@ class ResourceCollection(OrderedDict):
 
     def write_files(self):
         for res in self:
-            if options.force or res.changed():
+            if res.changed() or options.force and list(res.items(False)):
                 res.write_file()
                 for change_t in res_index.changes:
                     if change_t in res.diff:
@@ -967,13 +1097,13 @@ class IniCollection(ResourceCollection):
             call_tx(tx_cmd + ['-a'])
         elif all_res:
             for lang in res_index.languages:
-                call_tx(tx_cmd + ['-l', lang])
+                call_tx(tx_cmd + ['-l', res_index.lang_region[lang]])
         elif all_lang:
             for res in res_index.resources:
                 call_tx(tx_cmd + ['-r', 'dcss.' + res])
         else:
             for res in self:
-                call_tx(tx_cmd + ['-l', res.lang(), '-r', 'dcss.' + res.resource])
+                call_tx(tx_cmd + ['-l', res_index.lang_region[res.lang()], '-r', 'dcss.' + res.resource])
 
     def tx_push(self):
         tx_push = ['push']
@@ -982,7 +1112,7 @@ class IniCollection(ResourceCollection):
         for res in self:
             if not res.modified: continue
             resource = ['-r', 'dcss.' + res.resource]
-            language = ['-l', res.lang()]
+            language = ['-l', res_index.lang_region[res.lang()]]
             if not res.language:
                 # We push the source then reset the fake translation resource
                 ret = call_tx(tx_push + ['-s'] + resource)
@@ -1206,10 +1336,19 @@ class Menu(OrderedDict):
             self.build_main_menu()
             self.show_menu()
 
-wrapper = TextWrapper(width = 79, break_on_hyphens = False)
-FWwrapper = FullWidthTextWrapper(width = 79, break_on_hyphens = False)
-FW_NS_wrapper = FullWidthTextWrapper(width = 79, break_on_hyphens = False,
-                                     no_space = True)
+wrapper_args = {
+    'width' : 79,
+    'break_on_hyphens' : False,
+    'break_long_words' : False,
+    'replace_whitespace' : False}
+
+wrapper = TextWrapper(**wrapper_args)
+# Use hardcoded whitespaces instead of \s because the latter matches
+# non-breaking spaces (see textwrap.py:30).
+wrapper.wordsep_simple_re_uni = re.compile(r'([%s]+)' % _whitespace)
+FWwrapper = FullWidthTextWrapper(**wrapper_args)
+wrapper_args['no_space'] = True
+FW_NS_wrapper = FullWidthTextWrapper(**wrapper_args)
 
 # We initialize the resource index early because we might need it if we have to
 # initialize the transifex configuration.

@@ -1,5 +1,5 @@
 OBJECTS = \
-abl-show.o \
+ability.o \
 abyss.o \
 acquire.o \
 act-iter.o \
@@ -73,6 +73,7 @@ godmenu.o \
 godpassive.o \
 godprayer.o \
 godwrath.o \
+hash.o \
 hints.o \
 hiscores.o \
 initfile.o \
@@ -130,18 +131,17 @@ menu.o \
 message-stream.o \
 message.o \
 misc.o \
-mislead.o \
 mon-abil.o \
 mon-act.o \
 mon-behv.o \
 mon-cast.o \
+mon-chimera.o \
 mon-clone.o \
 mon-death.o \
 mon-ench.o \
 mon-gear.o \
 mon-grow.o \
 mon-info.o \
-mon-iter.o \
 mon-movetarget.o \
 mon-pathfind.o \
 mon-pick.o \
@@ -179,7 +179,6 @@ random.o \
 random-var.o \
 ray.o \
 religion.o \
-rng.o \
 shopping.o \
 shout.o \
 show.o \
@@ -196,6 +195,7 @@ spl-goditem.o \
 spl-miscast.o \
 spl-monench.o \
 spl-other.o \
+spl-pick.o \
 spl-selfench.o \
 spl-summoning.o \
 spl-tornado.o \
@@ -214,7 +214,6 @@ store.o \
 stuff.o \
 syscalls.o \
 tags.o \
-tagstring.o \
 target.o \
 teleport.o \
 terrain.o \
@@ -287,23 +286,6 @@ json.o
 YACC_OBJECTS = \
 util/levcomp.tab.o \
 util/levcomp.lex.o
-
-INI_OBJECTS = \
-dat/descript/ability.ini \
-dat/descript/backgrounds.ini \
-dat/descript/branches.ini \
-dat/descript/cards.ini \
-dat/descript/commands.ini \
-dat/descript/features.ini \
-dat/descript/gods.ini \
-dat/descript/items.ini \
-dat/descript/monsters.ini \
-dat/descript/quotes.ini \
-dat/descript/skills.ini \
-dat/descript/species.ini \
-dat/descript/spells.ini \
-dat/descript/unident.ini \
-dat/descript/unrand.ini
 
 ALL_OBJECTS = $(OBJECTS) $(TILES_OBJECTS) $(GLTILES_OBJECTS) \
 $(WEBTILES_OBJECTS) $(YACC_OBJECTS) $(TILEDEFOBJS) \

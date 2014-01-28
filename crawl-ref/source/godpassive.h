@@ -13,13 +13,13 @@ class monster;
 
 enum jiyva_slurp_results
 {
-        JS_NONE = 0,
-        JS_FOOD = 1,
-        JS_HP   = 2,
-        JS_MP   = 4,
+    JS_NONE = 0,
+    JS_FOOD = 1,
+    JS_HP   = 2,
+    JS_MP   = 4,
 };
 
-int che_stat_boost(int piety = you.piety);
+int chei_stat_boost(int piety = you.piety);
 void jiyva_eat_offlevel_items();
 void jiyva_slurp_bonus(int item_value, int *js);
 void jiyva_slurp_message(int js);

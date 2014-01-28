@@ -1,4 +1,6 @@
 define(["jquery", "comm"], function ($, comm) {
+    "use strict";
+
     var line_span = $("<span>");
     line_span.css("white-space", "pre");
 
@@ -29,7 +31,7 @@ define(["jquery", "comm"], function ($, comm) {
             for (var i = 0; i < lines.length; ++i)
             {
                 if (!(i in data.lines))
-                    lines.eq(i).html("");
+                    lines.eq(i).empty();
             }
         }
         for (var line in data.lines)

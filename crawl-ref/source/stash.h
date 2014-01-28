@@ -215,13 +215,12 @@ struct stash_search_result
 
     bool operator < (const stash_search_result &ssr) const
     {
-        return (player_distance < ssr.player_distance
-                   || (player_distance == ssr.player_distance
-                       && matches > ssr.matches));
+        return player_distance < ssr.player_distance
+                  || (player_distance == ssr.player_distance
+                      && matches > ssr.matches);
     }
 
     bool show_menu() const;
-
 };
 
 class LevelStashes
@@ -352,7 +351,9 @@ private:
                               bool curr_lev = false) const;
     bool display_search_results(vector<stash_search_result> &results,
                                 bool& sort_by_dist,
-                                bool& show_as_stacks);
+                                bool& show_as_stacks,
+                                bool& filter_useless,
+                                bool& default_execute);
     string stash_search_prompt();
 
 private:

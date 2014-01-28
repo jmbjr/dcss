@@ -53,22 +53,24 @@ void nowrap_eol_cprintf(PRINTF(0, ));
 // If keyproc is provided, it must return 1 for normal processing, 0 to exit
 // normally (pretend the user pressed Enter), or -1 to exit as if the user
 // pressed Escape
-int cancelable_get_line(char *buf,
+int cancellable_get_line(char *buf,
                          int len,
                          input_history *mh = NULL,
-                         int (*keyproc)(int &c) = NULL);
+                         int (*keyproc)(int &c) = NULL,
+                         const string &fill = "",
+                         const string &tag = "");
 
 // Do not use this templated function directly.  Use the macro below instead.
-template<int> static int cancelable_get_line_autohist_temp(char *buf, int len)
+template<int> static int cancellable_get_line_autohist_temp(char *buf, int len)
 {
     static input_history hist(10);
-    return cancelable_get_line(buf, len, &hist);
+    return cancellable_get_line(buf, len, &hist);
 }
 
-// This version of cancelable_get_line will automatically retain its own
-// input history, independent of other calls to cancelable_get_line.
-#define cancelable_get_line_autohist(buf, len) \
-    cancelable_get_line_autohist_temp<__LINE__>(buf, len)
+// This version of cancellable_get_line will automatically retain its own
+// input history, independent of other calls to cancellable_get_line.
+#define cancellable_get_line_autohist(buf, len) \
+    cancellable_get_line_autohist_temp<__LINE__>(buf, len)
 
 struct c_mouse_event
 {
@@ -105,22 +107,22 @@ struct c_mouse_event
 
     bool left_clicked() const
     {
-        return (bstate & BUTTON1);
+        return bstate & BUTTON1;
     }
 
     bool right_clicked() const
     {
-        return (bstate & BUTTON3);
+        return bstate & BUTTON3;
     }
 
     bool scroll_up() const
     {
-        return (bstate & (BUTTON4 | BUTTON4_DBL | BUTTON_SCRL_UP));
+        return bstate & (BUTTON4 | BUTTON4_DBL | BUTTON_SCRL_UP);
     }
 
     bool scroll_down() const
     {
-        return (bstate & (BUTTON2 | BUTTON2_DBL | BUTTON_SCRL_DN));
+        return bstate & (BUTTON2 | BUTTON2_DBL | BUTTON_SCRL_DN);
     }
 };
 
@@ -221,7 +223,7 @@ private:
     bool smartcstate;
 };
 
-// Reads lines of text; used internally by cancelable_get_line.
+// Reads lines of text; used internally by cancellable_get_line.
 class line_reader
 {
 public:
@@ -232,11 +234,15 @@ public:
     typedef int (*keyproc)(int &key);
 
     int read_line(bool clear_previous = true);
+    int read_line(const string &prefill);
 
     string get_text() const;
 
     void set_input_history(input_history *ih);
     void set_keyproc(keyproc fn);
+#ifdef USE_TILE_WEB
+    void set_tag(const string &tag);
+#endif
 
 protected:
     void cursorto(int newcpos);
@@ -257,7 +263,9 @@ protected:
     keyproc         keyfn;
     int             wrapcol;
 
+#ifdef USE_TILE_WEB
     string          tag; // For identification on the Webtiles client side
+#endif
 
     // These are subject to change during editing.
     char            *cur;

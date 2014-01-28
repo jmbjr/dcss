@@ -3,10 +3,8 @@
  * @brief Functions for making use of inventory items.
 **/
 
-
 #ifndef ITEM_USE_H
 #define ITEM_USE_H
-
 
 #include <string>
 #include "externs.h"
@@ -19,8 +17,6 @@ bool takeoff_armour(int index);
 void drink(int slot = -1);
 
 bool safe_to_remove(const item_def &item, bool quiet = false);
-
-void examine_object(void);
 
 bool puton_ring(int slot = -1);
 

@@ -63,7 +63,7 @@ public:
 
   FixedVector<int8_t, NUM_STATS> stat_loss;
   FixedVector<int8_t, NUM_STATS> base_stats;
-  FixedVector<int, NUM_STATS> stat_zero;
+  FixedVector<uint8_t, NUM_STATS> stat_zero;
 
   int hunger;
   int disease;
@@ -94,10 +94,9 @@ public:
   int burden;
   burden_state_type burden_state;
   FixedVector<spell_type, MAX_KNOWN_SPELLS> spells;
-  set<spell_type> old_vehumet_gifts;
+  set<spell_type> old_vehumet_gifts, vehumet_gifts;
 
   uint8_t spell_no;
-  set<spell_type> vehumet_gifts;
   game_direction_type char_direction;
   bool opened_zot;
   bool royal_jelly_dead;
@@ -219,9 +218,6 @@ public:
   uint8_t normal_vision;        // how far the species gets to see
   uint8_t current_vision;       // current sight radius (cells)
 
-  branch_type   hell_branch;          // which branch the player goes to on hell exit
-  uint8_t       hell_exit;            // which level player goes to on hell exit
-
   int           real_time;            // real time played (in seconds)
   int           num_turns;            // number of turns taken
   int           exploration;          // levels explored (16.16 bit real number)
@@ -291,6 +287,8 @@ public:
   // A list of allies awaiting an active recall
   vector<mid_t> recall_list;
 
+  // Hash seeds for deterministic stuff.
+  FixedVector<uint32_t, NUM_SEEDS> game_seeds;
 
   // -------------------
   // Non-saved UI state:
@@ -309,6 +307,7 @@ public:
 
   bool received_weapon_warning;
   bool received_noskill_warning;
+  bool wizmode_teleported_into_rock;
 
   delay_queue_type delay_queue;       // pending actions
 
@@ -317,9 +316,11 @@ public:
   int8_t bondage_level;  // how much an Ash worshipper is into bondage
   int8_t bondage[NUM_ET];
   map<skill_type, int8_t> skill_boost; // Skill bonuses.
+  bool digging;
 
   // The last spell cast by the player.
   spell_type last_cast_spell;
+  map<int,int> last_pickup;
 
 
   // ---------------------------
@@ -348,8 +349,6 @@ public:
   targetter *flash_where;
 
   int time_taken;
-
-  int shield_blocks;         // number of shield blocks since last action
 
   int old_hunger;            // used for hunger delta-meter (see output.cc)
 
@@ -421,6 +420,8 @@ public:
     int max_dex() const;
 
     bool in_water() const;
+    bool in_lava() const;
+    bool in_liquid() const;
     bool can_swim(bool permanently = false) const;
     int visible_igrd(const coord_def&) const;
     bool can_cling_to_walls() const;
@@ -428,15 +429,13 @@ public:
     bool is_web_immune() const;
     bool cannot_speak() const;
     bool invisible() const;
-    bool misled() const;
     bool can_see_invisible() const;
     bool can_see_invisible(bool unid, bool items = true) const;
     bool visible_to(const actor *looker) const;
     bool can_see(const actor* a) const;
     bool nightvision() const;
-
+    reach_type reach_range() const;
     bool see_cell(const coord_def& p) const;
-    const los_base* get_los();
 
     // Is c in view but behind a transparent wall?
     bool trans_wall_blocking(const coord_def &c) const;
@@ -483,8 +482,6 @@ public:
     string shout_verb() const;
 
     item_def *slot_item(equipment_type eq, bool include_melded=false) const;
-
-    map<int,int> last_pickup;
 
     // actor
     int mindex() const;
@@ -534,7 +531,9 @@ public:
                        bool calc_unid = true) const;
 
     item_def *weapon(int which_attack = -1) const;
-    item_def *shield();
+    item_def *shield() const;
+
+    hands_reqd_type hands_reqd(const item_def &item) const;
 
     bool      can_wield(const item_def &item,
                         bool ignore_curse = false,
@@ -561,13 +560,17 @@ public:
     bool can_go_berserk() const;
     bool can_go_berserk(bool intentional, bool potion = false,
                         bool quiet = false) const;
+    bool can_jump() const;
+    bool can_jump(bool quiet) const;
     void go_berserk(bool intentional, bool potion = false);
     bool berserk() const;
     bool has_lifeforce() const;
     bool can_mutate() const;
     bool can_safely_mutate() const;
+    bool is_lifeless_undead() const;
     bool can_polymorph() const;
     bool can_bleed(bool allow_tran = true) const;
+    bool is_stationary() const;
     bool malmutate(const string &reason);
     bool polymorph(int pow);
     void backlight();
@@ -593,13 +596,13 @@ public:
     void confuse(actor *, int strength);
     void weaken(actor *attacker, int pow);
     bool heal(int amount, bool max_too = false);
-    bool drain_exp(actor *, const char *aux = NULL, bool quiet = false,
-                   int pow = 3);
+    bool drain_exp(actor *, bool quiet = false, int pow = 3);
     bool rot(actor *, int amount, int immediate = 0, bool quiet = false);
     void sentinel_mark(bool trap = false);
     int hurt(const actor *attacker, int amount,
              beam_type flavour = BEAM_MISSILE,
-             bool cleanup_dead = true);
+             bool cleanup_dead = true,
+             bool attacker_effects = true);
 
     bool wont_attack() const { return true; };
     mon_attitude_type temp_attitude() const { return ATT_FRIENDLY; };
@@ -640,6 +643,7 @@ public:
     bool gourmand(bool calc_unid = true, bool items = true) const;
     bool res_corr(bool calc_unid = true, bool items = true) const;
     bool clarity(bool calc_unid = true, bool items = true) const;
+    bool stasis(bool calc_unid = true, bool items = true) const;
 
     flight_type flight_mode() const;
     bool cancellable_flight() const;
@@ -651,14 +655,12 @@ public:
     bool cannot_act() const;
     bool confused() const;
     bool caught() const;
-    bool backlit(bool check_haloed = true, bool self_halo = true, bool check_corona = true) const;
+    bool backlit(bool check_haloed = true, bool self_halo = true) const;
     bool umbra(bool check_haloed = true, bool self_halo = true) const;
     int halo_radius2() const;
     int silence_radius2() const;
     int liquefying_radius2() const;
     int umbra_radius2() const;
-    int suppression_radius2() const;
-    int soul_aura_radius2() const;
     int heat_radius2() const;
     bool glows_naturally() const;
     bool petrifying() const;
@@ -707,6 +709,9 @@ public:
 
     bool do_shaft();
 
+    bool can_do_shaft_ability(bool quiet = false) const;
+    bool do_shaft_ability();
+
     void apply_location_effects(const coord_def &oldpos,
                                 killer_type killer = KILL_NONE,
                                 int killernum = -1);
@@ -742,12 +747,11 @@ public:
     bool has_usable_tentacle() const;
 
 protected:
-    void _removed_beholder();
+    void _removed_beholder(bool quiet = false);
     bool _possible_beholder(const monster* mon) const;
 
-    void _removed_fearmonger();
+    void _removed_fearmonger(bool quiet = false);
     bool _possible_fearmonger(const monster* mon) const;
-
 };
 
 #ifdef DEBUG_GLOBALS
@@ -791,6 +795,16 @@ void moveto_location_effects(dungeon_feature_type old_feat,
 
 bool check_moveto(const coord_def& p, const string &move_verb = "step",
                   const string &msg = "");
+bool check_moveto_terrain(const coord_def& p, const string &move_verb,
+                          const string &msg = "", bool *prompted = nullptr);
+bool check_moveto_cloud(const coord_def& p, const string &move_verb = "step",
+                        bool *prompted = nullptr);
+bool check_moveto_exclusion(const coord_def& p,
+                            const string &move_verb = "step",
+                            bool *prompted = nullptr);
+bool check_moveto_trap(const coord_def& p, const string &move_verb = "step",
+        bool *prompted = nullptr);
+
 void move_player_to_grid(const coord_def& p, bool stepped, bool allow_shift);
 
 bool is_map_persistent(void);
@@ -799,10 +813,11 @@ bool player_in_connected_branch(void);
 bool player_in_hell(void);
 
 static inline bool player_in_branch(int branch)
-{ return you.where_are_you == branch; };
+{
+    return you.where_are_you == branch;
+};
 
 bool berserk_check_wielded_weapon(void);
-bool player_equip_unrand_effect(int unrand_index);
 bool player_equip_unrand(int unrand_index);
 bool player_can_hit_monster(const monster* mon);
 bool player_can_hear(const coord_def& p, int hear_distance = 999);
@@ -812,7 +827,10 @@ bool player_is_shapechanged(void);
 bool is_effectively_light_armour(const item_def *item);
 bool player_effectively_in_light_armour();
 
-bool player_under_penance(void);
+static inline int player_under_penance(god_type god = you.religion)
+{
+    return you.penance[god];
+}
 
 int burden_change(void);
 
@@ -874,7 +892,6 @@ bool player_control_teleport(bool temp = true);
 
 int player_shield_class(void);
 
-
 int player_spec_air(void);
 int player_spec_cold(void);
 int player_spec_conj(void);
@@ -918,7 +935,7 @@ void adjust_level(int diff, bool just_xp = false);
 
 bool player_genus(genus_type which_genus,
                    species_type species = SP_UNKNOWN);
-bool is_player_same_species(const monster_type mon, bool = false);
+bool is_player_same_genus(const monster_type mon, bool = false);
 monster_type player_mons(bool transform = true);
 void update_player_symbol();
 void update_vision_range();
@@ -929,16 +946,17 @@ bool player_wearing_slot(int eq);
 bool you_tran_can_wear(const item_def &item);
 bool you_tran_can_wear(int eq, bool check_mutation = false);
 
-bool enough_hp(int minimum, bool suppress_msg);
-bool enough_mp(int minimum, bool suppress_msg, bool include_items = true);
+bool enough_hp(int minimum, bool suppress_msg, bool abort_macros = true);
+bool enough_mp(int minimum, bool suppress_msg, bool abort_macros = true);
 bool enough_zp(int minimum, bool suppress_msg);
 
 void dec_hp(int hp_loss, bool fatal, const char *aux = NULL);
-void dec_mp(int mp_loss);
+void dec_mp(int mp_loss, bool silent = false);
 void drain_mp(int mp_loss);
 
-void inc_mp(int mp_gain);
+void inc_mp(int mp_gain, bool silent = false);
 void inc_hp(int hp_gain);
+void flush_mp();
 
 void rot_hp(int hp_loss);
 void unrot_hp(int hp_recovered);
@@ -961,7 +979,7 @@ void set_mp(int new_amount);
 
 void contaminate_player(int change, bool controlled = false, bool msg = true);
 
-bool confuse_player(int amount, bool resistable = true);
+bool confuse_player(int amount, bool quiet = false);
 
 bool curare_hits_player(int death_source, int amount, const bolt &beam);
 bool poison_player(int amount, string source, string source_aux = "",
@@ -980,10 +998,11 @@ void dec_exhaust_player(int delay);
 
 bool haste_player(int turns, bool rageext = false);
 void dec_haste_player(int delay);
+void dec_elixir_player(int delay);
+bool flight_allowed(bool quiet = false);
 void fly_player(int pow, bool already_flying = false);
 void float_player();
-bool land_player();
-bool is_hovering();
+bool land_player(bool quiet = false);
 
 void dec_disease_player(int delay);
 
@@ -1000,6 +1019,8 @@ bool is_feat_dangerous(dungeon_feature_type feat, bool permanently = false,
 void run_macro(const char *macroname = NULL);
 
 int count_worn_ego(int which_ego);
+bool need_expiration_warning(duration_type dur, dungeon_feature_type feat);
+bool need_expiration_warning(dungeon_feature_type feat);
 bool need_expiration_warning(duration_type dur, coord_def p = you.pos());
 bool need_expiration_warning(coord_def p = you.pos());
 

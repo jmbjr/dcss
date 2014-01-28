@@ -22,7 +22,8 @@ end
 
 NAME:   the_violet_keep_of_menkaure
 DESC:   Sprint II: "The Violet Keep of Menkaure"
-TAGS:   sprint no_item_gen no_trap_gen no_monster_gen no_pool_fixup no_rotate no_hmirror no_vmirror
+ORDER:  2
+TAGS:   sprint no_item_gen no_trap_gen no_pool_fixup no_rotate no_hmirror no_vmirror
 ORIENT: encompass
 SHUFFLE: 123
 SUBST:  ' = '......
@@ -121,7 +122,7 @@ MAP
  xxxxDDDxxxx
 xxAxxx+xxxBxx
 xAAAxx.xxBBBx
-+AAA+{[(+BBB+
++AAA+.{.+BBB+
 xAAAxx.xxBBBx
 xxAxxx+xxxBxx
  xxxxbbbxxxx
@@ -209,7 +210,7 @@ ENDMAP
 
 NAME:   sprint2_temple
 TAGS:   sprint2_temple no_item_gen no_trap_gen no_monster_gen no_pool_fixup
-SHUFFLE: abdefghijklmnopqr
+SHUFFLE: abdefghijklmnopqrs
 KFEAT:  a = altar_zin
 KFEAT:  b = altar_the_shining_one
 KFEAT:  d = altar_kikubaaqudgha
@@ -227,10 +228,11 @@ KFEAT:  o = altar_beogh
 KFEAT:  p = altar_jiyva
 KFEAT:  q = altar_fedhas
 KFEAT:  r = altar_cheibriados
+KFEAT:  s = altar_dithmengos
 MAP
 ....d...
 ...g.h..
-..k.l...
+..k.l.s.
 .T.o.p..
 ..a.i.m.
 ...r.q.j
@@ -583,7 +585,7 @@ ENDMAP
 
 NAME:   sprint2_smallroom_6
 TAGS:   sprint2_smallroom no_item_gen no_trap_gen no_monster_gen no_pool_fixup
-MONS:   dragon
+MONS:   fire dragon
 KITEM:  $ = gold q:81
 MAP
 %*

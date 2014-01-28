@@ -9,11 +9,11 @@
 #include "externs.h"
 #include "hints.h"
 #include "message.h"
-#include "mon-ench.h"
 #include "mpr.h"
 #include "player.h"
 #include "skills.h"
 #include "state.h"
+#include "stuff.h"
 
 void set_tutorial_hunger(int hunger)
 {
@@ -59,19 +59,18 @@ void tutorial_init_hint(const char* hintstr)
     else if (strcmp(hintstr, "HINT_ROTTEN_FOOD") == 0)
         hint = HINT_ROTTEN_FOOD;
 
-
     if (hint != HINT_EVENTS_NUM)
         Hints.hints_events[hint] = true;
 }
 
 void tutorial_death_message()
 {
-    mprnojoin("You die...");
-    mprnojoin("In Crawl, death is a sad but common occurence. "
-              "Note that there's usually something you could have done to "
-              "survive, for example by using some kind of item, running away, "
-              "resting between fights, or by avoiding combat entirely. "
-              "Keep trying, eventually you'll prevail!",
-              MSGCH_TUTORIAL);
+    canned_msg(MSG_YOU_DIE);
+    mpr_nojoin(MSGCH_TUTORIAL,
+               "In Crawl, death is a sad but common occurrence. "
+               "Note that there's usually something you could have done to "
+               "survive, for example by using some kind of item, running away, "
+               "resting between fights, or by avoiding combat entirely. "
+               "Keep trying, eventually you'll prevail!");
     more();
 }

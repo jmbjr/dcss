@@ -9,16 +9,15 @@
 
 #include <sstream>
 
+#include "act-iter.h"
 #include "coordit.h"
 #include "database.h"
 #include "env.h"
 #include "godcompanions.h"
 #include "goditem.h"
-#include "itemprop.h"
 #include "libutil.h"
 #include "message.h"
 #include "mon-behv.h"
-#include "mon-iter.h"
 #include "mon-util.h"
 #include "monster.h"
 #include "mon-stuff.h"
@@ -79,7 +78,7 @@ void beogh_follower_convert(monster* mons, bool orc_hit)
         return;
 
     // For followers of Beogh, decide whether orcs will join you.
-    if (you.religion == GOD_BEOGH
+    if (you_worship(GOD_BEOGH)
         && mons->foe == MHITYOU
         && mons_genus(mons->type) == MONS_ORC
         && !mons->is_summoned()
@@ -97,16 +96,6 @@ void beogh_follower_convert(monster* mons, bool orc_hit)
             && random2(you.piety / 15) + random2(4 + you.experience_level / 3)
                  > random2(hd) + hd + random2(5))
         {
-            if (you.weapon()
-                && you.weapon()->base_type == OBJ_WEAPONS
-                && get_weapon_brand(*you.weapon()) == SPWPN_ORC_SLAYING
-                && coinflip()) // 50% chance of conversion failing
-            {
-                msg::stream << mons->name(DESC_THE)
-                            << " flinches from your weapon."
-                            << endl;
-                return;
-            }
             beogh_convert_orc(mons, orc_hit);
             stop_running();
         }
@@ -115,13 +104,11 @@ void beogh_follower_convert(monster* mons, bool orc_hit)
 
 void slime_convert(monster* mons)
 {
-    if (you.religion == GOD_JIYVA && mons_is_slime(mons)
+    if (you_worship(GOD_JIYVA) && mons_is_slime(mons)
         && !mons->is_shapeshifter()
         && !mons->neutral()
         && !mons->friendly()
-        && !testbits(mons->flags, MF_ATT_CHANGE_ATTEMPT)
-        && you.visible_to(mons) && !mons->asleep()
-        && !mons_is_confused(mons) && !mons->paralysed())
+        && !testbits(mons->flags, MF_ATT_CHANGE_ATTEMPT))
     {
         mons->flags |= MF_ATT_CHANGE_ATTEMPT;
         if (!player_under_penance())
@@ -134,7 +121,7 @@ void slime_convert(monster* mons)
 
 void fedhas_neutralise(monster* mons)
 {
-    if (you.religion == GOD_FEDHAS
+    if (you_worship(GOD_FEDHAS)
         && mons->attitude == ATT_HOSTILE
         && fedhas_neutralises(mons)
         && !testbits(mons->flags, MF_ATT_CHANGE_ATTEMPT)
@@ -178,7 +165,7 @@ bool yred_slaves_abandon_you()
     int num_reclaim = 0;
     int num_slaves = 0;
 
-    for (radius_iterator ri(you.pos(), LOS_RADIUS); ri; ++ri)
+    for (radius_iterator ri(you.pos(), LOS_DEFAULT); ri; ++ri)
     {
         monster* mons = monster_at(*ri);
         if (mons == NULL)
@@ -229,7 +216,7 @@ bool beogh_followers_abandon_you()
     int num_reconvert = 0;
     int num_followers = 0;
 
-    for (radius_iterator ri(you.pos(), LOS_RADIUS); ri; ++ri)
+    for (radius_iterator ri(you.pos(), LOS_DEFAULT); ri; ++ri)
     {
         monster* mons = monster_at(*ri);
         if (mons == NULL)
@@ -311,7 +298,7 @@ static void _print_good_god_holy_being_speech(bool neutral,
     {
         msg = do_mon_str_replacements(msg, mon);
         strip_channel_prefix(msg, channel);
-        mpr(msg.c_str(), channel);
+        mprf(channel, "%s", msg.c_str());
     }
 }
 
@@ -390,7 +377,7 @@ static void _print_converted_orc_speech(const string key,
     {
         msg = do_mon_str_replacements(msg, mon);
         strip_channel_prefix(msg, channel);
-        mpr(msg.c_str(), channel);
+        mprf(channel, "%s", msg.c_str());
     }
 }
 
@@ -435,9 +422,6 @@ void beogh_convert_orc(monster* orc, bool emergency,
     // become hostile later on, it won't count as a good kill.
     orc->flags |= MF_NO_REWARD;
 
-    mons_make_god_gift(orc, GOD_BEOGH);
-    add_companion(orc);
-
     if (orc->is_patrolling())
     {
         // Make orcs stop patrolling and forget their patrol point,
@@ -447,6 +431,9 @@ void beogh_convert_orc(monster* orc, bool emergency,
 
     if (!orc->alive())
         orc->hit_points = min(random_range(1, 4), orc->max_hit_points);
+
+    mons_make_god_gift(orc, GOD_BEOGH);
+    add_companion(orc);
 
     // Avoid immobile "followers".
     behaviour_event(orc, ME_ALERT);
@@ -472,6 +459,8 @@ static void _fedhas_neutralise_plant(monster* plant)
 static void _jiyva_convert_slime(monster* slime)
 {
     ASSERT(mons_is_slime(slime));
+
+    behaviour_event(slime, ME_ALERT);
 
     if (you.can_see(slime))
     {

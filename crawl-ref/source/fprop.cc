@@ -29,18 +29,18 @@ bool is_bloodcovered(const coord_def& p)
 
 bool is_tide_immune(const coord_def &p)
 {
-    return (env.pgrid(p) & FPROP_NO_TIDE);
+    return env.pgrid(p) & FPROP_NO_TIDE;
 }
 
 bool is_moldy(const coord_def & p)
 {
-    return (env.pgrid(p) & FPROP_MOLD
-            || env.pgrid(p) & FPROP_GLOW_MOLD);
+    return env.pgrid(p) & FPROP_MOLD
+           || env.pgrid(p) & FPROP_GLOW_MOLD;
 }
 
 bool glowing_mold(const coord_def & p)
 {
-    return (env.pgrid(p) & FPROP_GLOW_MOLD);
+    return env.pgrid(p) & FPROP_GLOW_MOLD;
 }
 
 void remove_mold(const coord_def & p)

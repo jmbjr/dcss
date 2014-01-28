@@ -483,7 +483,7 @@ store_val_type CrawlStoreValue::get_type() const
 void CrawlStoreValue::write(writer &th) const
 {
     ASSERT(type != SV_NONE || (flags & SFLAG_UNSET));
-    ASSERT(!(flags & SFLAG_UNSET) || (type == SV_NONE));
+    ASSERT(!(flags & SFLAG_UNSET) || type == SV_NONE);
 
     marshallByte(th,  (char) type);
     marshallByte(th, (char) flags);
@@ -591,7 +591,7 @@ void CrawlStoreValue::read(reader &th)
     flags = (store_flags) unmarshallByte(th);
 
     ASSERT(type != SV_NONE || (flags & SFLAG_UNSET));
-    ASSERT(!(flags & SFLAG_UNSET) || (type == SV_NONE));
+    ASSERT(!(flags & SFLAG_UNSET) || type == SV_NONE);
 
     switch (type)
     {
@@ -1229,7 +1229,7 @@ int CrawlStoreValue::operator -- (int)
 
 string &CrawlStoreValue::operator += (const string &_val)
 {
-    return (get_string() += _val);
+    return get_string() += _val;
 }
 
 ////////////////////////////////////////////////////////////////////////////
@@ -1285,11 +1285,11 @@ void CrawlHashTable::write(writer &th) const
     ASSERT_VALIDITY();
     if (empty())
     {
-        marshallByte(th, 0);
+        marshallUnsigned(th, 0);
         return;
     }
 
-    marshallByte(th, size());
+    marshallUnsigned(th, size());
 
     CrawlHashTable::hash_map_type::const_iterator i = hash_map->begin();
 
@@ -1308,14 +1308,22 @@ void CrawlHashTable::read(reader &th)
 
     ASSERT(empty());
 
-    hash_size _size = (hash_size) unmarshallByte(th);
+#if TAG_MAJOR_VERSION == 34
+    unsigned int _size;
+    if (th.getMinorVersion() < TAG_MINOR_16_BIT_TABLE)
+        _size = unmarshallByte(th);
+    else
+        _size = unmarshallUnsigned(th);
+#else
+    unsigned int _size = unmarshallUnsigned(th);
+#endif
 
     if (_size == 0)
         return;
 
     init_hash_map();
 
-    for (hash_size i = 0; i < _size; i++)
+    for (unsigned int i = 0; i < _size; i++)
     {
         string           key = unmarshallString(th);
         CrawlStoreValue &val = (*this)[key];
@@ -1325,7 +1333,6 @@ void CrawlHashTable::read(reader &th)
 
     ASSERT_VALIDITY();
 }
-
 
 #ifdef DEBUG_PROPS
 static map<string, int> accesses;
@@ -1346,7 +1353,7 @@ bool CrawlHashTable::exists(const string &key) const
     ASSERT_VALIDITY();
     hash_map_type::const_iterator i = hash_map->find(key);
 
-    return (i != hash_map->end());
+    return i != hash_map->end();
 }
 
 void CrawlHashTable::assert_validity() const
@@ -1440,7 +1447,7 @@ const CrawlStoreValue& CrawlHashTable::get_value(const string &key) const
 {
 #ifdef ASSERTS
     if (!hash_map)
-        die("trying to read non-existant property \"%s\"", key.c_str());
+        die("trying to read non-existent property \"%s\"", key.c_str());
 #endif
     ASSERT_VALIDITY();
 
@@ -1449,7 +1456,7 @@ const CrawlStoreValue& CrawlHashTable::get_value(const string &key) const
 
 #ifdef ASSERTS
     if (i == hash_map->end())
-        die("trying to read non-existant property \"%s\"", key.c_str());
+        die("trying to read non-existent property \"%s\"", key.c_str());
 #endif
     ASSERT(i->second.type != SV_NONE);
     ASSERT(!(i->second.flags & SFLAG_UNSET));
@@ -1459,7 +1466,7 @@ const CrawlStoreValue& CrawlHashTable::get_value(const string &key) const
 
 ///////////////////////////
 // std::map style interface
-hash_size CrawlHashTable::size() const
+unsigned int CrawlHashTable::size() const
 {
     if (hash_map == NULL)
         return 0;
@@ -1584,8 +1591,8 @@ void CrawlVector::write(writer &th) const
         return;
     }
 
-    marshallByte(th, (char) size());
-    marshallByte(th, (char) max_size);
+    marshallUnsigned(th, (char) size());
+    marshallUnsigned(th, (char) max_size);
     marshallByte(th, static_cast<char>(type));
     marshallByte(th, (char) default_flags);
 
@@ -1607,12 +1614,25 @@ void CrawlVector::read(reader &th)
     ASSERT(default_flags == 0);
     ASSERT(max_size == VEC_MAX_SIZE);
 
-    vec_size _size = (vec_size) unmarshallByte(th);
+#if TAG_MAJOR_VERSION == 34
+    vec_size _size;
+    if (th.getMinorVersion() < TAG_MINOR_16_BIT_TABLE)
+        _size = (vec_size) unmarshallByte(th);
+    else
+        _size = (vec_size) unmarshallUnsigned(th);
+#else
+    vec_size _size = (vec_size) unmarshallUnsigned(th);
+#endif
 
     if (_size == 0)
         return;
 
-    max_size      = static_cast<vec_size>(unmarshallByte(th));
+#if TAG_MAJOR_VERSION == 34
+    if (th.getMinorVersion() < TAG_MINOR_16_BIT_TABLE)
+        max_size = static_cast<vec_size>(unmarshallByte(th));
+    else
+#endif
+    max_size      = static_cast<vec_size>(unmarshallUnsigned(th));
     type          = static_cast<store_val_type>(unmarshallByte(th));
     default_flags = static_cast<store_flags>(unmarshallByte(th));
 
@@ -1825,7 +1845,7 @@ void CrawlVector::push_back(CrawlStoreValue val)
     ASSERT(vec.size() < max_size);
     ASSERT(type == SV_NONE
            || (val.type == SV_NONE && (val.flags & SFLAG_UNSET))
-           || (val.type == type));
+           || val.type == type);
     val.flags |= default_flags;
     if (type != SV_NONE)
     {
@@ -1842,7 +1862,7 @@ void CrawlVector::insert(const vec_size index, CrawlStoreValue val)
     ASSERT(vec.size() < max_size);
     ASSERT(type == SV_NONE
            || (val.type == SV_NONE && (val.flags & SFLAG_UNSET))
-           || (val.type == type));
+           || val.type == type);
     val.flags |= default_flags;
     if (type != SV_NONE)
     {
@@ -1913,7 +1933,6 @@ CrawlVector::const_iterator CrawlVector::end() const
     ASSERT_VALIDITY();
     return vec.end();
 }
-
 
 #ifdef DEBUG_PROPS
 static bool _cmp(string a, string b)

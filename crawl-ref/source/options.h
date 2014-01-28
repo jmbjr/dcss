@@ -38,7 +38,6 @@ struct message_filter
             return channel_match;
         return pattern.matches(s);
     }
-
 };
 
 struct sound_mapping
@@ -93,13 +92,17 @@ public:
     static string resolve_include(string including_file, string included_file,
                             const vector<string> *rcdirs = NULL) throw (string);
 
+#ifdef USE_TILE_WEB
+    void write_webtiles_options(const string &name);
+#endif
+
 public:
     string      filename;     // The name of the file containing options.
     string      basefilename; // Base (pathless) file name
     int         line_num;     // Current line number being processed.
 
     // View options
-    vector<feature_override> feature_overrides;
+    map<dungeon_feature_type, feature_def> feature_overrides;
     map<monster_type, cglyph_t> mon_glyph_overrides;
     ucs_t cset_override[NUM_DCHAR_TYPES];
     vector<pair<string, cglyph_t> > item_glyph_overrides;
@@ -131,7 +134,7 @@ public:
     int         msg_max_height;
     bool        mlist_allow_alternate_layout;
     bool        messages_at_top;
-    bool        mlist_targetting;
+    bool        mlist_targeting;
     bool        msg_condense_repeats;
     bool        msg_condense_short;
 
@@ -153,6 +156,7 @@ public:
     int         scroll_margin_y;
 
     int         autopickup_on;
+    bool        autopickup_starting_ammo;
     int         default_friendly_pickup;
     bool        default_manual_training;
 
@@ -173,15 +177,9 @@ public:
     bool        prompt_for_swap; // Prompt to switch back from butchering
                                  // tool if hostile monsters are around.
     chunk_drop_type auto_drop_chunks; // drop chunks when overburdened
-    bool        prefer_safe_chunks; // prefer clean chunks to contaminated ones
     bool        easy_eat_chunks; // make 'e' auto-eat the oldest safe chunk
-    bool        easy_eat_gourmand; // with easy_eat_chunks, and wearing a
-                                   // "OfGourmand, auto-eat contaminated
-                                   // chunks if no safe ones are present
-    bool        easy_eat_contaminated; // like easy_eat_gourmand, but
-                                       // always active.
     bool        auto_eat_chunks; // allow eating chunks while resting or travelling
-    bool        default_target;  // start targetting on a real target
+    bool        default_target;  // start targeting on a real target
     bool        autopickup_no_burden;   // don't autopickup if it changes burden
     skill_focus_mode skill_focus; // is the focus skills available
 
@@ -190,7 +188,8 @@ public:
     string      user_note_prefix; // Prefix for user notes
     int         note_hp_percent;  // percentage hp for notetaking
     bool        note_xom_effects; // take note of all Xom effects
-    bool        note_chat_messages; // log chat in DGL/Webtiles
+    bool        note_chat_messages; // log chat in Webtiles
+    bool        note_dgl_messages; // log chat in DGL
     confirm_level_type easy_confirm;    // make yesno() confirming easier
     bool        easy_quit_item_prompts; // make item prompts quitable on space
     confirm_prompt_type allow_self_target;      // yes, no, prompt
@@ -198,7 +197,7 @@ public:
     int         colour[16];      // macro fg colours to other colours
     int         background_colour; // select default background colour
     msg_colour_type channels[NUM_MESSAGE_CHANNELS];  // msg channel colouring
-    bool        darken_beyond_range; // for whether targetting is out of range
+    bool        darken_beyond_range; // for whether targeting is out of range
 
     int         hp_warning;      // percentage hp for danger warning
     int         magic_point_warning;    // percentage mp for danger warning
@@ -339,9 +338,9 @@ public:
 
     int         drop_mode;          // Controls whether single or multidrop
                                     // is the default.
-    int         pickup_mode;        // -1 for single, 0 for menu,
-                                    // X for 'if at least X items present'
-
+    bool        pickup_menu;        // false for single, true for menu
+    int         pickup_menu_limit;  // Over this number of items, menu for
+                                    // pickup
     bool        easy_exit_menu;     // Menus are easier to get out of
 
     int         assign_item_slot;   // How free slots are assigned
@@ -382,6 +381,7 @@ public:
 #ifdef WIZARD
     // Parameters for fight simulations.
     string      fsim_mode;
+    bool        fsim_csv;
     int         fsim_rounds;
     string      fsim_mons;
     vector<string> fsim_scale;
@@ -419,15 +419,19 @@ public:
 #ifdef USE_TILE_LOCAL
     // font settings
     string      tile_font_crt_file;
-    int         tile_font_crt_size;
     string      tile_font_msg_file;
-    int         tile_font_msg_size;
     string      tile_font_stat_file;
-    int         tile_font_stat_size;
     string      tile_font_lbl_file;
-    int         tile_font_lbl_size;
     string      tile_font_tip_file;
+#endif
+#ifdef USE_TILE
+    int         tile_font_crt_size;
+    int         tile_font_msg_size;
+    int         tile_font_stat_size;
+    int         tile_font_lbl_size;
     int         tile_font_tip_size;
+#endif
+#ifdef USE_TILE_LOCAL
 #ifdef USE_FT
     bool        tile_font_ft_light;
 #endif
@@ -435,13 +439,13 @@ public:
     screen_mode tile_full_screen;
     int         tile_window_width;
     int         tile_window_height;
-    int         tile_map_pixels;
-    int         tile_cell_pixels;
-    bool        tile_filter_scaling;
     maybe_bool  tile_use_small_layout;
 #endif
-
 #ifdef USE_TILE
+    int         tile_cell_pixels;
+    bool        tile_filter_scaling;
+    int         tile_map_pixels;
+
     bool        tile_force_overlay;
     // display settings
     int         tile_update_rate;
@@ -453,8 +457,14 @@ public:
     bool        tile_show_minihealthbar;
     bool        tile_show_minimagicbar;
     bool        tile_show_demon_tier;
-    bool        tile_force_regenerate_levels;
+    bool        tile_water_anim;
     vector<string> tile_layout_priority;
+#endif
+#ifdef USE_TILE_WEB
+    bool        tile_realtime_anim;
+    string      tile_display_mode;
+    bool        tile_level_map_hide_messages;
+    bool        tile_level_map_hide_sidebar;
 #endif
 
     typedef map<string, string> opt_map;
@@ -518,6 +528,7 @@ private:
     cglyph_t parse_mon_glyph(const string &s) const;
     void add_item_glyph_override(const string &);
     void set_option_fragment(const string &s);
+    bool set_lang(const char *s);
 
     static const string interrupt_prefix;
 };

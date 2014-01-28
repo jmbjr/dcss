@@ -34,7 +34,7 @@ static void _increment(int& lvalue, int delta, int max_value)
 
 class _layout
 {
- public:
+public:
     _layout(coord_def termsz_, coord_def hudsz_) :
         termp(1,1),    termsz(termsz_),
         viewp(-1,-1),  viewsz(VIEW_MIN_WIDTH, VIEW_MIN_HEIGHT),
@@ -84,7 +84,7 @@ class _layout
 // mmmmmmmmmm
 class _inline_layout : public _layout
 {
- public:
+public:
     _inline_layout(coord_def termsz_, coord_def hudsz_) :
         _layout(termsz_, hudsz_)
     {
@@ -145,7 +145,7 @@ class _inline_layout : public _layout
     int leftover_x() const
     {
         int width = (viewsz.x + hud_gutter + max(hudsz.x, mlistsz.x));
-        return (termsz.x - width);
+        return termsz.x - width;
     }
     int leftover_rightcol_y() const { return termsz.y-hudsz.y-mlistsz.y-msgsz.y; }
     int leftover_leftcol_y() const  { return termsz.y-viewsz.y-msgsz.y; }
@@ -161,7 +161,7 @@ class _inline_layout : public _layout
 // mmmmmmmmmmmmm
 class _mlist_col_layout : public _layout
 {
- public:
+public:
     _mlist_col_layout(coord_def termsz_, coord_def hudsz_)
         : _layout(termsz_, hudsz_)
     { valid = _init(); }
@@ -210,13 +210,13 @@ class _mlist_col_layout : public _layout
     int leftover_x() const
     {
         int width = (mlistsz.x + MLIST_GUTTER + viewsz.x + hud_gutter + hudsz.x);
-        return (termsz.x - width);
+        return termsz.x - width;
     }
     int leftover_y() const
     {
         const int top_y = max(max(viewsz.y, hudsz.y), mlistsz.y);
         const int height = top_y + msgsz.y;
-        return (termsz.y - height);
+        return termsz.y - height;
     }
 };
 
@@ -249,7 +249,7 @@ void crawl_view_buffer::resize(const coord_def &sz)
 
 bool crawl_view_buffer::empty() const
 {
-    return (m_size.x * m_size.y <= 0);
+    return m_size.x * m_size.y <= 0;
 }
 
 const crawl_view_buffer &crawl_view_buffer::operator = (const crawl_view_buffer &rhs)
@@ -345,7 +345,7 @@ void crawl_view_geometry::set_player_at(const coord_def &c, bool centre)
         {
             const coord_def dp = c - last_player_pos;
             const coord_def dc = vgrdc - oldc;
-            if ((dc.x == dp.x) != (dc.y == dp.y))
+            if (dc.x == dp.x != (dc.y == dp.y))
                 vgrdc = oldc + dp;
         }
     }
@@ -370,12 +370,23 @@ void crawl_view_geometry::init_geometry()
     const _mlist_col_layout lay_mlist(termsz, hudsz);
 
 #ifndef USE_TILE_LOCAL
-    if ((termsz.x < MIN_COLS || termsz.y < MIN_LINES || !lay_inline.valid)
-        && !crawl_state.need_save)
+    if (!crawl_state.need_save)
     {
-        // Terminal too small; exit with an error.
-        end(1, false, "Terminal too small (%d,%d); need at least (%d,%d)",
-            termsz.x, termsz.y, MIN_COLS, MIN_LINES);
+        if (termsz.x < MIN_COLS || termsz.y < MIN_LINES)
+        {
+            end(1, false, "Terminal too small (%d,%d); need at least (%d,%d)",
+                termsz.x, termsz.y, MIN_COLS, MIN_LINES);
+        }
+        else if (!lay_inline.valid)
+        {
+            const int x_left = lay_inline.leftover_x();
+            const int y_left = lay_inline.leftover_y();
+
+            end(1, false, "Terminal too small (%d,%d); layout needs (%d,%d)",
+                termsz.x, termsz.y,
+                x_left < 0 ? termsz.x - x_left : MIN_COLS,
+                y_left < 0 ? termsz.y - y_left : MIN_LINES);
+        }
     }
 #endif
 

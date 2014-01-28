@@ -44,6 +44,7 @@ enum msg_channel_type
     MSGCH_TUTORIAL,         // messages for tutorial
     MSGCH_ORB,              // messages for the orb
     MSGCH_TIMED_PORTAL,     // timed portal entry "tick tick tick" sounds
+    MSGCH_HELL_EFFECT,      // hell effects
 
     NUM_MESSAGE_CHANNELS    // always last
 };
@@ -85,25 +86,15 @@ enum diag_type
 
 msg_colour_type msg_colour(int colour);
 
-void mpr(string text, msg_channel_type channel=MSGCH_PLAIN, int param=0,
-         bool nojoin=false, bool cap=true);
-
-static inline void mprnojoin(string text, msg_channel_type channel=MSGCH_PLAIN,
-                             int param=0)
-{
-    mpr(text, channel, param, true);
-}
-
-static inline void mpr_nocap(string text, msg_channel_type channel=MSGCH_PLAIN,
-                             int param=0, bool nojoin=false)
-{
-    mpr(text, channel, param, nojoin, false);
-}
+void mpr(const char *text);
+void mpr_nojoin(msg_channel_type channel, string text);
 
 // 4.1-style mpr, currently named mprf for minimal disruption.
 void mprf(msg_channel_type channel, int param, PRINTF(2, ));
 void mprf(msg_channel_type channel, PRINTF(1, ));
 void mprf(PRINTF(0, ));
+void mprf_nojoin(msg_channel_type channel, PRINTF(1,));
+void mprf_nojoin(PRINTF(0,));
 
 void mprf_nocap(msg_channel_type channel, int param, PRINTF(2, ));
 void mprf_nocap(msg_channel_type channel, PRINTF(1, ));

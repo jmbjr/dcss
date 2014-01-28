@@ -3,14 +3,12 @@
  * @brief Functions used when building new levels.
 **/
 
-
 #ifndef DUNGEON_H
 #define DUNGEON_H
 
 #include "env.h"
 #include "externs.h"
 #include "mapdef.h"
-#include "mon-pick.h"
 
 #include <vector>
 #include <set>
@@ -55,7 +53,7 @@ typedef vector<dgn_region> dgn_region_list;
 
 class dgn_region
 {
- public:
+public:
     // pos is top-left corner.
     coord_def pos, size;
 
@@ -93,7 +91,7 @@ class dgn_region
 
     static bool between(int val, int low, int high)
     {
-        return (val >= low && val <= high);
+        return val >= low && val <= high;
     }
 
     bool contains(const coord_def &p) const
@@ -103,14 +101,14 @@ class dgn_region
 
     bool contains(int xp, int yp) const
     {
-        return (xp >= pos.x && xp < pos.x + size.x
-                && yp >= pos.y && yp < pos.y + size.y);
+        return xp >= pos.x && xp < pos.x + size.x
+               && yp >= pos.y && yp < pos.y + size.y;
     }
 
     bool fully_contains(const coord_def &p) const
     {
-        return (p.x > pos.x && p.x < pos.x + size.x - 1
-                && p.y > pos.y && p.y < pos.y + size.y - 1);
+        return p.x > pos.x && p.x < pos.x + size.x - 1
+               && p.y > pos.y && p.y < pos.y + size.y - 1;
     }
 
     bool overlaps(const dgn_region &other) const;
@@ -169,7 +167,6 @@ private:
     const map_bitmask *oldmask;
 };
 
-extern bool Generating_Level;
 extern vector<vault_placement> Temp_Vaults;
 
 extern const map_bitmask *Vault_Placement_Mask;
@@ -243,8 +240,6 @@ void dgn_reset_level(bool enable_random_maps = true);
 
 const vault_placement *dgn_register_place(const vault_placement &place,
                                           bool register_vault);
-
-void dgn_seen_vault_at(coord_def p);
 
 // Count number of mutually isolated zones. If choose_stairless, only count
 // zones with no stairs in them. If fill is set to anything other than

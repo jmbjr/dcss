@@ -11,7 +11,6 @@
 #include "tiledoll.h"
 #include "tilemcache.h"
 #include "tilepick.h"
-#include "tilepick-p.h"
 
 DungeonCellBuffer::DungeonCellBuffer(ImageManager *im) :
     m_buf_floor(&im->m_textures[TEX_FLOOR]),
@@ -30,7 +29,7 @@ DungeonCellBuffer::DungeonCellBuffer(ImageManager *im) :
 
 static bool _in_water(const packed_cell &cell)
 {
-    return ((cell.bg & TILE_FLAG_WATER) && !(cell.fg & TILE_FLAG_FLYING));
+    return (cell.bg & TILE_FLAG_WATER) && !(cell.fg & TILE_FLAG_FLYING);
 }
 
 void DungeonCellBuffer::add(const packed_cell &cell, int x, int y)
@@ -262,8 +261,6 @@ void DungeonCellBuffer::pack_background(int x, int y, const packed_cell &cell)
                 m_buf_feat.add(TILE_HEAT_AURA + cell.heat_aura - 1, x, y);
             if (cell.is_silenced)
                 m_buf_feat.add(TILE_SILENCED, x, y);
-            if (cell.is_suppressed)
-                m_buf_feat.add(TILE_SUPPRESSED, x, y);
             if (cell.halo == HALO_RANGE)
                 m_buf_feat.add(TILE_HALO_RANGE, x, y);
             if (cell.halo == HALO_UMBRA)
@@ -288,6 +285,8 @@ void DungeonCellBuffer::pack_background(int x, int y, const packed_cell &cell)
             m_buf_feat.add(TILE_RAY, x, y);
         else if (bg & TILE_FLAG_RAY_OOR)
             m_buf_feat.add(TILE_RAY_OUT_OF_RANGE, x, y);
+        else if (bg & TILE_FLAG_LANDING)
+            m_buf_feat.add(TILE_LANDING, x, y);
     }
 }
 
@@ -456,6 +455,8 @@ void DungeonCellBuffer::pack_foreground(int x, int y, const packed_cell &cell)
         m_buf_icons.add(TILEI_ANIMATED_WEAPON, x, y);
     if (fg & TILE_FLAG_SUMMONED)
         m_buf_icons.add(TILEI_SUMMONED, x, y);
+    if (fg & TILE_FLAG_PERM_SUMMON)
+        m_buf_icons.add(TILEI_PERM_SUMMON, x, y);
 
     if (bg & TILE_FLAG_UNSEEN && (bg != TILE_FLAG_UNSEEN || fg))
         m_buf_icons.add(TILEI_MESH, x, y);
@@ -544,7 +545,6 @@ void DungeonCellBuffer::pack_doll(const dolls_data &doll, int x, int y,
 {
     pack_doll_buf(m_buf_doll, doll, x, y, submerged, ghost);
 }
-
 
 void DungeonCellBuffer::pack_mcache(mcache_entry *entry, int x, int y,
                                     bool submerged)

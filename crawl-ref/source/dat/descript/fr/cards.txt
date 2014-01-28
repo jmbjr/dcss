@@ -24,7 +24,7 @@ trouve habituellement dans les paquets d'évasion et de guerre.
 the Tomb card
 
 Cette carte entoure l'aventurier de murs de pierre protecteurs. A bas niveau,
-cette tombe pourra s'avérer imparfaite. A utiliser avec précaution ! On la
+cette tombe pourra s'avérer imparfaite. A utiliser avec précaution ! On la
 trouve en général dans les paquets de défense, d'évasion et de guerre ou, dans
 le paquet de punition de Nemelex Xobeh.
 %%%%
@@ -35,8 +35,8 @@ la trouve généralement dans les paquets de défense, d'évasion et de guerre.
 %%%%
 Damnation card
 
-Cette carte bannit une ou plusieurs créatures proches vers les Abysses,
-probablement vous avec. On la trouve généralement dans les paquets de défense,
+Cette carte bannit une ou plusieurs créatures proches vers les Abysses, peut
+etre vous avec. On la trouve généralement dans les paquets de défense,
 d'évasion et de guerre ou, dans le paquet de punition de Nemelex Xobeh.
 %%%%
 Solitude card
@@ -46,8 +46,8 @@ la trouve généralement dans les paquets de défense, d'évasion et de guerre.
 %%%%
 Warpwright card
 
-Cette carte peut créer des téléporteurs. On la trouve en général dans les
-paquets de défense, d'évasion et de guerre.
+Cette carte peut créer des pieges de teleportation. On la trouve en général
+dans les paquets de défense, d'évasion et de guerre.
 %%%%
 Flight card
 
@@ -57,9 +57,9 @@ défense, d'évasion et de guerre.
 %%%%
 the Elixir card
 
-Cette carte vous soigne mais peu aussi, drainer ou restaurer votre énergie
-magique dans le processus. On la trouve normalement dans les paquets de
-changements, de défense et de guerre.
+Cette carte rétablie votre santé ou votre énergie magique ou les deux à
+puissance élevée. On la trouve habituellement dans les tarots de changements,
+de défense et de guerre.
 %%%%
 Battlelust card
 
@@ -106,7 +106,7 @@ la trouve communément dans les paquets de changements et de merveilles.
 %%%%
 Shuffle card
 
-Cette carte inter-change vos trois attributs. A utiliser avec modération ! On
+Cette carte inter-change vos trois attributs. A utiliser avec modération ! On
 la trouve communément dans les paquets de changements et de merveilles.
 %%%%
 Experience card
@@ -271,7 +271,7 @@ paquet de punition de Nemelex Xobeh.
 Famine card
 
 Cette carte vous affame. On la trouve habituellement et uniquement dans le
-paquet de punition de Nemelex Xobeh.
+paquet de punitions de Nemelex Xobeh.
 %%%%
 the Swine card
 

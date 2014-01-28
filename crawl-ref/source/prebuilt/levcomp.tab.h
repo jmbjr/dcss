@@ -1,10 +1,8 @@
+/* A Bison parser, made by GNU Bison 2.7.12-4996.  */
 
-/* A Bison parser, made by GNU Bison 2.4.1.  */
-
-/* Skeleton interface for Bison's Yacc-like parsers in C
+/* Bison interface for Yacc-like parsers in C
    
-      Copyright (C) 1984, 1989, 1990, 2000, 2001, 2002, 2003, 2004, 2005, 2006
-   Free Software Foundation, Inc.
+      Copyright (C) 1984, 1989-1990, 2000-2013 Free Software Foundation, Inc.
    
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -32,6 +30,15 @@
    This special exception was added by the Free Software Foundation in
    version 2.2 of Bison.  */
 
+#ifndef YY_YY_LEVCOMP_TAB_H_INCLUDED
+# define YY_YY_LEVCOMP_TAB_H_INCLUDED
+/* Enabling traces.  */
+#ifndef YYDEBUG
+# define YYDEBUG 0
+#endif
+#if YYDEBUG
+extern int yydebug;
+#endif
 
 /* Tokens.  */
 #ifndef YYTOKENTYPE
@@ -78,17 +85,18 @@
      SUBVAULT = 294,
      FHEIGHT = 295,
      DESC = 296,
-     COMMA = 297,
-     COLON = 298,
-     PERC = 299,
-     DASH = 300,
-     CHARACTER = 301,
-     NUMBER = 302,
-     STRING = 303,
-     MAP_LINE = 304,
-     MONSTER_NAME = 305,
-     ITEM_INFO = 306,
-     LUA_LINE = 307
+     ORDER = 297,
+     COMMA = 298,
+     COLON = 299,
+     PERC = 300,
+     DASH = 301,
+     CHARACTER = 302,
+     NUMBER = 303,
+     STRING = 304,
+     MAP_LINE = 305,
+     MONSTER_NAME = 306,
+     ITEM_INFO = 307,
+     LUA_LINE = 308
    };
 #endif
 /* Tokens.  */
@@ -131,26 +139,25 @@
 #define SUBVAULT 294
 #define FHEIGHT 295
 #define DESC 296
-#define COMMA 297
-#define COLON 298
-#define PERC 299
-#define DASH 300
-#define CHARACTER 301
-#define NUMBER 302
-#define STRING 303
-#define MAP_LINE 304
-#define MONSTER_NAME 305
-#define ITEM_INFO 306
-#define LUA_LINE 307
-
+#define ORDER 297
+#define COMMA 298
+#define COLON 299
+#define PERC 300
+#define DASH 301
+#define CHARACTER 302
+#define NUMBER 303
+#define STRING 304
+#define MAP_LINE 305
+#define MONSTER_NAME 306
+#define ITEM_INFO 307
+#define LUA_LINE 308
 
 
 
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
 typedef union YYSTYPE
 {
-
-/* Line 1676 of yacc.c  */
+/* Line 2053 of yacc.c  */
 #line 34 "levcomp.ypp"
 
     int i;
@@ -159,9 +166,8 @@ typedef union YYSTYPE
     map_chance_pair chance;
 
 
-
-/* Line 1676 of yacc.c  */
-#line 165 "levcomp.tab.h"
+/* Line 2053 of yacc.c  */
+#line 171 "levcomp.tab.h"
 } YYSTYPE;
 # define YYSTYPE_IS_TRIVIAL 1
 # define yystype YYSTYPE /* obsolescent; will be withdrawn */
@@ -170,4 +176,18 @@ typedef union YYSTYPE
 
 extern YYSTYPE yylval;
 
+#ifdef YYPARSE_PARAM
+#if defined __STDC__ || defined __cplusplus
+int yyparse (void *YYPARSE_PARAM);
+#else
+int yyparse ();
+#endif
+#else /* ! YYPARSE_PARAM */
+#if defined __STDC__ || defined __cplusplus
+int yyparse (void);
+#else
+int yyparse ();
+#endif
+#endif /* ! YYPARSE_PARAM */
 
+#endif /* !YY_YY_LEVCOMP_TAB_H_INCLUDED  */

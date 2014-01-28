@@ -62,7 +62,50 @@ function crypt_entry(e)
     e.kmons("0 = place:Crypt:1")
     e.kfeat("O = enter_crypt")
 end
+
+function crypt_loot_plus(e)
+  -- Since Crypt is an optional, late, difficult branch,
+  -- provide some unreliable but high quality incentives.
+  local drain = "ego:draining good_item ident:type"
+  local pain = "ego:pain ident:type"
+  local vamp = "ego:vampiricism ident:type"
+  local book = "randbook disc:necromancy numspells:6 spells:"
+  local ring = "ring of positive energy randart good_item"
+  local amulet = "amulet of warding randart good_item ident:all"
+  -- One drop-off of these,
+  e.kitem("d = bastard sword w:5 " .. drain .." / claymore w:5 " .. drain ..
+          " / quick blade " .. drain .. " / executioner's axe " .. drain ..
+          " / eveningstar " .. drain .. " / bardiche " .. drain ..
+          " / lajatang " .. drain)
+  e.kitem("e = great sword " .. pain .." / battleaxe " .. pain ..
+          " / great mace " .. pain .. " / glaive " .. pain ..
+          " / quarterstaff " .. pain)
+  e.kitem("f = great sword " .. vamp .." / quick blade " .. vamp ..
+          " / quick blade " .. vamp .. " / battleaxe " .. vamp ..
+          " / great mace " .. vamp .. " / glaive " .. vamp)
+  e.kitem("g = " .. ring .. ", " .. ring .. " / " .. amulet .. " w:2, " ..
+          ring .. " / " .. amulet .. " w:2 / nothing")
+  -- and one drop-off of these.
+  e.kitem("h = dagger unrand:vampires_tooth / dagger unrand:morg / " ..
+          "great sword ego:pain unrand:sword_of_the_doom_knight / " ..
+          "demon blade unrand:bloodbane / demon blade unrand:leech / " ..
+          "bastard sword unrand:sword_of_zonguldrok / " ..
+          "scythe unrand:finisher / scythe unrand:scythe_of_curses / " ..
+          "spear unrand:spear_of_the_botono / " ..
+          "mace unrand:sceptre_of_torment / great mace unrand:undeadhunter")
+  e.kitem("i = necronomicon / " .. book .. "necromutation / " ..
+          book .. "death's_door / " .. book .. "haunt / " ..
+          book .. "borgnjor's_revivification")
+  e.kitem("j = lamp of fire / phial of floods / fan of gales / " ..
+          "stone of tremors / any rod good_item w:20, / " ..
+          "crystal ball of energy / staff of energy ident:type, " ..
+          "staff of death / staff of power / staff of wizardry / " ..
+          "any magical staff w:5")
+  e.subst("d = d:20 ef g:20")
+  e.subst("h = hij")
+end
 }}
+
 
 NAME: crypt_curse_skull
 TAGS: allow_dup luniq extra
@@ -254,7 +297,7 @@ ENDMAP
 
 ##############################################################################
 NAME:    minmay_crypt_entry_nasty_monster
-MONS:    bone dragon w:25 / lich / shadow dragon w:5, curse skull
+MONS:    bone dragon w:25 / lich / shadow dragon w:5, patrolling curse skull
 SHUFFLE: 1X/2Y
 SUBST:   X=., Y=x
 : crypt_entry(_G)
@@ -295,6 +338,27 @@ MAP
 .x...xx..xx.....
 .xxxxx....xxx...
 ................
+ENDMAP
+
+##############################################################################
+NAME:    blue_anna_dwarven_crypt
+MONS:    deep dwarf death knight / unborn w:5
+MONS:    shadow wraith / wraith / wight w:5
+FTILE:   12O.+ = floor_sandstone
+FTILE:   +12O. = floor_limestone
+FTILE:   @ = floor_sandstone
+COLOUR:  12 = yellow
+: crypt_entry(_G)
+MAP
+cccc@cccc
+c.......c
+c.ccccc.c
+c.c.2.c.c
+@.c.O.c.@
+c.c...c.c
+c.cc+cc.c
+c1.....1c
+cccc@cccc
 ENDMAP
 
 ##############################################################################
@@ -415,8 +479,8 @@ ENDMAP
 ##############################################################################
 # Dead fish
 NAME: lemuel_dead_fish_pool
-DEPTH: Crypt:*
-# Lemuel also had Cocytus:*
+DEPTH: Crypt
+# Lemuel also had Cocytus
 TAGS: no_pool_fixup extra
 SUBST: . : .W
 SUBST: 1 = w:50 1
@@ -506,7 +570,7 @@ NAME:  weyrava_lich_vault
 DEPTH: Crypt
 TAGS:  no_monster_gen no_item_gen
 ITEM:  gold
-KFEAT: Z = blade trap / needle trap / bolt trap / w:8 zot trap / w:25 floor
+KFEAT: Z = w:5 alarm trap / w:8 zot trap / w:50 floor
 KMONS: Y = Boris / ancient lich, ancient lich
 MONS:  w:3 zombie / lich / w:3 skeleton / w:3 bone dragon
 MONS:  skeleton / zombie
@@ -547,11 +611,11 @@ KFEAT: z = deep_water
 KMASK: z = no_pool_fixup
 KFEAT: T = .
 KITEM: T = * / w:5 |
-KMONS: T = w:25 phantasmal warrior / spectral dragon / spectral ice dragon / \
+KMONS: T = w:25 phantasmal warrior / spectral fire dragon / spectral ice dragon / \
            spectral storm dragon
 KFEAT: S = .
 KITEM: S = $ / nothing
-KMONS: S = w:25 phantasmal warrior / spectral dragon / spectral ice dragon / \
+KMONS: S = w:25 phantasmal warrior / spectral fire dragon / spectral ice dragon / \
            spectral storm dragon
 MAP
     cccccccccccc
@@ -676,7 +740,7 @@ ENDMAP
 NAME:   st_shrine_of_skulls
 DEPTH:  Crypt
 MONS:   flying skull band, lich
-KMONS:  3 = curse skull
+KMONS:  3 = patrolling curse skull
 KMONS:  4 = lich / ancient lich
 KMONS:  P = w:2 col:darkgrey plant name:withered name_adjective             \
           tile:mons_withered_plant / w:1 col:lightgrey plant name:withered  \
@@ -935,6 +999,51 @@ ccECDEDCEcc
 ccccccccccc
 ENDMAP
 
+NAME:    hangedman_hall_of_fallen_heroes
+TAGS:    no_monster_gen no_item_gen
+DEPTH:   Crypt:2-
+ORIENT:  float
+MONS:    wight band, phantasmal warrior
+MONS:    skeletal warrior ; long sword | war axe | trident | flail . \
+                            chain mail | ring mail | scale mail
+MONS:    patrolling vampire knight, patrolling ancient champion
+ITEM:    any weapon no_pickup / any armour no_pickup w:8 / \
+         gold no_pickup w:3 / any weapon good_item no_pickup w:3
+ITEM:    $ no_pickup, | no_pickup
+SHUFFLE: -_
+SUBST:   z : cvvv, G : GGv, - = ++++., _ = +.
+NSUBST:  C = 3 = ':19 c:1 / 2 = 'cc / *:c
+NSUBST:  Z = 1:. / *:v, G = 1:' / * = G:19 ':1
+MAP
+        ccccccc
+        cccccccccc
+        cc2d.ccccc
+        ccd.z_cccc
+    cccccc.zZ..cccccccc
+    ccccccc_....ccvvvvc
+    cc3d.c....G.evvf5vc
+    ccd.z-.cC....4+vfvc
+cccccc.zZ..CC.....z+vvc
+ccccccc-...........4vccccc
+cc2d.c....G...C.....eccccc
+ccd.z_.cC.............cccc
+cc.zZ..CC...C...c...G..cccc
+ccc_.........c.........-ccc
+cce...G...c...C...CC..cz.cc
+ccc-..............Cc.-z.dcc
+cc.zZ.......C...G....c.d3cc
+ccd.z-............._ccccccc
+cc3d.c........CC..Zz.cccccc
+cccccc+c......Cc._z.dcc
+ ....ez+.........c.d2cc
+  @.c.ecc_..G..-ccccccc
+   .1c.c.zZ...Zz.cccccc
+    ...cd.z_.-z.dcc
+     @.c2d.cec.d3cc
+      .cccccccccccc
+       cccccccccccc
+ENDMAP
+
 ##############################################################################
 # Crypt ends
 ##############################################################################
@@ -984,7 +1093,7 @@ KMONS:  7 = vampire / skeletal warrior / w:15 zombie / wraith / w:5 nothing
 # ghost layout
 : elseif brnd > 0 then
 MONS:   curse skull
-MONS:   revenant / unborn deep dwarf w:1
+MONS:   revenant / unborn w:1
 MONS:   lich
 MONS:   eidolon / flayed ghost
 MONS:   phantasmal warrior / shadow wraith w:6
@@ -1004,6 +1113,8 @@ MONS:   mummy / guardian mummy / w:5 nothing
 SUBST:  ; = .:7 ~:2 ^:1
 NSUBST: / = 1:| / 2:* / *:%
 NSUBST: . = 5:0 / *:.
+NSUBST: %*| = 1:d / 1:h
+: crypt_loot_plus(_G)
 MAP
            xxxxvvvvvvvvvvvvvvvvvxxxx
            xxxvv..WWWWWWWWWWW..vvxxx
@@ -1074,7 +1185,7 @@ KMONS:  z = skeletal warrior
 KMONS:  N = necromancer
 KMONS:  H = hell knight
 KMONS:  M = zombie / skeleton / w:5 necrophage
-KMONS:  h = titan zombie/dragon zombie/golden dragon zombie/ghoul
+KMONS:  h = titan zombie / fire dragon zombie / golden dragon zombie / ghoul
 KMONS:  0 = lost soul / nothing
 # red metal walls
 COLOUR: = = red
@@ -1085,9 +1196,9 @@ SUBST:  r = c
 # emergency exits; most are closed
 NSUBST: ? = 3:+ / *:v
 NSUBST: . = 7:0 / *:.
-SUBST:  / = |**
-SUBST:  * = *%
-SUBST:  % = %$
+SUBST:  % = %$, * = *%, / = |**
+NSUBST: *| = 1:d / 1:h
+: crypt_loot_plus(_G)
 MAP
 vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
 vwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwv
@@ -1180,15 +1291,17 @@ lua_marker("|",
                               true, { only_at_slave = true,
                                       listen_to_slaves = true })))
 }}
+NSUBST:  %| = 1:d / 1:h
+: crypt_loot_plus(_G)
 MAP
 .....................
 .....................
 ..vvvvnnnnnnnnnvvvv..
 ..vlllllllllllllllv..
 ..vlllllllllllllllv..
-..vllll..|||..llllv..
-.4vll...|||||...llv4.
-..vl.....|||.....lv..
+..vllll.%|||%.llllv..
+.4vll..%|||||%..llv4.
+..vl....%|||%....lv..
 ..vl.............lv..
 ..vmm..F.vvv.F..mmv..
 ..v1m...^^^^^...m1v..
@@ -1217,17 +1330,15 @@ KFEAT:  p = .
 KMONS:  p = w:2 col:darkgrey plant name:withered name_adjective               \
             tile:mons_withered_plant / w:1 col:lightgrey plant name:withered  \
             name_adjective tile:mons_withered_plant
-####### hidden skeleton; sometimes good pain weapon, but draining short sword
+####### hidden skeleton; sometimes good pain weapon, or draining short sword
 KMONS:  ! = skeletal warrior ; w:2 dagger ego:pain | short sword ego:draining |\
-                               w:2 sabre ego:pain | w:1 quick blade ego:pain
+                               w:2 cutlass ego:pain | w:1 quick blade ego:pain
 KFEAT:  o = granite_statue
 KFEAT:  _ = altar_kikubaaqudgha
-KFEAT:  ~ = bolt trap / blade trap / needle trap
 SUBST:  B = b %
 KITEM:  b = any book
 SUBST:  ? = $ % * |:1
 SUBST:  u = U Y
-SUBST:  ; = ....~
 KMONS:  8 = iron golem
 ####### NW monsters (chapel).
 KMONS:  A = ancient lich / w:2 mummy priest
@@ -1248,19 +1359,19 @@ KMONS:  P = skeleton / mummy
 : end
 ####### SE monsters (catacombs). Either corporeal or incorporeal undead.
 : if crawl.coinflip() then
-KMONS:  Z = curse skull
+KMONS:  Z = patrolling curse skull
 KMONS:  Q = bone dragon
 KMONS:  R = skeletal warrior
 KMONS:  S = zombie / skeleton
 : else
-KMONS:  Z = curse skull
+KMONS:  Z = patrolling curse skull
 KMONS:  Q = eidolon
 KMONS:  R = phantasmal warrior / flayed ghost w:8
 KMONS:  S = shadow / wraith / freezing wraith / shadow wraith / wight
 : end
 ####### SW monsters (crematory). Either fiery undead or hellish.
 : if crawl.coinflip() then
-KMONS:  t = w:20 flaming corpse / fire giant skeleton / dragon skeleton
+KMONS:  t = w:20 flaming corpse / fire giant skeleton / fire dragon skeleton
 KMONS:  X = w:1 curse skull / w:19 revenant
 : else
 KMONS:  t = w:20 hell knight / smoke demon / red devil
@@ -1272,44 +1383,46 @@ NSUBST: K = 1:+ / *:v
 NSUBST: ' = 1:+ / *:v
 NSUBST: " = 1:+ / *:v
 NSUBST: . = 8:0 / *:.
+NSUBST: *| = 1:d / 1:h
+: crypt_loot_plus(_G)
 MAP
 vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
 vccccccccccccccccccccccccc......"...Bvvvvvvvvvvvvvvvvvvvvvv
-vc..D..c.....c....Bc;;+;;c.ffff.vvvBDvvvvvvvvvvvvvvvvvvvvvv
-vc.c.c.+.....+....cc;;+;;c.ffFf.vvvv"vvvvvvvvvvvvvnP+.....v
-vc.._..+...D.c....Bc;;c;;m.ffFf.v????||$$$.vvvvv..nPn|????v
+vc..D..c.....c....Bc..+..c.ffff.vvvBDvvvvvvvvvvvvvvvvvvvvvv
+vc.c.c.+.....+....cc..+..c.ffFf.vvvv"vvvvvvvvvvvvvnP+.....v
+vc.._..+...D.c....Bc..c..m.ffFf.v????||$$$.vvvvv..nPn|????v
 vc.c.c.c.....c....cc..c..c.ffff.v$$$$$$$$$.vvvv...nPn$$$$$v
 vc.....ccc+ccc....Bc..cGGc.ffff.vnnnnnnnnn+vvv..H.nPn$$$$$v
-vc.....c.....c....cc..c..c.ffff.v;;;;;;;;;;vv.....nPn$$$$$v
-vc.....c?....c..A.Bc..c..m..fff.v;;;;;;;;;;vv.uvu.nPn$$$$$v
-vc.....c|?...c....cc..c..c...ff.v;;vvvvvvvvv..vvv.nPnnnnnnv
-vc.....c||?EEcBcBcc...c..c....f.v;;;;;;;;;;+..uvu.nPPPPPPPv
-vc++cccccccccccccc...cc..c......v;;;;;;;;;;+......nnnnnnn+v
+vc.....c.....c....cc..c..c.ffff.v..........vv.....nPn$$$$$v
+vc.....c?....c..A.Bc..c..m..fff.v..........vv.uvu.nPn$$$$$v
+vc.....c|?...c....cc..c..c...ff.v..vvvvvvvvv..vvv.nPnnnnnnv
+vc.....c||?EEcBcBcc...c..c....f.v..........+..uvu.nPPPPPPPv
+vc++cccccccccccccc...cc..c......v..........+......nnnnnnn+v
 vc.....G............cc...m..G...vvvvvvvvvvvv.H............v
 vc.....G...........cc...cc......v....vvvvvvv..............v
 vccccccccccccccccccc...cc...ff..v.JJ...vvvvvv....v..v..v..v
-vc.....;;;;;;.........cc..fffff.v.......vvvvv.............v
-vc......;;;;.........ccE..fffff.vv+vv....vvvvv...v..v..v..v
+vc....................cc..fffff.v.......vvvvv.............v
+vc...................ccE..fffff.vv+vv....vvvvv...v..v..v..v
 vccmcccmm++mmcccmcccmc...fffff..v...vvv...vvvvv...........v
 v.......f..f............fffffff.v.....vv...vvvvv..........v
 v....ffff..ffff.........fffFfff.v......v...vvvvvvvvvvvv++vv
-v.G.ffff...ffff...G....ffffffff.v......vv...v;..;.I;..;..;v
-v...ffff...fffff.......fffffff..v.......v...+.;..;..;..;..v
-v....ffff....ffff.......f.ffff..v.......v...+..;..;..;..;.v
-v......f.f....ffff..............v.......v...v;..;.I;..;..;v
+v.G.ffff...ffff...G....ffffffff.v......vv...v.....I.......v
+v...ffff...fffff.......fffffff..v.......v...+.............v
+v....ffff....ffff.......f.ffff..v.......v...+.............v
+v......f.f....ffff..............v.......v...v.....I.......v
 vvvvvvvvvvvvvv++vvvvvvvvvvvvvvvvvvvvvvv+vvvvvvvvvvvvvvvvvvv
 vvvvvvvvvvvvv....v??llv??llv??llvvvvvvo.ovvvWWWWWWW.......v
-vvvvvlllvvvvv....v?.tlv?.tlv?.tlvvvv.......vvWWWWWWZ.mmmm;v
+vvvvvlllvvvvv....v?.tlv?.tlv?.tlvvvv.......vvWWWWWWZ.mmmm.v
 vvv.......vvv....v....v....v....vvv.........vvWWWWWWWm*|m.v
-vv.........vv....v....v....v....vv...........vWWWWWWWW*|m;v
+vv.........vv....v....v....v....vv...........vWWWWWWWW*|m.v
 v..ccc.ccc..vv++vvv++vvv++vvv++vvv...R.Q.R...vvWWWWmWW%|m.v
-v...lc.cl...v...................vo...........ovWWWWmmmmmm;v
-v..t.c.c.t..+.;;;;;;;;;;;;;;;;;.+......U......+...........v
+v...lc.cl...v...................vo...........ovWWWWmmmmmm.v
+v..t.c.c.t..+...................+......U......+...........v
 v...........v...................vo...........ov...........v
 v.cccc.cccc.vvvvvvvvvKvvvvvvvvvvvv.........vvvvvvvvvvvvvvvv
-v.cll...llc.v??......<vvvvvvvvvvvv.........+..;+..........v
-v.clt...tlc.K???.....Kvvvvvvvvvvvvv........+.;.vvvvvvvvvv.v
-v.c...X...c.v????|KKvvwwwwwwwwvvvvvv.......v;...vvvW.R.%v.v
+v.cll...llc.v??......<vvvvvvvvvvvv.........+...+..........v
+v.clt...tlc.K???.....Kvvvvvvvvvvvvv........+...vvvvvvvvvv.v
+v.c...X...c.v????|KKvvwwwwwwwwvvvvvv.......v....vvvW.R.%v.v
 v...........vRRRRKvwwwwwwwwwwwwwwvvvvvo.ovvv+v...vvW...%v.v
 v..ccc.ccc..vRRKvvwwwwwwwwwwwwwwwwvvvvv+vvvv.vv...vv...$v.v
 v..lc...cl..vvvvwwwwwwwwwwwwwwwwwwwwvvv<v....vvv...vvv+vv.v
@@ -1322,20 +1435,20 @@ vvvv++vvvvvvvwwwwwww..8..wwwwwwwwwwwwwwvv.v.v...WvRWvv...vv
 v........+tvwwwwww.........wwwwwwwwwwwwwv.v+v+vvvv+vvvv...v
 v...ll...v+vwwwww...........wwwwwwwwwwwwv............vvv..v
 v...ll...+tvwwww.............wwwwwwwwwwwvvvvvvvvvvvvvvvvv+v
-v...ll...v+vwwww.............wwww..;;.;;+.;;.....R......v.v
-v...ll...+tvwww...............ww...;;.;;+.;;.V.S.R.V....v.v
-v.llllll.v+vwww...................wwwwwwv.;;...S........v.v
-v.llllll.+tvwww8.............8...wwwwwwwv.;;.V.S.R.V....v.v
-v...ll...v+vwww.................wwwwwwwwv.;;.....R......v.v
+v...ll...v+vwwww.............wwww.......+........R......v.v
+v...ll...+tvwww...............ww........+....V.S.R.V....v.v
+v.llllll.v+vwww...................wwwwwwv......S........v.v
+v.llllll.+tvwww8.............8...wwwwwwwv....V.S.R.V....v.v
+v...ll...v+vwww.................wwwwwwwwv........R......v.v
 v.t.ll...vtvvww...............wwwwwwwwwvvvvvv''vvvvvvv+vv+v
-v.t.ll...v.*vwww.{...........wwwwwwwwwwv...;...'o$.....vv.v
-v...ll...v.%vwww..[..........wwwwwwwwwwv....;..v$;....vvv.v
-v........+.*vvwww..(........wwwwwwwwwwvv..W..;.v..;..vvv..v
-vvvvvvvvvvvvvvvwww.........wwwwwwwwwwvv..SW...;v.S.;vvv.S.v
-vvvvvvvvvvvvvvvwwwww..8..wwwwwwwwwwwwv;.WWWWW..'...vvv;...v
-vvvvvvvvvvvvvvvvwwwwwwwwwwwwwwwwwwwwvv.;..W....v..vvv..;..v
-vvvvvvvvvvvvvvvvvvwwwwwwwwwwwwwwwwvvvo..;.W....v+vvv....;$v
-vvvvvvvvvvvvvvvvvvvwwwwwwwwwwwwwwvv!+....;..R..'........$ov
+v.t.ll...v.*vwww.{...........wwwwwwwwwwv.......'o$.....vv.v
+v...ll...v.%vwww..[..........wwwwwwwwwwv.......v$.....vvv.v
+v........+.*vvwww..(........wwwwwwwwwwvv..W....v.....vvv..v
+vvvvvvvvvvvvvvvwww.........wwwwwwwwwwvv..SW....v.S..vvv.S.v
+vvvvvvvvvvvvvvvwwwww..8..wwwwwwwwwwwwv..WWWWW..'...vvv....v
+vvvvvvvvvvvvvvvvwwwwwwwwwwwwwwwwwwwwvv....W....v..vvv.....v
+vvvvvvvvvvvvvvvvvvwwwwwwwwwwwwwwwwvvvo....W....v+vvv.....$v
+vvvvvvvvvvvvvvvvvvvwwwwwwwwwwwwwwvv!+.......R..'........$ov
 vvvvvvvvvvvvvvvvvvvvvvwwwwwwwwvvvvvvvovvvvvvvvvvvvvvvvvvvvv
 vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
 ENDMAP
@@ -1373,19 +1486,19 @@ MONS:   w:5 wraith / phantasmal warrior / eidolon / w:5 freezing wraith / w:5 no
 MONS:   raven skeleton / w:30 nothing
 MONS:   w:3 guardian mummy / w:1 mummy
 MONS:   w:5 patrolling mummy priest / w:1 patrolling greater mummy
-KMONS:  z = curse skull
+KMONS:  z = patrolling curse skull
 SHUFFLE: 9H
 : if crawl.coinflip() then
 # Temple of yred
 KFEAT: _ = altar_yredelemnul
 KMONS:  9 = patrolling profane servitor
-KMONS:  H = w:20 patrolling unborn deep dwarf / patrolling profane servitor
+KMONS:  H = w:20 patrolling unborn / patrolling profane servitor
 KMONS:  0 = patrolling ghoul
 KMONS:  A = patrolling deep dwarf death knight
 KMONS:  B = skeletal warrior
 KMONS:  C = necrophage / plague shambler
 KMONS:  E = phantasmal warrior / w:4 flayed ghost / w:1 phantom / w:1 shadow / nothing
-KMONS:  F = patrolling bone dragon / patrolling unborn deep dwarf
+KMONS:  F = patrolling bone dragon / patrolling unborn
 : else
 # Temple of kiku - more necromancers, more demonic (kiku's description refers to
 # him/her/it being demonic). Not as much undead in this set.
@@ -1394,7 +1507,7 @@ KMONS:  9 = patrolling ancient lich
 KMONS:  H = w:20 patrolling lich / patrolling ancient lich
 KMONS:  0 = patrolling reaper w:5 / patrolling soul eater
 KMONS:  A = patrolling deep elf death mage
-KMONS:  B = w:4 necromancer / w:1 deep dwarf necromancer
+KMONS:  B = necromancer
 KMONS:  C = rotting devil
 KMONS:  E = skeleton w:13 / nothing
 KMONS:  F = patrolling reaper
@@ -1404,6 +1517,8 @@ NSUBST: . = 8:S / *:.
 SUBST:  n : ncc
 : set_feature_name("granite_statue", "gravestone")
 : set_feature_name("tree", "dead tree")
+NSUBST: *| = 1:d / 1:h
+: crypt_loot_plus(_G)
 MAP
 tttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttt
 tttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttt
@@ -1529,7 +1644,7 @@ KMONS:  6 = generate_awake vampire mage
 : elseif brnd > 2 then
 MONS:   patrolling freezing wraith / patrolling spectral thing w:8
 MONS:   revenant
-MONS:   eidolon / unborn deep dwarf w:6
+MONS:   eidolon / unborn w:6
 MONS:   flayed ghost / phantasmal warrior
 MONS:   spectral thing / simulacrum / shadow w:5 / wraith w:5 / shadow wraith / \
         spectral storm dragon w:5 / spectral ice dragon w:5 / \
@@ -1544,6 +1659,8 @@ MONS:   guardian mummy
 MONS:   bog body / mummy / guardian mummy
 MONS:   generate_awake sphinx
 : end
+NSUBST:  %*| = 1:d / 1:h
+: crypt_loot_plus(_G)
 MAP
                 ccccccccccccccccccccccccccccccc
                 ccccccccccccccccccccccccccccccc
@@ -1601,91 +1718,93 @@ TAGS:    patrolling no_monster_gen no_rotate no_hmirror no_vmirror
 PLACE:   Crypt:$
 ORIENT:  encompass
 MONS:    skeletal warrior / jiangshi, flying skull band
-SHUFFLE: 34 / 78 / 90 / Hh, Dd / Ee / Ff / Ii / Jj / Kk / Ll / 56
+SHUFFLE: 34 / 56 / 78 / 90, AB / CD / EF / HI / JK / LM / NO / PQ
 
-# Initial waves; these should be weaker.
 KMONS:   3 = ghoul
 KMONS:   4 = plague shambler / necrophage
-KMONS:   7 = necromancer
-KMONS:   8 = simulacrum / spectral thing / zombie w:5 / skeleton w:5 / \
+KMONS:   5 = necromancer
+KMONS:   6 = simulacrum / spectral thing / zombie w:5 / skeleton w:5 / \
              hell knight w:5
-KMONS:   9 = deep dwarf death knight
-KMONS:   0 = death cob / skeletal warrior / flaming corpse
-KMONS:   H = ancient champion
-KMONS:   h = skeletal warrior
+KMONS:   7 = deep dwarf death knight
+KMONS:   8 = death cob / skeletal warrior / flaming corpse
+KMONS:   9 = ancient champion
+KMONS:   0 = skeletal warrior
 
 # Room guardian waves; these should be tougher, but not boss tier.
-KMONS:   D = lich
-KMONS:   E = revenant
-KMONS:   de = freezing wraith / shadow wraith / wraith
-KMONS:   F = deep elf death mage
-KMONS:   f = lost soul / small abomination / large abomination w:2
-KMONS:   I = unborn deep dwarf
-KMONS:   i = deep dwarf necromancer w:2 / deep dwarf scion w:5 / deep dwarf
+KMONS:   A = lich
+KMONS:   C = revenant
+KMONS:   BD = freezing wraith / shadow wraith / wraith
+KMONS:   E = deep elf death mage
+KMONS:   F = lost soul / small abomination / large abomination w:2
+KMONS:   H = unborn
+KMONS:   I = deep dwarf death knight w:5 / nothing
 KMONS:   J = profane servitor
-KMONS:   K = bone dragon
-KMONS:   jk = nothing
-KMONS:   Ll = jiangshi
-KMONS:   5 = flayed ghost
-KMONS:   6 = flayed ghost / shadow w:20
+KMONS:   L = bone dragon
+KMONS:   KM = nothing
+KMONS:   NO = jiangshi
+KMONS:   P = flayed ghost
+KMONS:   Q = flayed ghost / shadow w:20
 
 # Boss tier monsters.
 : if crawl.one_chance_in(4) then
-KMONS:   M = Khufu, greater mummy
-KMONS:   N = mummy priest
-KMONS:   O = guardian mummy
+KMONS:   R = Khufu, greater mummy
+KMONS:   S = mummy priest
+KMONS:   T = guardian mummy
 : elseif crawl.one_chance_in(3) then
-KMONS:   M = Jory, vampire knight
-KMONS:   N = vampire mage
-KMONS:   O = vampire / jiangshi
+KMONS:   R = Jory, vampire knight
+KMONS:   S = vampire mage
+KMONS:   T = vampire / jiangshi
 : elseif crawl.coinflip() then
-KMONS:   M = ancient lich
-KMONS:   N = flayed ghost
-KMONS:   O = phantasmal warrior
+KMONS:   R = ancient lich
+KMONS:   S = flayed ghost
+KMONS:   T = phantasmal warrior
 : else
-KMONS:   M = curse skull
-KMONS:   N = ancient champion
-KMONS:   O = skeletal warrior
+KMONS:   R = curse skull
+KMONS:   S = ancient champion
+KMONS:   T = skeletal warrior
 : end
 
 KFEAT:   _ = altar_yredelemnul / altar_kikubaaqudgha
 SHUFFLE: {[(<
+
+NSUBST:  *| = 1:d / 1:h
+: crypt_loot_plus(_G)
 MAP
 ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-ccccccccccccccccccccccccc|*$$...M...$$*|ccccccccccccccccccccccccc
-cccccccccccccccccccccc..cc*$$.O...O.$$*cc..cccccccccccccccccccccc
-cccccccccccccccccccc....ccc$$...O...$$ccc....cccccccccccccccccccc
+ccccccccccccccccccccccccc|*$$...R...$$*|ccccccccccccccccccccccccc
+cccccccccccccccccccccc..cc*$$.T...T.$$*cc..cccccccccccccccccccccc
+cccccccccccccccccccc....ccc$$...T...$$ccc....cccccccccccccccccccc
 ccccccccccccccccccc.G.G.c.ccccc+++ccccc.c.G.G.ccccccccccccccccccc
 cccccccccccccccccc......c...............c......cccccccccccccccccc
-ccccccccccccccccc.......c..G..O...O..G..c.......ccccccccccccccccc
-cccccccccccccccc..e.E.e.c......O.O......c.j.J.j..cccccccccccccccc
+ccccccccccccccccc.......c..G..T...T..G..c.......ccccccccccccccccc
+cccccccccccccccc..K.J.K.c......T.T......c.M.L.M..cccccccccccccccc
 cccccccccccccccc........c..G.........G..c........cccccccccccccccc
-ccccccccccccccc....e.e..cc.............cc..j.j....ccccccccccccccc
+ccccccccccccccc....K.K..cc.............cc..M.M....ccccccccccccccc
 ccccccccccccccc..........c.G.........G.c..........ccccccccccccccc
 ccccccccccccccc+c........c....c+++c....c........c+ccccccccccccccc
-cccccccccccccc..cc.G...G.c.N.cc...cc.N.c.G...G.cc..cccccccccccccc
-ccccccccccccccd.cc.......c..cc.....cc..c.......cc.kcccccccccccccc
-ccccccccccccccdDcc...f...cccc...H...cccc..i....ccKkcccccccccccccc
-ccccccccccccccddcc.....f..c...G...G...c..i.....cckkcccccccccccccc
-ccccccccccccccc$$c...F....c.h.......h.c.....I..c$$ccccccccccccccc
-ccccccccccccccc$$c.....f..+.....Y.....+..i.....c$$ccccccccccccccc
-ccccccccccccccc$$cc...f...c.h.......h.c...i...cc$$ccccccccccccccc
+cccccccccccccc..cc.G...G.c.S.cc...cc.S.c.G...G.cc..cccccccccccccc
+ccccccccccccccO.cc.......c..cc.....cc..c.......cc.Qcccccccccccccc
+ccccccccccccccONcc...F...cccc...9...cccc...I...ccPQcccccccccccccc
+ccccccccccccccOOcc.....F..c...G...G...c..I.....ccQQcccccccccccccc
+ccccccccccccccc$$c...E....c.0.......0.c....H...c$$ccccccccccccccc
+ccccccccccccccc$$c.....F..+.....Y.....+..I.....c$$ccccccccccccccc
+ccccccccccccccc$$cc...F...c.0.......0.c...I...cc$$ccccccccccccccc
 ccccccccccccccc**cc.G.G...c...G...G...c...G.G.cc**ccccccccccccccc
 cccccccccccccccc|cc....cccccc.......cccccc....cc|cccccccccccccccc
-cccccccccccccccc|cc..ccc.l..ccc+++ccc..6.ccc..cc|cccccccccccccccc
-cccccccccccccccccccccc*$..l.+...4...+.6..$*cccccccccccccccccccccc
-ccccccccccccccccccc.c|*$.L..c.......c..5.$*|c.ccccccccccccccccccc
-cccccccccccccccccc..cc*$..lcc.4.3.4.cc6..$*cc..cccccccccccccccccc
-cccccccccccccccccc...c$$.l.c.........c.6.$$c...cccccccccccccccccc
-cccccccccccccccccc.G.cc...ccc...4...ccc...cc.G.cccccccccccccccccc
+cccccccccccccccc|cc..ccc.B..ccc+++ccc..D.ccc..cc|cccccccccccccccc
+cccccccccccccccccccccc*$..B.+...8...+.D..$*cccccccccccccccccccccc
+ccccccccccccccccccc.c|*$.A..c.......c..C.$*|c.ccccccccccccccccccc
+cccccccccccccccccc..cc*$..Bcc.8.7.8.ccD..$*cc..cccccccccccccccccc
+cccccccccccccccccc...c$$.B.c.........c.D.$$c...cccccccccccccccccc
+cccccccccccccccccc.G.cc...ccc...8...ccc...cc.G.cccccccccccccccccc
 ccccccc...cccccccc....ccccc.+c.....c+.ccccc....cccccccc...ccccccc
 ccccccc.[.cccccccc......c....ccccccc....c......cccccccc.{.ccccccc
-ccccccc....ccccccc...2..8..2.ccccccc.2..0..2...ccccccc....ccccccc
+ccccccc....ccccccc...2..4..2.ccccccc.2..6..2...ccccccc....ccccccc
 ccccccc.G...ccccccc..........ccccccc..........ccccccc...G.ccccccc
-cccccc.......ccccccc..8.7V8..ccccccc..0V9.0..ccccccc.......cccccc
+cccccc.......ccccccc..4.3V4..ccccccc..6V5.6..ccccccc.......cccccc
 ccccc..........ccccccc.......ccccccc.......ccccccc..........ccccc
-cccccc..cc...1....cccccc8....cc...cc....0cccccc....1...cc..cccccc
+cccccc..cc...1....cccccc4....cc...cc....6cccccc....1...cc..cccccc
 cccccccccccc...2...cccccc..1.cc._.cc.1..cccccc...2...cccccccccccc
 ccccccccccccccc.....ccc.cc.............cc.ccc.....ccccccccccccccc
 ccccccccccccccccc....+.G.c....V...V....c.G.+....ccccccccccccccccc

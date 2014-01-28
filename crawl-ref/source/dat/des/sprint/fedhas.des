@@ -1,6 +1,7 @@
 NAME:   dungeon_sprint_fedhas
-TAGS:   sprint no_item_gen no_trap_gen no_monster_gen no_pool_fixup no_rotate no_hmirror no_vmirror
+TAGS:   sprint no_item_gen no_trap_gen no_pool_fixup no_rotate no_hmirror no_vmirror
 DESC:   Sprint IV: "Fedhas' Mad Dash"
+ORDER:  4
 ORIENT: encompass
 SUBVAULT: o : temple
 KMONS:  A = fungus
@@ -46,7 +47,7 @@ KFEAT:  Z = any shop
 MAP
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 xcccccccccccccccccccccccccccccccccccccccccccccccccccccx
-xc{[(Ac....uc.$$$$coooooooooooooc.*+$BBc.E..ccZcc|ccccx
+xc{..Ac....uc.$$$$coooooooooooooc.*+$BBc.E..ccZcc|ccccx
 xcAA..+.%...+.c%%.+ooooooooooooo+.Dc$E$c.F.G+*|cc+ccccx
 xcAAAAc...m.cCcn..coooooooooooooc..ccc+cc.**ccZc$$ccccx
 xccccccccccccccc+ccoooooooooooooc.*ccZZ$+..Fccccc..R.cx
@@ -102,12 +103,13 @@ KFEAT:  M = altar_jiyva
 KFEAT:  N = altar_vehumet
 KFEAT:  O = altar_sif_muna
 KFEAT:  P = altar_makhleb
+KFEAT:  Q = altar_dithmengos
 KMONS:  X = oklob sapling name:priest n_suf spells:cantrip;.;cantrip;smiting priest_spells
 
 MAP
 .T.........T.
 .A.B.C.D.E.F.
-..M.NXO.P.T..
+..M.NXO.P.Q..
 .G.H.I.J.K.L.
 .T.........T.
 ENDMAP

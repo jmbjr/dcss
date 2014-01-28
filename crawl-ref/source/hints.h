@@ -58,7 +58,7 @@ enum hints_event_type
     HINT_SEEN_ALTAR,
     HINT_SEEN_SHOP,
     HINT_SEEN_DOOR,
-    HINT_FOUND_RUNED_DOOR,
+    HINT_SEEN_RUNED_DOOR,
     // other 'first events'
     HINT_SEEN_MONSTER,
     HINT_SEEN_ZERO_EXP_MON,
@@ -155,6 +155,7 @@ void hints_load_game(void);
 formatted_string hints_starting_info2();
 void hints_starting_screen(void);
 void hints_new_turn();
+void print_hint(string key, const string arg1 = "", const string arg2 = "");
 void hints_death_screen(void);
 void hints_finished(void);
 

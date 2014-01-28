@@ -10,22 +10,22 @@
 
 #include <algorithm>
 
+#include "act-iter.h"
 #include "beam.h"
 #include "cloud.h"
 #include "coord.h"
 #include "coordit.h"
 #include "env.h"
 #include "fprop.h"
-#include "itemprop.h"
+#include "godconduct.h"
 #include "items.h"
-#include "libutil.h"
+#include "losglobal.h"
 #include "message.h"
 #include "misc.h"
 #include "mon-behv.h"
 #include "mon-util.h"
 #include "ouch.h"
 #include "player.h"
-#include "skills.h"
 #include "spl-util.h"
 #include "stuff.h"
 #include "terrain.h"
@@ -86,7 +86,7 @@ spret_type conjure_flame(int pow, const coord_def& where, bool fail)
         return SPRET_ABORT;
     }
 
-    // Note that self-targetting is handled by SPFLAG_NOT_SELF.
+    // Note that self-targeting is handled by SPFLAG_NOT_SELF.
     monster* mons = monster_at(where);
     if (mons)
     {
@@ -104,6 +104,8 @@ spret_type conjure_flame(int pow, const coord_def& where, bool fail)
     }
 
     fail_check();
+
+    did_god_conduct(DID_FIRE, min(5 + pow/2, 23));
 
     if (cloud != EMPTY_CLOUD)
     {
@@ -183,7 +185,7 @@ spret_type cast_big_c(int pow, cloud_type cty, const actor *caster, bolt &beam,
     }
 
     //XXX: there should be a better way to specify beam cloud types
-    switch(cty)
+    switch (cty)
     {
         case CLOUD_POISON:
             beam.flavour = BEAM_POISON;
@@ -204,7 +206,7 @@ spret_type cast_big_c(int pow, cloud_type cty, const actor *caster, bolt &beam,
 
     beam.thrower           = KILL_YOU;
     beam.hit               = AUTOMATIC_HIT;
-    beam.damage            = INSTANT_DEATH; // just a convenient non-zero
+    beam.damage            = dice_def(42, 1); // just a convenient non-zero
     beam.is_big_cloud      = true;
     beam.is_tracer         = true;
     beam.use_target_as_pos = true;
@@ -234,6 +236,7 @@ void big_cloud(cloud_type cl_type, const actor *agent,
                const coord_def& where, int pow, int size, int spread_rate,
                int colour, string name, string tile)
 {
+    // The starting point _may_ be a place no cloud can be placed on.
     apply_area_cloud(_make_a_normal_cloud, where, pow, size,
                      cl_type, agent, spread_rate, colour, name, tile,
                      -1);
@@ -249,6 +252,7 @@ spret_type cast_ring_of_flames(int power, bool fail)
     }
 
     fail_check();
+    did_god_conduct(DID_FIRE, min(5 + power/5, 50));
     you.increase_duration(DUR_FIRE_SHIELD,
                           5 + (power / 10) + (random2(power) / 5), 50,
                           "The air around you leaps into flame!");
@@ -275,19 +279,18 @@ void manage_fire_shield(int delay)
 
     if (!you.duration[DUR_FIRE_SHIELD])
     {
-        mpr("Your ring of flames gutters out.", MSGCH_DURATION);
+        mprf(MSGCH_DURATION, "Your ring of flames gutters out.");
         return;
     }
 
     int threshold = get_expiration_threshold(DUR_FIRE_SHIELD);
 
-
     if (old_dur > threshold && you.duration[DUR_FIRE_SHIELD] < threshold)
-        mpr("Your ring of flames is guttering out.", MSGCH_WARN);
+        mprf(MSGCH_WARN, "Your ring of flames is guttering out.");
 
     // Place fire clouds all around you
     for (adjacent_iterator ai(you.pos()); ai; ++ai)
-        if (!feat_is_solid(grd(*ai)) && env.cgrid(*ai) == EMPTY_CLOUD)
+        if (!cell_is_solid(*ai) && env.cgrid(*ai) == EMPTY_CLOUD)
             place_cloud(CLOUD_FIRE, *ai, 1 + random2(6), &you);
 }
 
@@ -315,9 +318,11 @@ spret_type cast_corpse_rot(bool fail)
 
 void corpse_rot(actor* caster)
 {
-    for (radius_iterator ri(caster->pos(), 6, C_ROUND, caster->is_player() ? you.get_los_no_trans()
-                                                                                    : caster->get_los());
-         ri; ++ri)
+    // If there is no caster (god wrath), centre the effect on the player.
+    const coord_def center = caster ? caster->pos() : you.pos();
+    bool saw_rot = caster && (caster->is_player() || you.can_see(caster));
+
+    for (radius_iterator ri(center, 6, C_ROUND, LOS_NO_TRANS); ri; ++ri)
     {
         if (!is_sanctuary(*ri) && env.cgrid(*ri) == EMPTY_CLOUD)
             for (stack_iterator si(*ri); si; ++si)
@@ -334,13 +339,16 @@ void corpse_rot(actor* caster)
 
                     place_cloud(CLOUD_MIASMA, *ri, 4+random2avg(16, 3),caster);
 
+                    if (!saw_rot && you.see_cell(*ri))
+                        saw_rot = true;
+
                     // Don't look for more corpses here.
                     break;
                 }
     }
 
-    if (you.can_smell() && you.can_see(caster))
-        mpr("You smell decay.");
+    if (saw_rot)
+        mprf("You %s decay.", you.can_smell() ? "smell" : "sense");
 
     // Should make zombies decay into skeletons?
 }
@@ -354,7 +362,7 @@ int holy_flames(monster* caster, actor* defender)
     {
         if (!in_bounds(*ai)
             || env.cgrid(*ai) != EMPTY_CLOUD
-            || feat_is_solid(grd(*ai))
+            || cell_is_solid(*ai)
             || is_sanctuary(*ai)
             || monster_at(*ai))
         {
@@ -367,4 +375,123 @@ int holy_flames(monster* caster, actor* defender)
     }
 
     return cloud_count;
+}
+
+struct dist2_sorter
+{
+    coord_def pos;
+    bool operator()(const actor* a, const actor* b)
+    {
+        return distance2(a->pos(), pos) > distance2(b->pos(), pos);
+    }
+};
+
+static bool _safe_cloud_spot(const monster* mon, coord_def p)
+{
+    if (cell_is_solid(p) || env.cgrid(p) != EMPTY_CLOUD)
+        return false;
+
+    if (actor_at(p) && mons_aligned(mon, actor_at(p)))
+        return false;
+
+    return true;
+}
+
+void apply_control_winds(const monster* mon)
+{
+    vector<int> cloud_list;
+    for (distance_iterator di(mon->pos(), true, false, LOS_RADIUS); di; ++di)
+    {
+        if (env.cgrid(*di) != EMPTY_CLOUD
+            && cell_see_cell(mon->pos(), *di, LOS_SOLID)
+            && (di.radius() < 6 || env.cloud[env.cgrid(*di)].type == CLOUD_FOREST_FIRE
+                                || (actor_at(*di) && mons_aligned(mon, actor_at(*di)))))
+        {
+            cloud_list.push_back(env.cgrid(*di));
+        }
+    }
+
+    bolt wind_beam;
+    wind_beam.hit = AUTOMATIC_HIT;
+    wind_beam.is_beam = true;
+    wind_beam.affects_nothing = true;
+    wind_beam.source = mon->pos();
+    wind_beam.range = LOS_RADIUS;
+    wind_beam.is_tracer = true;
+
+    for (int i = cloud_list.size() - 1; i >= 0; --i)
+    {
+        cloud_struct* cl = &env.cloud[cloud_list[i]];
+        if (cl->type == CLOUD_FOREST_FIRE)
+        {
+            if (you.see_cell(cl->pos))
+                mpr("The forest fire is smothered by the winds.");
+            delete_cloud(cloud_list[i]);
+            continue;
+        }
+
+        // Leave clouds engulfing hostiles alone
+        if (actor_at(cl->pos) && !mons_aligned(actor_at(cl->pos), mon))
+            continue;
+
+        bool pushed = false;
+
+        coord_def newpos;
+        if (cl->pos != mon->pos())
+        {
+            wind_beam.target = cl->pos;
+            wind_beam.fire();
+            for (unsigned int j = 0; j < wind_beam.path_taken.size() - 1; ++j)
+            {
+                if (env.cgrid(wind_beam.path_taken[j]) == cloud_list[i])
+                {
+                    newpos = wind_beam.path_taken[j+1];
+                    if (_safe_cloud_spot(mon, newpos))
+                    {
+                        swap_clouds(newpos, wind_beam.path_taken[j]);
+                        pushed = true;
+                        break;
+                    }
+                }
+            }
+        }
+
+        if (!pushed)
+        {
+            for (distance_iterator di(cl->pos, true, true, 1); di; ++di)
+            {
+                if ((newpos.origin() || adjacent(*di, newpos))
+                    && di->distance_from(mon->pos())
+                        == (cl->pos.distance_from(mon->pos()) + 1)
+                    && _safe_cloud_spot(mon, *di))
+                {
+                    swap_clouds(*di, cl->pos);
+                    pushed = true;
+                    break;
+                }
+            }
+
+            if (!pushed && actor_at(cl->pos) && mons_aligned(mon, actor_at(cl->pos)))
+            {
+                env.cloud[cloud_list[i]].decay =
+                        env.cloud[cloud_list[i]].decay / 2 - 20;
+            }
+        }
+    }
+
+    // Now give a ranged accuracy boost to nearby allies
+    for (monster_near_iterator mi(mon, LOS_NO_TRANS); mi; ++mi)
+    {
+        if (distance2(mon->pos(), mi->pos()) >= 33 || !mons_aligned(mon, *mi))
+            continue;
+
+        if (!mi->has_ench(ENCH_WIND_AIDED))
+            mi->add_ench(mon_enchant(ENCH_WIND_AIDED, 1, mon, 20));
+        else
+        {
+            mon_enchant aid = mi->get_ench(ENCH_WIND_AIDED);
+            aid.duration = 20;
+            mi->update_ench(aid);
+        }
+    }
 }

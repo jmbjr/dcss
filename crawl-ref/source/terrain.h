@@ -56,7 +56,6 @@ bool feat_is_metal(dungeon_feature_type feat);
 
 bool feat_is_stair(dungeon_feature_type feat);
 bool feat_is_travelable_stair(dungeon_feature_type feat);
-bool feat_is_escape_hatch(dungeon_feature_type feat);
 bool feat_is_gate(dungeon_feature_type feat);
 
 string feat_preposition(dungeon_feature_type feat, bool active = false,
@@ -77,16 +76,13 @@ bool feat_is_branchlike(dungeon_feature_type feat);
 bool feat_is_bidirectional_portal(dungeon_feature_type feat);
 bool feat_is_fountain(dungeon_feature_type feat);
 bool feat_is_reachable_past(dungeon_feature_type feat);
-void find_connected_identical(const coord_def& d, dungeon_feature_type ft,
-                              set<coord_def>& out);
-set<coord_def> connected_doors(const coord_def& d);
+void find_connected_identical(const coord_def& d, set<coord_def>& out);
 coord_def get_random_stair();
 
 bool slime_wall_neighbour(const coord_def& c);
 
 void get_door_description(int door_size, const char** adjective,
                           const char** noun);
-dungeon_feature_type grid_appearance(const coord_def &gc);
 bool feat_destroys_item(dungeon_feature_type feat, const item_def &item, bool noisy = false);
 bool feat_virtually_destroys_item(dungeon_feature_type feat, const item_def &item, bool noisy = false);
 
@@ -124,6 +120,7 @@ dungeon_feature_type dungeon_feature_by_name(const string &name);
 vector<string> dungeon_feature_matches(const string &name);
 const char *dungeon_feature_name(dungeon_feature_type rfeat);
 void nuke_wall(const coord_def& p);
+void set_terrain_changed(const coord_def c);
 bool cell_is_clingable(const coord_def pos);
 bool cell_can_cling_to(const coord_def& from, const coord_def to);
 bool is_boring_terrain(dungeon_feature_type feat);
@@ -132,5 +129,7 @@ void temp_change_terrain(coord_def pos, dungeon_feature_type newfeat, int dur,
                          terrain_change_type type = TERRAIN_CHANGE_GENERIC,
                          const monster* mon = NULL);
 bool revert_terrain_change(coord_def pos, terrain_change_type ctype);
+
+bool plant_forbidden_at(const coord_def &p, bool connectivity_only = false);
 
 #endif

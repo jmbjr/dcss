@@ -158,9 +158,9 @@ static armour_type _pick_wearable_armour(const armour_type arm)
         // Check for Horns 3 & Antennae 3 - Don't give a cap if those mutation
         // levels have been reached.
         if (you.mutation[MUT_HORNS] <= 2 || you.mutation[MUT_ANTENNAE] <= 2)
-          result = coinflip() ? ARM_CAP : ARM_WIZARD_HAT;
+            result = ARM_HAT;
         else
-          result = NUM_ARMOURS;
+            result = NUM_ARMOURS;
     }
 
     return result;
@@ -273,9 +273,6 @@ static armour_type _acquirement_armour_subtype(bool divine)
 
                 if (x_chance_in_y(you.skills[SK_ARMOUR], 150))
                     result = ARM_CRYSTAL_PLATE_ARMOUR;
-
-                if (one_chance_in(12))
-                    result = ARM_ANIMAL_SKIN;
             }
             else
             {
@@ -335,11 +332,7 @@ static armour_type _acquirement_armour_subtype(bool divine)
     return result;
 }
 
-// If armour acquirement turned up a non-ego non-artefact armour item,
-// see whether the player has any unfilled equipment slots.  If so,
-// hand out a plain (possibly enchanted) item of that
-// type.  Otherwise, keep the original armour.
-static bool _try_give_plain_armour(item_def &arm)
+static armour_type _pick_unseen_armour()
 {
     static const equipment_type armour_slots[] =
         {  EQ_SHIELD, EQ_CLOAK, EQ_HELMET, EQ_GLOVES, EQ_BOOTS  };
@@ -385,34 +378,20 @@ static bool _try_give_plain_armour(item_def &arm)
             picked = result;
     }
 
-    // All available secondary slots already filled.
-    if (picked == NUM_ARMOURS)
-        return false;
-
-    arm.clear();
-    arm.quantity = 1;
-    arm.base_type = OBJ_ARMOUR;
-    arm.sub_type = picked;
-    arm.plus = random2(5) - 2;
-
-    const int max_ench = armour_max_enchant(arm);
-    if (arm.plus > max_ench)
-        arm.plus = max_ench;
-    else if (arm.plus < -max_ench)
-        arm.plus = -max_ench;
-    item_colour(arm);
-
-    ASSERT(arm.is_valid());
-    return true;
+    return picked;
 }
 
 // Write results into arguments.
-static void _acquirement_determine_food(int& type_wanted, int& quantity,
-                                        const has_vector& already_has)
+static void _acquirement_determine_food(int& type_wanted, int& quantity)
 {
     // Food is a little less predictable now. - bwr
     if (you.species == SP_GHOUL)
-        type_wanted = one_chance_in(10) ? FOOD_ROYAL_JELLY : FOOD_CHUNK;
+    {
+        type_wanted = random_choose_weighted(4, FOOD_CHUNK,
+                                             2, FOOD_ROYAL_JELLY,
+                                             1, FOOD_AMBROSIA,
+                                             0);
+    }
     else if (you.species == SP_VAMPIRE)
     {
         // Vampires really don't want any OBJ_FOOD but OBJ_CORPSES
@@ -420,35 +399,25 @@ static void _acquirement_determine_food(int& type_wanted, int& quantity,
         // class type is set elsewhere
         type_wanted = POT_BLOOD;
     }
-    else if (you.religion == GOD_FEDHAS)
+    else if (you_worship(GOD_FEDHAS))
     {
         // Fedhas worshippers get fruit to use for growth and evolution
-        type_wanted = one_chance_in(3) ? FOOD_BANANA : FOOD_ORANGE;
+        type_wanted = random_choose(FOOD_BANANA, FOOD_ORANGE, FOOD_LEMON, -1);
     }
     else
     {
-        // Meat is better than bread (except for herbivores), and
-        // by choosing it as the default we don't have to worry
-        // about special cases for carnivorous races (e.g. kobolds)
-        type_wanted = FOOD_MEAT_RATION;
-
-        if (player_mutation_level(MUT_HERBIVOROUS))
-            type_wanted = FOOD_BREAD_RATION;
-
-        // If we have some regular rations, then we're probably more
-        // interested in faster foods (especially royal jelly)...
-        // otherwise the regular rations should be a good enough offer.
-        if (already_has[FOOD_MEAT_RATION]
-            + already_has[FOOD_BREAD_RATION] >= 2 || coinflip())
-        {
-            type_wanted = one_chance_in(5) ? FOOD_HONEYCOMB
-                : FOOD_ROYAL_JELLY;
-        }
+        type_wanted = random_choose_weighted(
+                        5, FOOD_ROYAL_JELLY,
+                        3, FOOD_AMBROSIA,
+                        1, player_mutation_level(MUT_HERBIVOROUS) ? FOOD_BREAD_RATION
+                                                                  : FOOD_MEAT_RATION,
+                        1, FOOD_HONEYCOMB,
+                        0);
     }
 
     quantity = 3 + random2(5);
 
-    if (type_wanted == FOOD_BANANA || type_wanted == FOOD_ORANGE)
+    if (type_wanted == FOOD_BANANA || type_wanted == FOOD_ORANGE || type_wanted == FOOD_LEMON)
         quantity = 8 + random2avg(15, 2);
     // giving more of the lower food value items
     else if (type_wanted == FOOD_HONEYCOMB || type_wanted == FOOD_CHUNK)
@@ -507,10 +476,6 @@ static int _acquirement_weapon_subtype(bool divine)
     // 0% or 100% in the above formula.  At skill 25 that's *3.5 .
     for (int i = 0; i < NUM_WEAPONS; ++i)
     {
-#if TAG_MAJOR_VERSION == 34
-        if (i == WPN_SPIKED_FLAIL)
-            continue;
-#endif
         int wskill = range_skill(OBJ_WEAPONS, i);
         if (wskill == SK_THROWING)
             wskill = weapon_skill(OBJ_WEAPONS, i);
@@ -528,7 +493,7 @@ static int _acquirement_weapon_subtype(bool divine)
         if (!acqweight)
             continue;
 
-        const bool two_handed = hands_reqd(item_considered, you.body_size()) == HANDS_TWO;
+        const bool two_handed = you.hands_reqd(item_considered) == HANDS_TWO;
 
         // For non-Trog/Okawaru acquirements, give a boost to high-end items.
         if (!divine && !is_range_weapon(item_considered))
@@ -603,6 +568,7 @@ static missile_type _acquirement_missile_subtype()
             vector<pair<missile_type, int> > missile_weights;
 
             missile_weights.push_back(make_pair(MI_DART, 100));
+            missile_weights.push_back(make_pair(MI_TOMAHAWK, 100));
 
             if (_have_item_with_types(OBJ_WEAPONS, WPN_BLOWGUN))
                 missile_weights.push_back(make_pair(MI_NEEDLE, 100));
@@ -707,10 +673,10 @@ static int _acquirement_misc_subtype()
     // Note: items listed early are less likely due to chances of being
     // overwritten.
     int result = random_range(MISC_FIRST_DECK, MISC_LAST_DECK);
+    if (result == MISC_DECK_OF_SUMMONING && coinflip())
+        result = MISC_SACK_OF_SPIDERS;
     if (result == MISC_DECK_OF_PUNISHMENT)
         result = MISC_BOX_OF_BEASTS;
-    if (one_chance_in(4))
-        result = MISC_BOTTLED_EFREET;
     if (one_chance_in(4) && !you.seen_misc[MISC_DISC_OF_STORMS])
         result = MISC_DISC_OF_STORMS;
     if (one_chance_in(4) && !you.seen_misc[MISC_LAMP_OF_FIRE])
@@ -746,8 +712,13 @@ static int _acquirement_wand_subtype()
         // First, weight according to usefulness.
         switch (type)
         {
-        case WAND_HASTING:          // each 17.9%, group unknown each 26.3%
         case WAND_HEAL_WOUNDS:
+            if (you.mutation[MUT_NO_DEVICE_HEAL])
+            {
+                w = 0;
+                break;
+            }
+        case WAND_HASTING:          // each 17.9%, group unknown each 26.3%
             w = 25; break;
         case WAND_TELEPORTATION:    // each 10.7%, group unknown each 17.6%
             w = 15; break;
@@ -821,8 +792,13 @@ static int _find_acquirement_subtype(object_class_type &class_wanted,
         switch (class_wanted)
         {
         case OBJ_FOOD:
+            // Clobber class_wanted for vampires.
+            if (you.species == SP_VAMPIRE)
+                class_wanted = OBJ_POTIONS;
+            // Deliberate fall-through
+        case OBJ_POTIONS: // Should only happen for vampires.
             // set type_wanted and quantity
-            _acquirement_determine_food(type_wanted, quantity, already_has);
+            _acquirement_determine_food(type_wanted, quantity);
             break;
 
         case OBJ_WEAPONS:    type_wanted = _acquirement_weapon_subtype(divine);  break;
@@ -889,7 +865,6 @@ static int _spell_weight(spell_type spell)
     int leveldiff = 5 - spell_difficulty(spell);
 
     return max(0, 2 * weight/count + leveldiff);
-
 }
 
 // When randomly picking a book for acquirement, use the sum of the
@@ -917,7 +892,7 @@ static int _book_weight(book_type book)
 
 static bool _is_magic_skill(int skill)
 {
-    return (skill >= SK_SPELLCASTING && skill < SK_INVOCATIONS);
+    return skill >= SK_SPELLCASTING && skill < SK_INVOCATIONS;
 }
 
 static bool _skill_useless_with_god(int skill)
@@ -925,19 +900,19 @@ static bool _skill_useless_with_god(int skill)
     switch (you.religion)
     {
     case GOD_TROG:
-        return (_is_magic_skill(skill) || skill == SK_INVOCATIONS);
+        return _is_magic_skill(skill) || skill == SK_INVOCATIONS;
     case GOD_ZIN:
     case GOD_SHINING_ONE:
     case GOD_ELYVILON:
-    case GOD_FEDHAS:
-        return (skill == SK_NECROMANCY);
+        return skill == SK_NECROMANCY;
     case GOD_XOM:
     case GOD_NEMELEX_XOBEH:
     case GOD_KIKUBAAQUDGHA:
     case GOD_VEHUMET:
     case GOD_ASHENZARI:
+    case GOD_JIYVA:
     case GOD_NO_GOD:
-        return (skill == SK_INVOCATIONS);
+        return skill == SK_INVOCATIONS;
     default:
         return false;
     }
@@ -969,17 +944,13 @@ static bool _do_book_acquirement(item_def &book, int agent)
             skill_type sk = static_cast<skill_type>(i);
             int weight = you.skills[sk];
 
-            // Anyone can get Spellcasting 1. Doesn't prove anything.
-            if (sk == SK_SPELLCASTING && weight >= 1)
-                weight--;
-
             if (_is_magic_skill(sk))
                 magic_weights += weight;
             else
                 other_weights += weight;
         }
 
-        if (you.religion == GOD_TROG)
+        if (you_worship(GOD_TROG))
             magic_weights = 0;
 
         // If someone has 25% or more magic skills, never give manuals.
@@ -1192,7 +1163,7 @@ static bool _is_armour_plain(const item_def &item)
         return false;
     }
 
-    return (get_armour_ego_type(item) == SPARM_NORMAL);
+    return get_armour_ego_type(item) == SPARM_NORMAL;
 }
 
 int acquirement_create_item(object_class_type class_wanted,
@@ -1209,12 +1180,9 @@ int acquirement_create_item(object_class_type class_wanted,
 #define MAX_ACQ_TRIES 40
     for (int item_tries = 0; item_tries < MAX_ACQ_TRIES; item_tries++)
     {
+        // This may clobber class_wanted (e.g. staves/rods, or vampire food)
         int type_wanted = _find_acquirement_subtype(class_wanted, quant,
                                                     divine, agent);
-
-        // Clobber class_wanted for vampires.
-        if (you.species == SP_VAMPIRE && class_wanted == OBJ_FOOD)
-            class_wanted = OBJ_POTIONS;
 
         // Don't generate randart books in items(), we do that
         // ourselves.
@@ -1283,14 +1251,13 @@ int acquirement_create_item(object_class_type class_wanted,
                  || get_armour_slot(doodad) == EQ_BODY_ARMOUR && coinflip())
                 && _armour_slot_seen((armour_type)doodad.sub_type))
             {
-                if (_try_give_plain_armour(doodad))
+                armour_type at = _pick_unseen_armour();
+                if (at != NUM_ARMOURS)
                 {
-                    origin_acquired(doodad, agent);
-                    // Only Xom gives negatively enchanted items (75% if not 0).
-                    if (doodad.plus < 0 && agent != GOD_XOM)
-                        doodad.plus = 0;
-                    else if (doodad.plus > 0 && agent == GOD_XOM && coinflip())
-                        doodad.plus *= -1;
+                    destroy_item(thing_created, true);
+                    thing_created = items(true, OBJ_ARMOUR, at, true,
+                               ITEM_LEVEL, MAKE_ITEM_RANDOM_RACE,
+                               0, 0, agent);
                 }
                 else if (agent != GOD_XOM && one_chance_in(3))
                 {
@@ -1398,7 +1365,7 @@ int acquirement_create_item(object_class_type class_wanted,
             init_stack_blood_potions(doodad);
 
         // Remove curse flag from item, unless worshipping Ashenzari.
-        if (you.religion == GOD_ASHENZARI)
+        if (you_worship(GOD_ASHENZARI))
             do_curse_item(doodad, true);
         else
             do_uncurse_item(doodad, false);
@@ -1446,79 +1413,11 @@ int acquirement_create_item(object_class_type class_wanted,
             }
         }
         else if (doodad.base_type == OBJ_WEAPONS
-                 && !is_unrandom_artefact(doodad))
+                 && !is_unrandom_artefact(doodad)
+                 && doodad.sub_type != WPN_BLOWGUN)
         {
-            // HACK: Make unwieldable weapons wieldable.
-            // Note: messing with fixed artefacts is probably very bad.
-            switch (you.species)
-            {
-            case SP_DEMONSPAWN:
-            case SP_MUMMY:
-            case SP_GHOUL:
-            case SP_VAMPIRE:
-            {
-                int brand = get_weapon_brand(doodad);
-                if (brand == SPWPN_HOLY_WRATH)
-                {
-                    if (is_random_artefact(doodad))
-                    {
-                        int tries = 10;
-                        // Keep resetting seed until it's good.
-                        for (; brand == SPWPN_HOLY_WRATH && --tries > 0;
-                             brand = get_weapon_brand(doodad))
-                        {
-                            make_item_randart(doodad);
-                        }
-
-                        if (tries == 0)
-                            set_item_ego_type(doodad, OBJ_WEAPONS, SPWPN_VORPAL);
-                    }
-                    else
-                        set_item_ego_type(doodad, OBJ_WEAPONS, SPWPN_VORPAL);
-                }
-                break;
-            }
-
-            case SP_HALFLING:
-            case SP_KOBOLD:
-            case SP_SPRIGGAN:
-                switch (doodad.sub_type)
-                {
-                case WPN_LONGBOW:
-                    doodad.sub_type = WPN_BOW;
-                    break;
-
-                case WPN_GREAT_SWORD:
-                case WPN_TRIPLE_SWORD:
-                    doodad.sub_type = (coinflip() ? WPN_FALCHION
-                                                  : WPN_LONG_SWORD);
-                    break;
-
-                case WPN_GREAT_MACE:
-                case WPN_DIRE_FLAIL:
-                    doodad.sub_type = (coinflip() ? WPN_MACE : WPN_FLAIL);
-                    break;
-
-                case WPN_BATTLEAXE:
-                case WPN_EXECUTIONERS_AXE:
-                    doodad.sub_type = (coinflip() ? WPN_HAND_AXE : WPN_WAR_AXE);
-                    break;
-
-                case WPN_HALBERD:
-                case WPN_GLAIVE:
-                case WPN_SCYTHE:
-                case WPN_BARDICHE:
-                    doodad.sub_type = (coinflip() ? WPN_SPEAR : WPN_TRIDENT);
-                    break;
-                }
-                break;
-
-            default:
-                break;
-            }
-
             // These can never get egos, and mundane versions are quite common, so
-            // guarantee artifact status.  Rarity is a bit low to compensate.
+            // guarantee artefact status.  Rarity is a bit low to compensate.
             if (is_giant_club_type(doodad.sub_type))
             {
                 if (!one_chance_in(25))
@@ -1581,8 +1480,8 @@ int acquirement_create_item(object_class_type class_wanted,
     // If a god wants to give you something but the floor doesn't want it,
     // it counts as a failed acquirement - no piety, etc cost.
     if (feat_destroys_item(grd(pos), mitm[thing_created])
-        && (agent > GOD_NO_GOD)
-        && (agent < NUM_GODS))
+        && agent > GOD_NO_GOD
+        && agent < NUM_GODS)
     {
         if (agent == GOD_XOM)
             simple_god_message(" snickers.", GOD_XOM);
@@ -1615,7 +1514,7 @@ bool acquirement(object_class_type class_wanted, int agent,
         bad_class.set(OBJ_STAVES);
         bad_class.set(OBJ_RODS);
     }
-    bad_class.set(OBJ_FOOD, you_foodless());
+    bad_class.set(OBJ_FOOD, you_foodless_normally() && !you_worship(GOD_FEDHAS));
 
     static struct { object_class_type type; const char* name; } acq_classes[] =
     {
@@ -1631,7 +1530,7 @@ bool acquirement(object_class_type class_wanted, int agent,
         { OBJ_MISSILES,   "Ammunition" },
     };
     ASSERT(acq_classes[7].type == OBJ_FOOD);
-    acq_classes[7].name = you.religion == GOD_FEDHAS ? "Fruit":
+    acq_classes[7].name = you_worship(GOD_FEDHAS) ? "Fruit":
                           you.species == SP_VAMPIRE  ? "Blood":
                                                        "Food";
 
@@ -1665,7 +1564,7 @@ bool acquirement(object_class_type class_wanted, int agent,
                 line.clear();
             }
         }
-        mpr("What kind of item would you like to acquire? (\\ to view known items)", MSGCH_PROMPT);
+        mprf(MSGCH_PROMPT, "What kind of item would you like to acquire? (\\ to view known items)");
 
         const int keyin = toalower(get_ch());
         if (keyin >= 'a' && keyin < 'a' + (int)ARRAYSZ(acq_classes))
@@ -1674,7 +1573,7 @@ bool acquirement(object_class_type class_wanted, int agent,
             check_item_knowledge(), redraw_screen();
         else
         {
-            // Lets wizards escape out of accidently choosing acquirement.
+            // Lets wizards escape out of accidentally choosing acquirement.
             if (agent == AQ_WIZMODE)
             {
                 canned_msg(MSG_OK);

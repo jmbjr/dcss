@@ -113,14 +113,20 @@ bool scramble(void);
 bool interrupt_cmd_repeat(activity_interrupt_type ai,
                           const activity_interrupt_data &at);
 
-bool bad_attack(const monster *mon, string& adj, string& suffix);
+bool bad_attack(const monster *mon, string& adj, string& suffix,
+                coord_def attack_pos = coord_def(0, 0),
+                bool check_landing_only = false);
+
 bool stop_attack_prompt(const monster* mon, bool beam_attack,
                         coord_def beam_target, bool autohit_first = false,
-                        bool *prompted = nullptr);
-bool stop_attack_prompt(targetter &hitfunc, string verb,
-                        bool (*affects)(const actor *victim) = 0);
+                        bool *prompted = nullptr,
+                        coord_def attack_pos = coord_def(0, 0),
+                        bool check_landing_only = false);
 
-bool is_orckind(const actor *act);
+bool stop_attack_prompt(targetter &hitfunc, const char* verb,
+                        bool (*affects)(const actor *victim) = 0,
+                        bool *prompted = nullptr);
+
 bool is_dragonkind(const actor *act);
 
 void swap_with_monster(monster *mon_to_swap);
@@ -196,7 +202,7 @@ struct position_node
 
     int total_dist() const
     {
-        return (estimate + path_distance);
+        return estimate + path_distance;
     }
 };
 
@@ -205,11 +211,9 @@ struct path_less
     bool operator()(const set<position_node>::iterator & left,
                     const set<position_node>::iterator & right)
     {
-        return (left->total_dist() > right->total_dist());
+        return left->total_dist() > right->total_dist();
     }
-
 };
-
 
 template<typename cost_T, typename est_T>
 struct simple_connect
@@ -229,7 +233,7 @@ struct simple_connect
     void operator()(const position_node & node,
                     vector<position_node> & expansion)
     {
-        random_shuffle(compass_idx, compass_idx + connect);
+        shuffle_array(compass_idx, connect);
 
         for (int i=0; i < connect; i++)
         {
@@ -264,7 +268,6 @@ struct coord_wrapper
 
     coord_wrapper()
     {
-
     }
 };
 
@@ -281,7 +284,6 @@ void search_astar(position_node & start,
 
     set<position_node>::iterator current = visited.insert(start).first;
     fringe.push(current);
-
 
     bool done = false;
     while (!fringe.empty())

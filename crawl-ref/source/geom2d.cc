@@ -13,7 +13,7 @@ namespace geom
 
 static bool double_is_zero(double d)
 {
-    return (abs(d) < 0.0000001);
+    return abs(d) < 0.0000001;
 }
 
 // Is v parallel to the kernel of f?
@@ -24,7 +24,7 @@ bool parallel(const vector &v, const form &f)
 
 vector ray::shoot(double t) const
 {
-    return (start + t*dir);
+    return start + t*dir;
 }
 
 void ray::advance(double t)
@@ -46,7 +46,7 @@ double intersect(const ray &r, const line &l)
 
 double lineseq::index(const vector &v) const
 {
-    return ((f(v) - offset) / dist);
+    return (f(v) - offset) / dist;
 }
 
 // Find the next intersection of r with a line in ls.
@@ -86,7 +86,7 @@ bool ray::to_grid(const grid &g, bool half)
         corner = double_is_zero(r - s);
     }
     advance(half ? 0.5 * t : t);
-    return (corner && !half);
+    return corner && !half;
 }
 
 // Shoot the ray inside the next cell, stopping at corners.
@@ -102,10 +102,8 @@ bool ray::to_next_cell(const grid &g)
 vector reflect(const vector &v, const form &f)
 {
     vector normal = vector(f.a, f.b);
-    return (v - 2 * f(v)/f(normal) * normal);
+    return v - 2 * f(v)/f(normal) * normal;
 }
-
-
 
 //////////////////////////////////////////////////
 // vector space implementation
@@ -126,17 +124,17 @@ vector vector::operator+(const vector &v) const
 
 vector vector::operator-() const
 {
-    return ((-1) * (*this));
+    return (-1) * (*this);
 }
 
 const vector& vector::operator-=(const vector &v)
 {
-    return (*this += -v);
+    return *this += -v;
 }
 
 vector vector::operator-(const vector &v) const
 {
-    return (*this + (-v));
+    return *this + (-v);
 }
 
 vector operator*(double t, const vector &v)
@@ -146,21 +144,7 @@ vector operator*(double t, const vector &v)
 
 double form::operator()(const vector& v) const
 {
-    return (a*v.x + b*v.y);
-}
-
-double degrees(const vector &v)
-{
-    if (v.x == 0)
-        return (v.y > 0 ? 90.0 : -90.0);
-    double rad = v.x > 0 ? atan(v.y/v.x) : M_PI + atan(v.y/v.x);
-    return (180.0 / M_PI * rad);
-}
-
-vector degree_to_vector(double d)
-{
-    double rad = d / 180.0 * M_PI;
-    return vector(cos(rad), sin(rad));
+    return a*v.x + b*v.y;
 }
 
 }

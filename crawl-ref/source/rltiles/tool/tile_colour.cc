@@ -14,12 +14,12 @@ tile_colour tile_colour::black(0, 0, 0, 255);
 
 bool tile_colour::operator==(const tile_colour &rhs) const
 {
-    return (r == rhs.r && g == rhs.g && b == rhs.b && a == rhs.a);
+    return r == rhs.r && g == rhs.g && b == rhs.b && a == rhs.a;
 }
 
 bool tile_colour::operator!=(const tile_colour &rhs) const
 {
-    return (r != rhs.r || g != rhs.g || b != rhs.b || a != rhs.a);
+    return r != rhs.r || g != rhs.g || b != rhs.b || a != rhs.a;
 }
 
 const tile_colour &tile_colour::operator=(const tile_colour &rhs)
@@ -159,7 +159,7 @@ void tile_colour::desaturate()
 
 float tile_colour::get_lum() const
 {
-    return ((get_min_rgb() + get_max_rgb()) / (255 * 2.0f));
+    return (get_min_rgb() + get_max_rgb()) / (255 * 2.0f);
 }
 
 float tile_colour::get_sat() const
@@ -222,7 +222,7 @@ void tile_colour::change_lum(int lum_percent)
 
     if (min_rgb == max_rgb)
     {
-        int rgb_change = (lum_percent * 255) / 100;
+        int rgb_change = lum_percent * 255 / 100;
 
         min_rgb += rgb_change;
         max_rgb += rgb_change;

@@ -18,9 +18,9 @@
 // Add a monster to the list of fearmongers.
 bool player::add_fearmonger(const monster* mon)
 {
-    if (is_sanctuary(you.pos()))
+    if (is_sanctuary(pos()))
     {
-        if (you.can_see(mon))
+        if (can_see(mon))
         {
             mprf("%s's aura of fear is muted, and has no effect on you.",
                  mon->name(DESC_THE).c_str());
@@ -33,14 +33,14 @@ bool player::add_fearmonger(const monster* mon)
 
     if (!duration[DUR_AFRAID])
     {
-        you.set_duration(DUR_AFRAID, 7, 12);
+        set_duration(DUR_AFRAID, 7, 12);
         fearmongers.push_back(mon->mindex());
         mprf(MSGCH_WARN, "You are terrified of %s!",
                          mon->name(DESC_THE).c_str());
     }
     else
     {
-        you.increase_duration(DUR_AFRAID, 5, 12);
+        increase_duration(DUR_AFRAID, 5, 12);
         if (!afraid_of(mon))
             fearmongers.push_back(mon->mindex());
     }
@@ -52,7 +52,7 @@ bool player::add_fearmonger(const monster* mon)
 bool player::afraid() const
 {
     ASSERT(duration[DUR_AFRAID] > 0 == !fearmongers.empty());
-    return (duration[DUR_AFRAID] > 0);
+    return duration[DUR_AFRAID] > 0;
 }
 
 // Whether player is afraid of the given monster.
@@ -115,7 +115,7 @@ void player::fearmongers_check_noise(int loudness, bool axe)
 
     if (loudness >= 20 && beheld())
     {
-        mprf("For a moment, your terror fades away!");
+        mpr("For a moment, your terror fades away!");
         clear_fearmongers();
         _removed_fearmonger();
     }
@@ -139,6 +139,11 @@ void player::update_fearmongers()
         {
             fearmongers.erase(fearmongers.begin() + i);
             removed = true;
+
+            // If that was the last one, clear the duration before
+            // printing any subsequent messages, or a --more-- can
+            // crash (#6547).
+            _removed_fearmonger(true);
             _removed_fearmonger_msg(mon);
         }
     }
@@ -163,13 +168,13 @@ void player::update_fearmonger(const monster* mon)
 
 // Helper function that resets the duration and messages if the player
 // is no longer afraid.
-void player::_removed_fearmonger()
+void player::_removed_fearmonger(bool quiet)
 {
     if (fearmongers.empty())
     {
         duration[DUR_AFRAID] = 0;
-        mpr("You are no longer terrified.",
-            MSGCH_DURATION);
+        if (!quiet)
+            mprf(MSGCH_DURATION, "You are no longer terrified.");
     }
 }
 
@@ -180,12 +185,13 @@ bool player::_possible_fearmonger(const monster* mon) const
     if (crawl_state.game_is_arena())
         return false;
 
-    return (mon->alive()
-         && !silenced(pos()) && !silenced(mon->pos())
-         && see_cell(mon->pos()) && mon->see_cell(pos())
-         && !mon->submerged() && !mon->confused()
-         && !mon->asleep() && !mon->cannot_move()
-         && !mon->wont_attack() && !mon->pacified()
-         && !mon->berserk() && !mons_is_fleeing(mon)
-         && !is_sanctuary(you.pos()));
+    return mon->alive()
+        && !silenced(pos()) && !silenced(mon->pos())
+        && see_cell(mon->pos()) && mon->see_cell(pos())
+        && !mon->submerged() && !mon->confused()
+        && !mon->asleep() && !mon->cannot_move()
+        && !mon->wont_attack() && !mon->pacified()
+        && !mon->berserk_or_insane()
+        && !mons_is_fleeing(mon)
+        && !is_sanctuary(pos());
 }

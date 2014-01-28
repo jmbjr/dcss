@@ -29,7 +29,6 @@
  #include "tilefont.h"
  #include "tilereg-crt.h"
  #include "tilereg-menu.h"
- #include "tilereg-popup.h"
 #endif
 #ifdef USE_TILE
  #include "mon-stuff.h"
@@ -246,6 +245,21 @@ void Menu::set_flags(int new_flags, bool use_options)
 void Menu::set_more(const formatted_string &fs)
 {
     more = fs;
+}
+
+void Menu::set_more()
+{
+    set_more(formatted_string::parse_string(
+#ifdef USE_TILE_LOCAL
+        "<cyan>[ <w>+</w>, <w>></w>, <w>Space</w> or <w>L-click</w>: Page down."
+        "   <w>-</w> or <w><<</w>: Page up."
+        "   <w>Esc</w> or <w>R-click</w> exits.]"
+#else
+        "<cyan>[ <w>+</w>, <w>></w> or <w>Space</w>: Page down."
+        "   <w>-</w> or <w><<</w>: Page up."
+        "                       <w>Esc</w> exits.]"
+#endif
+    ));
 }
 
 void Menu::set_highlighter(MenuHighlighter *mh)
@@ -481,7 +495,7 @@ bool Menu::process_key(int keyin)
         textcolor(WHITE);
         cprintf("Select what? (regex) ");
         textcolor(LIGHTGREY);
-        bool validline = !cancelable_get_line(linebuf, sizeof linebuf);
+        bool validline = !cancellable_get_line(linebuf, sizeof linebuf);
         if (validline && linebuf[0])
         {
             text_pattern tpat(linebuf, true);
@@ -891,7 +905,6 @@ FeatureMenuEntry::FeatureMenuEntry(const string &str,
     quantity = 1;
 }
 
-
 #ifdef USE_TILE
 PlayerMenuEntry::PlayerMenuEntry(const string &str) :
     MenuEntry(str, MEL_ITEM, 1)
@@ -1282,7 +1295,7 @@ int Menu::item_colour(int, const MenuEntry *entry) const
     if (highlighter)
         icol = highlighter->entry_colour(entry);
 
-    return (icol == -1 ? entry->colour : icol);
+    return icol == -1 ? entry->colour : icol;
 }
 
 void Menu::draw_title()
@@ -1335,7 +1348,7 @@ void Menu::write_title()
 
 bool Menu::in_page(int index) const
 {
-    return (index >= first_entry && index < first_entry + pagesize);
+    return index >= first_entry && index < first_entry + pagesize;
 }
 
 void Menu::draw_item(int index) const
@@ -1638,7 +1651,7 @@ void Menu::webtiles_update_section_boundaries()
     {
         _webtiles_section_start = first_entry;
         while (_webtiles_section_start > 0
-               && items[_webtiles_section_start]->level != MEL_TITLE)
+               && items[_webtiles_section_start - 1]->level != MEL_TITLE)
         {
             _webtiles_section_start--;
         }
@@ -1675,15 +1688,15 @@ int menu_colour(const string &text, const string &prefix, const string &tag)
 
 int MenuHighlighter::entry_colour(const MenuEntry *entry) const
 {
-    return (entry->colour != MENU_ITEM_STOCK_COLOUR ? entry->colour
-            : entry->highlight_colour());
+    return entry->colour != MENU_ITEM_STOCK_COLOUR ? entry->colour
+           : entry->highlight_colour();
 }
 
 ///////////////////////////////////////////////////////////////////////
 // column_composer
 
 column_composer::column_composer(int cols, ...)
-    : ncols(cols), pagesize(0), columns()
+    : pagesize(0), columns()
 {
     ASSERT(cols > 0);
 
@@ -1897,13 +1910,10 @@ string get_linebreak_string(const string& s, int maxcol)
 
 bool formatted_scroller::jump_to(int i)
 {
-    if (i == first_entry + 1)
+    if (i == first_entry)
         return false;
 
-    if (i == 0)
-        first_entry = 0;
-    else
-        first_entry = i - 1;
+    first_entry = i;
 
 #ifdef USE_TILE_WEB
     webtiles_update_section_boundaries();
@@ -1936,7 +1946,7 @@ bool formatted_scroller::page_down()
             break;
     }
     first_entry = target;
-    return (old_first != first_entry);
+    return old_first != first_entry;
 }
 
 bool formatted_scroller::page_up()
@@ -1958,7 +1968,7 @@ bool formatted_scroller::page_up()
         --first_entry;
     }
 
-    return (old_first != first_entry);
+    return old_first != first_entry;
 }
 
 bool formatted_scroller::line_down()
@@ -2392,11 +2402,11 @@ MenuObject* PrecisionMenu::_find_object_by_direction(const MenuObject* start,
         aabb_start.x = start->get_min_coord().x;
         aabb_end.x = start->get_max_coord().x;
         aabb_start.y = start->get_max_coord().y;
-        // we choose an arbitarily large number here, because
+        // we choose an arbitrarily large number here, because
         // tiles saves entry coordinates in pixels, yet console saves them
         // in characters
-        // basicly, we want the AABB to be large enough to extend to the bottom
-        // of the screen in every possible resolution
+        // basically, we want the AABB to be large enough to extend to the
+        // bottom of the screen in every possible resolution
         aabb_end.y = 32767;
         break;
     case LEFT:
@@ -2651,7 +2661,6 @@ COLORS MenuItem::get_highlight_colour() const
     return m_highlight_colour;
 }
 
-
 void MenuItem::set_bg_colour(COLORS colour)
 {
     m_bg_colour = colour;
@@ -2814,7 +2823,8 @@ void TextItem::render()
         cgotoxy(m_min_coord.x, m_min_coord.y + i);
         textcolor(m_fg_colour);
         textbackground(m_bg_colour);
-        cprintf("%s", m_render_text.substr(newline_pos, endline_pos).c_str());
+        cprintf("%s", m_render_text.substr(newline_pos,
+                endline_pos - newline_pos).c_str());
         if (endline_pos != string::npos)
             newline_pos = endline_pos + 1;
         else
@@ -2867,7 +2877,7 @@ void TextItem::_wrap_text()
     if (num_linebreaks > max_lines)
     {
         size_t pos = 0;
-        // find the max_line'th occurence of '\n'
+        // find the max_line'th occurrence of '\n'
         for (int i = 0; i < max_lines; ++i)
             pos = m_render_text.find('\n', pos);
 
@@ -2989,7 +2999,6 @@ void TextTileItem::render()
                        m_min_coord.x + tile_offset,
                        m_min_coord.y + get_vertical_offset());
 
-
         m_dirty = false;
     }
 
@@ -3094,8 +3103,6 @@ void SaveMenuItem::_pack_doll()
     }
 }
 #endif
-
-
 
 MenuObject::MenuObject() : m_dirty(false), m_allow_focus(true), m_min_coord(0,0),
                            m_max_coord(0,0)
@@ -3252,8 +3259,6 @@ bool MenuObject::is_visible() const
     return m_visible;
 }
 
-
-
 MenuFreeform::MenuFreeform(): m_active_item(NULL), m_default_item(NULL)
 {
 }
@@ -3317,7 +3322,6 @@ MenuObject::InputReturnValue MenuFreeform::process_input(int key)
             set_active_item(m_default_item);
             return MenuObject::INPUT_ACTIVE_CHANGED;
         }
-
 
     MenuItem* find_entry = NULL;
     switch (key)
@@ -3650,11 +3654,11 @@ MenuItem* MenuFreeform::_find_item_by_direction(const MenuItem* start,
         aabb_start.x = start->get_min_coord().x;
         aabb_end.x = start->get_max_coord().x;
         aabb_start.y = start->get_max_coord().y;
-        // we choose an arbitarily large number here, because
+        // we choose an arbitrarily large number here, because
         // tiles saves entry coordinates in pixels, yet console saves them
         // in characters
-        // basicly, we want the AABB to be large enough to extend to the bottom
-        // of the screen in every possible resolution
+        // basically, we want the AABB to be large enough to extend to the
+        // bottom of the screen in every possible resolution
         aabb_end.y = 32767;
         break;
     case LEFT:
@@ -4290,7 +4294,6 @@ void MenuDescriptor::_place_items()
         textcolor(LIGHTGRAY);
 #endif
 
-
         if (tmp == NULL)
              m_desc_item.set_text("");
         else
@@ -4313,8 +4316,6 @@ vector<MenuItem*> BoxMenuHighlighter::get_selected_items()
     vector<MenuItem*> ret_val;
     return ret_val;
 }
-
-
 
 MenuObject::InputReturnValue BoxMenuHighlighter::process_input(int key)
 {
@@ -4378,7 +4379,6 @@ void BoxMenuHighlighter::_place_items()
 #endif
     m_active_item = tmp;
 }
-
 
 BlackWhiteHighlighter::BlackWhiteHighlighter(PrecisionMenu* parent):
     BoxMenuHighlighter(parent)

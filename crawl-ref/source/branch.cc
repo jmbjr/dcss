@@ -2,13 +2,12 @@
 
 #include "branch.h"
 #include "externs.h"
-#include "files.h"
 #include "player.h"
-#include "traps.h"
 #include "travel.h"
 #include "branch-data.h"
 
-FixedVector<int, NUM_BRANCHES> startdepth, brdepth;
+FixedVector<level_id, NUM_BRANCHES> brentry;
+FixedVector<int, NUM_BRANCHES> brdepth;
 branch_type root_branch;
 
 const Branch& your_branch()
@@ -32,15 +31,15 @@ level_id current_level_parent()
 
 bool is_hell_subbranch(branch_type branch)
 {
-    return (branch >= BRANCH_FIRST_HELL
-            && branch <= BRANCH_LAST_HELL
-            && branch != BRANCH_VESTIBULE_OF_HELL);
+    return branch >= BRANCH_FIRST_HELL
+           && branch <= BRANCH_LAST_HELL
+           && branch != BRANCH_VESTIBULE;
 }
 
 bool is_random_subbranch(branch_type branch)
 {
     return (parent_branch(branch) == BRANCH_LAIR
-            && branch != BRANCH_SLIME_PITS)
+            && branch != BRANCH_SLIME)
            || branch == BRANCH_CRYPT
            || branch == BRANCH_FOREST;
 }
@@ -78,16 +77,16 @@ branch_type get_branch_at(const coord_def& pos)
 bool branch_is_unfinished(branch_type branch)
 {
 #if TAG_MAJOR_VERSION == 34
-    if (branch == BRANCH_UNUSED)
+    if (branch == BRANCH_DWARF)
         return true;
 #endif
-    return branch == BRANCH_DWARVEN_HALL;
+    return false;
 }
 
 branch_type parent_branch(branch_type branch)
 {
-    if (branch == BRANCH_TOMB && startdepth[BRANCH_CRYPT] == -1)
-        return BRANCH_FOREST;
-
+    if (brentry[branch].is_valid())
+        return brentry[branch].branch;
+    // If it's not in the game, use the default parent.
     return branches[branch].parent_branch;
 }

@@ -36,27 +36,21 @@ function sewer_portal(e)
   e.lua_marker('O',
       timed_marker {
         disappear = "The drain falls to bits.",
-        desc = "glowing drain",
         entity = 'drain',
-        dst = "Sewer",
-        overview = "glowing drain",
         turns = timeout_turns,
         floor = "expired_portal",
         feat_tile = "dngn_portal_sewer_rusted",
         msg = messager })
   e.tags("uniq_sewer no_monster_gen chance_sewer")
-  e.chance("8%")
-  e.kfeat("O = enter_portal_vault")
+  e.chance(800)
+  e.kfeat("O = enter_sewer")
   e.kfeat("1 = W")
-  e.colour("O = lightgreen")
   e.colour("1W = lightgreen / cyan w:5")
   e.colour("w = green")
-  e.tile("O = dngn_portal_sewer")
 end
 
 function sewer_setup(e)
-  e.kfeat("< = exit_portal_vault")
-  e.colour("< = darkgrey")
+  e.kfeat("< = exit_sewer")
   e.colour("w = green")
   e.colour("W = lightgreen")
 end
@@ -206,18 +200,18 @@ KMONS:  1 = rat / grey rat / green rat w:5 / giant centipede w:5 / \
             giant cockroach / giant mite / giant gecko / worm w:5 / nothing
 NSUBST: - = 8:1 / *:W
 MAP
-.xxx....xxx.
+ xxx    xxx
 xx-xxxxxx-xx
 x----------x
 x---xxxx---x
 xx-xx--xx-xx
-.x-x--O-x-x.
-.x-x----x-x.
+ x-x--O-x-x
+ x-x----x-x
 xx-xx--xx-xx
 x---x--x---x
 x---x------x
 xx-xxxxxx-xx
-.x@x....xxx.
+ x@x    xxx
 ENDMAP
 
 NAME:   gup_sewer_entry_bowl
@@ -774,7 +768,7 @@ ITEM:     potion of flight w:50 / potion of invisibility / \
           potion of might w:3 / potion of agility w:4 / \
           potion of brilliance w:3 / nothing
 #       possibly rather generous loot, if you get to the center
-ITEM:     scroll of vulnerability / scroll of identify / wizard hat / \
+ITEM:     scroll of vulnerability / scroll of identify / hat / \
           potion of magic / potion of brilliance / potion of resistance
 ITEM:     scroll of identify / scroll of recharging / potion of invisibility / \
           pair of gloves w:5 / pair of boots w:5 / potion of agility / nothing
@@ -785,7 +779,7 @@ KITEM:    ' = scroll of random uselessness w:30 / \
               scroll of identify / scroll of teleportation / \
               potion of confusion w:50 / potion of paralysis w:50 / \
               potion of mutation / potion of flight / \
-              wizard hat / buckler / pair of gloves w:5 / pair of boots w:5
+              hat / buckler / pair of gloves w:5 / pair of boots w:5
 MAP
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 xwwwwwwwwwwwWWW-WW-W--WWWWW-WWW--W--WW-WW-WW-W-WWwwwwwwwwwwwx
@@ -1209,4 +1203,158 @@ xxxxxwwwwwwwwwwwwwwwwwwwwwwxxxxxX..PB.2.Xxxx
 xxxxxYwwwwwwwwwwwwwwwwwwwwYxxxxxX.2..e..Xxxx
 xxxxxxYwwwwwwYYYYwwwYYYwwYxxxxxxxX.....Xxxxx
 xxxxxxxYYYxYYxxxxYYYxxxYYxxxxxxxxxxXXXxxxxxx
+ENDMAP
+
+################################################################################
+# A Prince Ribbit Lair by badplayer.
+#
+NAME: sewer_ribbit_badplayer
+ORIENT:  encompass
+TAGS:   no_item_gen no_monster_gen no_pool_fixup
+KMONS:   1 = adder w:20 / ball python w:80
+KMONS:   2 = Giant Frog
+KMONS:   3 = Prince Ribbit, Blink Frog
+KFEAT:   1 = '
+KFEAT:   23 = W
+KPROP:   "' = no_tele_into
+NSUBST:  1 = 8=1 / *='
+NSUBST:  2 = 2=2 / *=x
+COLOUR:  23 = lightgreen
+KITEM:   ? = potion of curing / potion of heal wounds / potion of might /\
+         potion of magic / potion of speed w:5 / potion of brilliance w:5
+KITEM:   ! =  scroll of teleportation / scroll of fear w:5 /\
+         scroll of blinking w:3 / scroll of magic mapping w:3 /\
+         scroll of recharging w:2 / scroll of fog w:3
+SUBST:    ' = wW, " = .wW, ` = .W
+SUBST:    $ = !?*
+: sewer_setup(_G)
+MAP
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+xxxxxxxxxxxxxxxxxx'''''111111xx
+xxxxxxxxx2````+.........111111x
+xxxxxx2```````+..........11111x
+xxxxx`````xxxxxxxx.......11111x
+xxxxx```xxx````xxxxx......111xx
+xxxxx``xx````xxWxxxx...."""11xx
+xxxxx``x$$$`xxWWWxxx.....""11xx
+xxxx2``x$$$xxWWWWWxxx....""1xxx
+xxx````x$$xxWWW3WWWxx...."11xxx
+xxx```xx$xxWWWWWWWWWxx""".1xxxx
+xxx``xxxxxWWWWWWWWWWWxx"".1xxxx
+xxx``xxxxWWWWWWWWWWWWWx"".1xxxx
+xxx``xxxxxxx+xxxxx+xxxx"".1xxxx
+xxx``````xww.......wwx""".1xxxx
+xxx2`````xww.......wwxx""<xxxxx
+xxxxxx2``xww...<...wwxx"A"xxxxx
+xxxxxxx``xww.......wwxxxxxxxxxx
+xxxxxxx``xxww.....wwxxxxxxxxxxx
+xxxxxxx```xxxx++xxxxxxxxxxxxxxx
+xxxxxxx2``````""xxxxxxxxxxxxxxx
+xxxxxxxxx'''''''xxxxxxxxxxxxxxx
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+ENDMAP
+
+NAME:   sewer_kobold_necro_badplayer
+TAGS:   no_item_gen no_monster_gen no_pool_fixup
+ORIENT: encompass
+WEIGHT: 3
+KMONS:  1  = rat w:80 / grey rat w:20
+KMONS:  4  = rat w:75 / grey rat w:15 / green rat w:8 / orange rat w:2
+KMONS:  23 = big kobold spells:animate_dead name:necromancer n_suf \
+             col:white ; dagger | club . robe
+: dgn.delayed_decay(_G, '%', 'rat skeleton w:40 / rat corpse w:20 /' ..
+:    'rotting rat corpse w:20 / grey rat skeleton w:10 /' ..
+:    'grey rat corpse w:5 / rotting grey rat corpse w:5')
+: dgn.delayed_decay(_G, '^', 'rat skeleton w:16 / rat corpse w:8 /' ..
+:    'rotting rat corpse w:8 / grey rat skeleton w:24 /' ..
+:    'grey rat corpse w:12 / rotting grey rat corpse w:12 /' ..
+:    'green rat skeleton w:10 / green rat corpse w:5 /' ..
+:    'rotting green rat corpse w:5')
+: dgn.delayed_decay(_G, '&', 'grey rat skeleton w:36 /' ..
+:    'grey rat corpse w:18 / rotting grey rat corpse w:18 /' ..
+:    'green rat skeleton w:24 / green rat corpse w:12 /' ..
+:    'rotting green rat corpse w:12 / orange rat skeleton w:2 /' ..
+:    'orange rat corpse w:1 / rotting orange rat corpse w:1')
+KITEM:  ?  = potion of curing / potion of heal wounds / potion of might /\
+             potion of magic / potion of speed w:5 /\
+             potion of brilliance w:5
+KFEAT:  1 = '
+KFEAT:  3 = ~
+KFEAT:  & = .
+KPROP:  # = no_tele_into
+NSUBST: 1 = 3=1 / *=' , 2 = 1=2 / *='
+NSUBST: a = 1=+ / *=x , b = 1=+ / *=x
+NSUBST: { = 1=< / *=~
+NSUBST: % = 2=% / *=. , ^ = 5=^ / *='
+NSUBST: 3 = 2:3 / 1:3~ / *:~
+NSUBST: & = 4:* / 4:? / 8:& / 4:4 / 2:4. / *:.
+SUBST:  ' = W.. , ~ = wx , # = Wwx
+: sewer_setup(_G)
+MAP
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+x###############################x
+x##3~~~~~~~~~~~~{~~~~~~~~~~~~3##x
+x##~&&&&&&&&&&&&&&&&&&&&&&&&&~##x
+x##~&&&&&&&&&&&&&&&&&&&&&&&&&~##x
+x##~&&&&&&&&&&&&&&&&&&&&&&&&&~##x
+x##~&&&&&&bbbbbbbbbbbbb&&&&&&~##x
+x##~&&&&bbb^^^^^2^^^^^bbb&&&&~##x
+x#~~&&&bb^^^^^^^^^^^^^^^bb&&&~~#x
+x#~&&&&b^^^^^aaaaaaa^^^^^b&&&&~#x
+x#~&&&&b^^^aaa11111aaa^^^b&&&&~#x
+x#~&&&&b^^aa1%%%%%%%1aa^^b&&&&~#x
+x#{&&&&b^^a1%%%%%%%%%1a^^b&&&&{#x
+x#~&&&&b2^a1%%%%%%%%%1a^2b&&&&~#x
+x#~&&&&b^^aa1%%<%%%%1aa^^b&&&&~#x
+x#~&&&&b^^^aaa'A%%'aaa^^^b&&&&~#x
+x#~~&&&bb^^^^aaaaaaa^^^^bb&&&~~#x
+x##~&&&&bb^^^^^^^^^^^^^bb&&&&~##x
+x##~&&&&&bb^^^^^2^^^^^bb&&&&&~##x
+x##~&&&&&&bbbbbbbbbbbbb&&&&&&~##x
+x##~~&&&&&&&&&&&&&&&&&&&&&&&~~##x
+x##~~&&&&&&&&&&&&&&&&&&&&&&&~~##x
+x##~3&&&&&&&&&&&&&&&&&&&&&&&3~##x
+x###~~~~~~~~~~~~{~~~~~~~~~~~~###x
+x###############################x
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+ENDMAP
+
+NAME:   sewer_ratzerg_badplayer
+TAGS:   no_item_gen no_monster_gen no_pool_fixup
+ORIENT: encompass
+KFEAT: bcd = . w:1 / W w:9
+: local rnd = crawl.random2(3)
+: if rnd == 0 then
+KMONS: bcd = rat w:40 / grey rat w:1 / nothing w:59
+: elseif rnd == 1 then
+KMONS: bcd = ball python w:40 / adder w:1 / nothing w:59
+: else
+KMONS: bcd = giant newt w:40 / giant gecko w:1 / nothing w:59
+: end
+KITEM: $ = potion of might / potion of berserk rage /\
+           potion of agility / potion of magic /\
+           potion of brilliance / potion of speed w:5
+COLOUR: bcd = lightgreen
+SUBST: ^ = .:10 W:2, ! = .:5 W:5
+NSUBST: cbd = 5:$
+: sewer_setup(_G)
+MAP
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+xddddd!xxxx^^^^^^^xxxx!bbbbbx
+xddddd!!!^^^.....^^^!!!bbbbbx
+xddddd!!!^^^..A<.^^^!!!bbbbbx
+xddddd!!!^^^.....^^^!!!bbbbbx
+xddddd!xxxx^^^^^^^xxxx!bbbbbx
+xxxxxxxxxxxxx^^^xxxxxxxxxxxxx
+xxxxxxxxxxxxx^^^xxxxxxxxxxxxx
+xxxxxxxxxxxxx^^^xxxxxxxxxxxxx
+xxxxxxxxxxxxx!!!xxxxxxxxxxxxx
+xxxxxxxxxxxxx!!!xxxxxxxxxxxxx
+xxxxxxxxxxxx!!!!!xxxxxxxxxxxx
+xxxxxxxxxxxxcccccxxxxxxxxxxxx
+xxxxxxxxxxxxcccccxxxxxxxxxxxx
+xxxxxxxxxxxxcccccxxxxxxxxxxxx
+xxxxxxxxxxxxcccccxxxxxxxxxxxx
+xxxxxxxxxxxxcccccxxxxxxxxxxxx
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 ENDMAP

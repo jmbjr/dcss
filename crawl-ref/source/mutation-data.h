@@ -29,30 +29,33 @@
   "tough skin"
 },
 
-{ MUT_STRONG,                         8, 14, false,  true, false,
-  NULL,
+{ MUT_STRONG,                         7, 2, false,  true, false,
+  "strong",
 
-  {"Your muscles are strong (Str +", "", ""},
+  {"Your muscles are strong. (Str +2)",
+   "Your muscles are very strong. (Str +4)", ""},
   {"", "", ""},
   {"", "", ""},
 
   "strong"
 },
 
-{ MUT_CLEVER,                         8, 14, false,  true, false,
-  NULL,
+{ MUT_CLEVER,                         7, 2, false,  true, false,
+  "clever",
 
-  {"Your mind is acute (Int +", "", ""},
+  {"Your mind is acute. (Int +2)",
+   "Your mind is very acute. (Int +4)", ""},
   {"", "", ""},
   {"", "", ""},
 
   "clever"
 },
 
-{ MUT_AGILE,                          8, 14, false,  true, false,
-  NULL,
+{ MUT_AGILE,                          7, 2, false,  true, false,
+  "agile",
 
-  {"You are agile (Dex +", "", ""},
+  {"You are agile. (Dex +2)",
+   "You are very agile. (Dex +4)", ""},
   {"", "", ""},
   {"", "", ""},
 
@@ -190,17 +193,17 @@
 { MUT_SLOW_HEALING,                   3,  3,  true, false, false,
   "slow healing",
 
-  {"You heal slowly.",
-   "You heal very slowly.",
+  {"You heal slowly when monsters are visible.",
+   "You do not heal naturally when monsters are visible.",
    "You do not heal naturally."},
 
-  {"You begin to heal more slowly.",
-   "You begin to heal more slowly.",
+  {"Your natural healing is weakened.",
+   "Your natural healing is weakened.",
    "You stop healing."},
 
-  {"Your rate of healing increases.",
-   "Your rate of healing increases.",
-   "Your rate of healing increases."},
+  {"Your natural healing is strengthened.",
+   "Your natural healing is strengthened.",
+   "Your natural healing is strengthened."},
 
   "slow healing"
 },
@@ -241,25 +244,28 @@
   "slow metabolism"
 },
 
-{ MUT_WEAK,                          10, 14,  true,  true, false,
-  NULL,
-  {"You are weak (Str -", "", ""},
+{ MUT_WEAK,                          8, 2,  true,  true, false,
+  "weak",
+  {"You are weak. (Str -2)",
+   "You are very weak. (Str -4)", ""},
   {"", "", ""},
   {"", "", ""},
   "weak"
 },
 
-{ MUT_DOPEY,                         10, 14,  true,  true, false,
-  NULL,
-  {"You are dopey (Int -", "", ""},
+{ MUT_DOPEY,                         8, 2,  true,  true, false,
+  "dopey",
+  {"You are dopey. (Int -2)",
+   "You are very dopey. (Int -4)", ""},
   {"", "", ""},
   {"", "", ""},
   "dopey",
 },
 
-{ MUT_CLUMSY,                        10, 14,  true,  true, false,
-  NULL,
-  {"You are clumsy (Dex -", "", ""},
+{ MUT_CLUMSY,                        8, 2,  true,  true, false,
+  "clumsy",
+  {"You are clumsy. (Dex -2)",
+   "You are very clumsy. (Dex -4)", ""},
   {"", "", ""},
   {"", "", ""},
   "clumsy"
@@ -313,7 +319,7 @@
   "magic resistance"
 },
 
-{ MUT_FAST,                           1,  3, false, false,  true,
+{ MUT_FAST,                           0,  3, false, false,  true,
   "speed",
 
   {"You cover ground quickly.",
@@ -331,7 +337,7 @@
   "fast"
 },
 
-{ MUT_SLOW,                           3,  3,  true, false,  true,
+{ MUT_SLOW,                           0,  3,  true, false,  true,
   "slowness",
 
   {"You cover ground slowly.",
@@ -411,6 +417,24 @@
   "breathe flames"
 },
 
+{ MUT_JUMP,                 0,  3, false, false, false,
+  "jump",
+
+  {"You can jump attack at a short distance.",
+   "You can jump attack at a medium distance.",
+   "You can jump attack at a long distance."},
+
+  {"You feel more sure on your feet.",
+   "You feel more sure on your feet.",
+   "You feel more sure on your feet."},
+
+  {"You feel less sure on your feet.",
+   "You feel less sure on your feet.",
+   "You feel less sure on your feet."},
+
+  "jump"
+},
+
 { MUT_BLINK,                          3,  3, false, false, false,
   "blink",
 
@@ -429,8 +453,9 @@
   "blink"
 },
 
-{ MUT_STRONG_STIFF,                  10,  3, false,  true, false,
-  NULL,
+#if TAG_MAJOR_VERSION == 34
+{ MUT_STRONG_STIFF,                  0,  3, false,  true, false,
+  "strong stiff",
 
   {"Your muscles are strong, but stiff (Str +1, Dex -1).",
    "Your muscles are very strong, but stiff (Str +2, Dex -2).",
@@ -447,8 +472,8 @@
   "strong stiff"
 },
 
-{ MUT_FLEXIBLE_WEAK,                 10,  3, false,  true, false,
-  NULL,
+{ MUT_FLEXIBLE_WEAK,                 0,  3, false,  true, false,
+  "flexible weak",
 
   {"Your muscles are flexible, but weak (Str -1, Dex +1).",
    "Your muscles are very flexible, but weak (Str -2, Dex +2).",
@@ -464,6 +489,7 @@
 
   "flexible weak"
 },
+#endif
 
 { MUT_SCREAM,                         6,  3,  true, false, false,
   "screaming",
@@ -584,7 +610,7 @@
 },
 
 { MUT_FRAIL,                         10,  3,  true,  true, false,
-  NULL,
+  "frail",
 
   {"You are frail (-10% HP).",
    "You are very frail (-20% HP).",
@@ -602,7 +628,7 @@
 },
 
 { MUT_ROBUST,                         5,  3, false,  true, false,
-  NULL,
+  "robust",
 
   {"You are robust (+10% HP).",
    "You are very robust (+20% HP).",
@@ -639,7 +665,7 @@
   "torment resistance"
 },
 
-{ MUT_NEGATIVE_ENERGY_RESISTANCE,     0,  3, false, false,  true,
+{ MUT_NEGATIVE_ENERGY_RESISTANCE,     0,  3, false, false, false,
   "life protection",
 
   {"You resist negative energy.",
@@ -803,8 +829,8 @@
   "tentacle spike"
 },
 
-// Naga only; getting it is special-cased.
-{ MUT_BREATHE_POISON,                 0,  1, false, false,  true,
+// Naga only
+{ MUT_BREATHE_POISON,                 4,  1, false, false,  false,
   "breathe poison",
 
   {"You can exhale a cloud of poison.", "", ""},
@@ -872,7 +898,7 @@
 },
 
 { MUT_SHAGGY_FUR,                     2,  3, false,  true,  true,
-  NULL,
+  "shaggy fur",
 
   {"You are covered in fur (AC +1).",
    "You are covered in thick fur (AC +2).",
@@ -890,7 +916,7 @@
 },
 
 { MUT_HIGH_MAGIC,                     2,  3, false, false, false,
-  NULL,
+  "high mp",
 
   {"You have an increased reservoir of magic (+10% MP).",
    "You have a considerably increased reservoir of magic (+20% MP).",
@@ -908,7 +934,7 @@
 },
 
 { MUT_LOW_MAGIC,                      9,  3,  true, false, false,
-  NULL,
+  "low mp",
 
   {"Your magical capacity is low (-10% MP).",
    "Your magical capacity is very low (-20% MP).",
@@ -972,7 +998,7 @@
 },
 
 { MUT_ICEMAIL,                        0,  1, false, false, false,
-  NULL,
+  "icemail",
 
   {"A meltable icy envelope protects you from harm and freezing vapours (AC +", "", ""},
   {"An icy envelope takes form around you.", "", ""},
@@ -1128,7 +1154,7 @@
 
 // Jiyva only mutations
 { MUT_GELATINOUS_BODY,                0,  3, false,  true,  true,
-  NULL,
+  "gelatinous body",
 
   {"Your rubbery body absorbs attacks (AC +1).",
    "Your pliable body absorbs attacks (AC +1, EV +1).",
@@ -1146,7 +1172,7 @@
 },
 
 { MUT_EYEBALLS,                       0,  3, false,  true,  true,
-  NULL,
+  "eyeballs",
 
   {"Your body is partially covered in golden eyeballs (Acc +3).",
    "Your body is mostly covered in golden eyeballs (Acc +5).",
@@ -1221,9 +1247,29 @@
   "acidic bite"
 },
 
+{ MUT_ANTIMAGIC_BITE,                 0,  1, false,  true,  true,
+  "antimagic bite",
+
+  {"Your bite disrupts and absorbs the magic of your enemies.", "", ""},
+  {"You feel a sudden thirst for magic.", "", ""},
+  {"Your magical appetite wanes.", "", ""},
+
+  "antimagic bite"
+},
+
+{ MUT_NO_DEVICE_HEAL,                 0,  1, true,  false,  false,
+  "no device heal",
+
+  {"Potions and wands cannot restore your HP.", "", ""},
+  {"Your system rejects artificial healing.", "", ""},
+  {"Your system accepts artificial healing.", "", ""},
+
+  "no device heal"
+},
+
 // Scale mutations
 { MUT_DISTORTION_FIELD,               2,  3, false, false, false,
-  NULL,
+  "repulsion field",
 
   {"You are surrounded by a mild repulsion field (EV +2).",
    "You are surrounded by a moderate repulsion field (EV +3).",
@@ -1241,7 +1287,7 @@
 },
 
 { MUT_ICY_BLUE_SCALES,                2,  3, false,  true,  true,
-  NULL,
+  "icy blue scales",
 
   {"You are partially covered in icy blue scales (AC +1).",
    "You are mostly covered in icy blue scales (AC +3, EV -1).",
@@ -1259,7 +1305,7 @@
 },
 
 { MUT_IRIDESCENT_SCALES,              2,  3, false,  true,  true,
-  NULL,
+  "iridescent scales",
 
   {"You are partially covered in iridescent scales (AC +4).",
    "You are mostly covered in iridescent scales (AC +6).",
@@ -1277,7 +1323,7 @@
 },
 
 { MUT_LARGE_BONE_PLATES,              2,  3, false,  true,  true,
-  NULL,
+  "large bone plates",
 
   {"You are partially covered in large bone plates (AC +2, SH +2).",
    "You are mostly covered in large bone plates (AC +3, SH +4).",
@@ -1295,7 +1341,7 @@
 },
 
 { MUT_MOLTEN_SCALES,                  2,  3, false,  true,  true,
-  NULL,
+  "molten scales",
 
   {"You are partially covered in molten scales (AC +1).",
    "You are mostly covered in molten scales (AC +3, EV -1).",
@@ -1313,7 +1359,7 @@
 },
 
 { MUT_ROUGH_BLACK_SCALES,             2,  3, false,  true,  true,
-  NULL,
+  "rough black scales",
 
   {"You are partially covered in rough black scales (AC +4, Dex -1).",
    "You are mostly covered in rough black scales (AC +7, Dex -2).",
@@ -1331,7 +1377,7 @@
 },
 
 { MUT_RUGGED_BROWN_SCALES,            2,  3, false,  true,  true,
-  NULL,
+  "rugged brown scales",
 
   {"You are partially covered in rugged brown scales (AC +1, +3% HP).",
    "You are mostly covered in rugged brown scales (AC +2, +5% HP).",
@@ -1349,7 +1395,7 @@
 },
 
 { MUT_SLIMY_GREEN_SCALES,             2,  3, false,  true,  true,
-  NULL,
+  "slimy green scales",
 
   {"You are partially covered in slimy green scales (AC +2).",
    "You are mostly covered in slimy green scales (AC +3).",
@@ -1367,7 +1413,7 @@
 },
 
 { MUT_THIN_METALLIC_SCALES,           2,  3, false,  true,  true,
-  NULL,
+  "thin metallic scales",
 
   {"You are partially covered in thin metallic scales (AC +2).",
    "You are mostly covered in thin metallic scales (AC +3).",
@@ -1385,7 +1431,7 @@
 },
 
 { MUT_THIN_SKELETAL_STRUCTURE,        2,  3, false,  true, false,
-  NULL,
+  "thin skeletal structure",
 
   {"You have a somewhat thin skeletal structure (Dex +2, Stlth).",
    "You have a moderately thin skeletal structure (Dex +4, Str -1, Stlth).",
@@ -1403,7 +1449,7 @@
 },
 
 { MUT_YELLOW_SCALES,                  2,  3, false,  true,  true,
-  NULL,
+  "yellow scales",
 
   {"You are partially covered in yellow scales (AC +2).",
    "You are mostly covered in yellow scales (AC +3).",
@@ -1494,7 +1540,7 @@
   "jelly missile"
 },
 
-{ MUT_PETRIFICATION_RESISTANCE,            3,  1, false, false, false,
+{ MUT_PETRIFICATION_RESISTANCE,            0,  1, false, false, false,
   "petrification resistance",
 
   {"You are immune to petrification.", "", ""},
@@ -1504,6 +1550,7 @@
   "petrification resistance"
 },
 
+#if TAG_MAJOR_VERSION == 34
 { MUT_TRAMPLE_RESISTANCE,                  0,  1, false, false, false,
   "trample resistance",
 
@@ -1513,3 +1560,42 @@
 
   "trample resistance"
 },
+
+{ MUT_CLING,                               0,  1, false, false, true,
+  "cling",
+
+  {"You can cling to walls.", "", ""},
+  {"You feel sticky.", "", ""},
+  {"You feel slippery.", "", ""},
+
+  "cling"
+},
+#endif
+
+{ MUT_EXOSKELETON,                         0,  2, false,  true,  true,
+  "exoskeleton",
+
+  {"Your body is surrounded by an exoskeleton. (AC +1)",
+   "Your body is surrounded by a tough exoskeleton. (AC +4)",
+   ""},
+
+  {"Your exoskeleton hardens.",
+   "Your exoskeleton becomes even harder.",
+   ""},
+
+  {"Your exoskeleton softens.",
+   "Your exoskeleton softens.",
+   ""},
+
+  "exoskeleton"
+},
+
+{ MUT_FUMES,            0,  2, false, false, false,
+  "fuming",
+
+  {"You emit clouds of smoke.", "You frequently emit clouds of smoke.", ""},
+  {"You fume.", "You fume more.", ""},
+  {"You stop fuming.", "You fume less.", ""},
+
+  "fumes"
+}

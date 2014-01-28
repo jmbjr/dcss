@@ -48,9 +48,55 @@ static int _fuzz_mons_depth(int level)
     if (level > 1 && one_chance_in(7))
     {
         const int fuzz = random2avg(9, 2);
-        return (fuzz > 4 ? level + fuzz - 4 : level);
+        return fuzz > 4 ? level + fuzz - 4 : level;
     }
     return level;
+}
+
+static bool _is_branch_fitting(branch_type pb, int wavenum)
+{
+    switch (pb)
+    {
+    case BRANCH_DUNGEON:
+        return wavenum < 30;                 // <6K turns only
+    case BRANCH_ORC:
+        return wavenum < 30;                 // <6K turns only
+    case BRANCH_ELF:
+        return wavenum > 10 && wavenum < 60; // 2.2-12K turns
+    case BRANCH_LAIR:
+        return wavenum < 40;                 // <8K turns only
+    case BRANCH_SWAMP:
+        return wavenum > 12 && wavenum < 40; // 2.6-8K turns
+    case BRANCH_SHOALS:
+        return wavenum > 12 && wavenum < 60; // 2.6-12K turns
+    case BRANCH_SNAKE:
+        return wavenum > 10 && wavenum < 60; // 2.2-12K turns
+    case BRANCH_VAULTS:
+        return wavenum > 12;                 // 2.6-
+    case BRANCH_DEPTHS:
+        return wavenum > 13;                 // 2.8K-
+    case BRANCH_CRYPT:
+        return wavenum > 15;                 // 3.2K-
+    case BRANCH_FOREST:
+        return wavenum > 20;                 // 4K-
+    case BRANCH_SLIME:
+        return wavenum > 20 && coinflip();   // 4K-
+    case BRANCH_BLADE:
+        return wavenum > 30;                 // 6K-
+    case BRANCH_TOMB:
+        return wavenum > 30 && coinflip();   // 6K-
+    case BRANCH_DIS:                         // 8K-
+    case BRANCH_COCYTUS:
+    case BRANCH_TARTARUS:
+    case BRANCH_GEHENNA:
+        return wavenum > 40 && one_chance_in(3);
+    case BRANCH_VESTIBULE:
+        return wavenum > 30 && one_chance_in(6);
+    case BRANCH_ZOT:                         // 10K-
+        return wavenum > 50;
+    default:
+        return false;
+    }
 }
 
 // Choose a random branch. Which branches may be chosen is a function of
@@ -58,75 +104,17 @@ static int _fuzz_mons_depth(int level)
 static branch_type _zotdef_random_branch()
 {
     int wavenum = you.num_turns / ZOTDEF_CYCLE_LENGTH;
+    branch_type pb;
 
-    while (true)
-    {
-        branch_type pb = static_cast<branch_type>(random2(NUM_BRANCHES));
-        bool ok = true;
-        switch (pb)
-        {
-            case BRANCH_MAIN_DUNGEON:
-                ok = true;
-                // reduce freq at high levels
-                if (wavenum > 40)
-                    ok = coinflip();
-                break;
+    do
+         pb = static_cast<branch_type>(random2(NUM_BRANCHES));
+    while (!_is_branch_fitting(pb, wavenum));
 
-            case BRANCH_SNAKE_PIT:
-                ok = wavenum > 10;
-                // reduce freq at high levels
-                if (wavenum > 40 && !coinflip())
-                   ok = false;
-                break;
+    if (one_chance_in(4))
+        return wavenum < 15 ? BRANCH_DUNGEON : BRANCH_DEPTHS;
+        // strong bias to main dungeon and depths
 
-            default:
-            case BRANCH_ECUMENICAL_TEMPLE:
-            case BRANCH_VAULTS:
-            case BRANCH_VESTIBULE_OF_HELL:
-                ok = false;
-                break;                // vaults/vestibule same as dungeon
-
-            case BRANCH_ORCISH_MINES:
-                ok = wavenum < 30;                 // <6K turns only
-                break;
-            case BRANCH_ELVEN_HALLS:
-                ok = wavenum > 10 && wavenum < 60; // 2.2-12K turns
-                break;
-            case BRANCH_LAIR:
-                ok = wavenum < 40;                 // <8K turns only
-                break;
-            case BRANCH_SWAMP:
-                ok = wavenum > 12 && wavenum < 40; // 2.6-8K turns
-                break;
-            case BRANCH_SHOALS:
-                ok = wavenum > 12 && wavenum < 60; // 2.6-12K turns
-                break;
-            case BRANCH_CRYPT:
-                ok = wavenum > 13;                 // 2.8K-
-                break;
-            case BRANCH_SLIME_PITS:
-                ok = wavenum > 20 && coinflip();   // 4K-
-                break;        // >4K turns only
-            case BRANCH_HALL_OF_BLADES:
-                ok = wavenum > 30;                 // 6K-
-                break;
-            case BRANCH_TOMB:
-                ok = wavenum > 30 && coinflip();   // 6K-
-                break;
-            case BRANCH_DIS:                       // 8K-
-            case BRANCH_COCYTUS:
-            case BRANCH_TARTARUS:
-            case BRANCH_GEHENNA:
-                ok = wavenum > 40 && one_chance_in(3);
-                break;
-            case BRANCH_HALL_OF_ZOT:               // 10K-
-                ok = wavenum > 50;
-                break;
-        }
-        if (ok)
-            return (one_chance_in(4) ? BRANCH_MAIN_DUNGEON : pb);
-            // strong bias to main dungeon
-    }
+    return pb;
 }
 
 static int _mon_strength(monster_type mon_type)
@@ -169,9 +157,9 @@ static void _zotdef_fill_from_list(monster_type mlist[], int chance, int power)
         while (env.mons_alloc[i] == MONS_PROGRAM_BUG)
         {
             monster_type mon_type = mlist[random2(ls)];
-            if (random2((power * 3) / 2) > _mon_strength(mon_type))
+            if (random2(power * 3 / 2) > _mon_strength(mon_type))
                 continue;        // bias away from weaker critters
-            if (random2((power * 3) / 2) > _mon_strength(mon_type))
+            if (random2(power * 3 / 2) > _mon_strength(mon_type))
                 env.mons_alloc[i] = mon_type;
             if (one_chance_in(100))
                 env.mons_alloc[i] = mon_type;      // occasional random pick
@@ -209,7 +197,7 @@ static void _zotdef_choose_boss(monster_type mlist[], int power)
 
 static void _zotdef_danger_msg(const char *msg)
 {
-    mpr(msg, MSGCH_DANGER);
+    mprf(MSGCH_DANGER, "%s", msg);
     more();
 }
 
@@ -233,7 +221,7 @@ static void _fire_wave(int power)
 {
     wave_name("FIRE WAVE");
     monster_type firemons[] = {MONS_FIRE_ELEMENTAL, MONS_FIRE_DRAKE, MONS_CRIMSON_IMP,
-        MONS_DRAGON, MONS_FIRE_VORTEX ,MONS_FIRE_GIANT, MONS_HELLION,
+        MONS_FIRE_DRAGON, MONS_FIRE_VORTEX ,MONS_FIRE_GIANT, MONS_HELLION,
         MONS_MOLTEN_GARGOYLE, MONS_SALAMANDER, MONS_SUN_DEMON,
         MONS_RED_DRACONIAN, MONS_MOTTLED_DRACONIAN, MONS_DRACONIAN_SCORCHER,
         MONS_FLAMING_CORPSE, MONS_MOTTLED_DRAGON, MONS_EFREET,
@@ -287,7 +275,7 @@ static void _hound_wave(int power)
 {
     wave_name("HOUND WAVE");
     monster_type hounds[] = {MONS_JACKAL, MONS_HOUND, MONS_WARG,
-                MONS_WOLF, MONS_WAR_DOG, END};
+                MONS_WOLF, END};
     monster_type boss[] = {MONS_HELL_HOUND, END};
     _zotdef_fill_from_list(hounds, 0, power); // full
     _zotdef_choose_boss(boss, power);
@@ -480,7 +468,7 @@ static void _pan_wave(int power)
         }
     }
     // Weak bosses only at lower power
-    _zotdef_choose_boss((power < 27 ? weakboss : boss), power);
+    _zotdef_choose_boss(power < 27 ? weakboss : boss, power);
     _zotdef_danger_msg("Hellish voices call for your blood. They are coming!");
 }
 
@@ -587,7 +575,7 @@ static monster_type _get_zotdef_monster(level_id &place, int power)
 
         // get default level
         int lev_mons = (place.branch == NUM_BRANCHES)
-                       ? ((strength * 3) / 2)
+                       ? strength * 3 / 2
                        : mons_depth(mon_type, place.branch)
                          + absdungeon_depth(place.branch, 0);
 
@@ -597,7 +585,7 @@ static monster_type _get_zotdef_monster(level_id &place, int power)
 
         // adjust level based on strength, as weak monsters with high
         // level pop up on some branches and we want to allow them
-        if (place.branch != BRANCH_MAIN_DUNGEON
+        if (place.branch != BRANCH_DUNGEON
             && lev_mons > power
             && lev_mons > strength * 3)
         {
@@ -702,7 +690,7 @@ void zotdef_set_wave()
     // Early waves are all DUNGEON
     if (you.num_turns < ZOTDEF_CYCLE_LENGTH * 4)
     {
-        _zotdef_set_branch_wave(BRANCH_MAIN_DUNGEON, power);
+        _zotdef_set_branch_wave(BRANCH_DUNGEON, power);
         return;
     }
 
@@ -710,14 +698,14 @@ void zotdef_set_wave()
     {
     case 0:
     case 1:
-        _zotdef_set_branch_wave(BRANCH_MAIN_DUNGEON, power);
+        _zotdef_set_branch_wave(BRANCH_DUNGEON, power);
         break;
     case 2:
     case 3:
     {
         branch_type b = _zotdef_random_branch();
         // HoB branch waves v. rare before 10K turns
-        if (b == BRANCH_HALL_OF_BLADES && you.num_turns / ZOTDEF_CYCLE_LENGTH < 50)
+        if (b == BRANCH_BLADE && you.num_turns / ZOTDEF_CYCLE_LENGTH < 50)
             b = _zotdef_random_branch();
         _zotdef_set_branch_wave(b, power);
         break;
@@ -786,7 +774,7 @@ monster* zotdef_spawn(bool boss)
     mg.flags |= MG_PERMIT_BANDS;
 
     // Hack: emulate old mg.power
-    mg.place = level_id(BRANCH_MAIN_DUNGEON, you.num_turns / (ZOTDEF_CYCLE_LENGTH * 3) + 1);
+    mg.place = level_id(BRANCH_DUNGEON, you.num_turns / (ZOTDEF_CYCLE_LENGTH * 3) + 1);
     // but only for item generation/etc., not for actual monster selection.
     ASSERT(mt != RANDOM_MONSTER);
 
@@ -1044,7 +1032,8 @@ void zotdef_bosses_check()
         }
 
         // since you don't move between maps, any crash would be fatal
-        save_game(false);
+        if (!crawl_state.disables[DIS_SAVE_CHECKPOINTS])
+            save_game(false);
     }
 
     if ((you.num_turns + 1) % ZOTDEF_CYCLE_LENGTH == ZOTDEF_CYCLE_INTERVAL)

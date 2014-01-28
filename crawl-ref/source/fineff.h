@@ -124,8 +124,10 @@ protected:
 class deferred_damage_fineff : public final_effect
 {
 public:
-    deferred_damage_fineff(const actor *attack, const actor *defend, int dam)
-        : final_effect(attack, defend, coord_def()), damage(dam)
+    deferred_damage_fineff(const actor *attack, const actor *defend,
+                           int dam, bool _attacker_effects, bool _fatal = true)
+        : final_effect(attack, defend, coord_def()),
+          damage(dam), attacker_effects(_attacker_effects), fatal(_fatal)
     {
     }
     bool mergeable(const final_effect &a) const;
@@ -133,6 +135,8 @@ public:
     void fire();
 protected:
     int damage;
+    bool attacker_effects;
+    bool fatal;
 };
 
 class starcursed_merge_fineff : public final_effect
@@ -152,9 +156,9 @@ public:
 class delayed_action_fineff : public final_effect
 {
 public:
-    delayed_action_fineff(daction_type _action, string _final_msg)
+    delayed_action_fineff(daction_type _action, const char* _final_msg)
             : final_effect(0, 0, coord_def()),
-              action(_action),final_msg(_final_msg)
+              action(_action), final_msg(_final_msg)
     {
     }
 
@@ -163,13 +167,13 @@ public:
 
 protected:
     daction_type action;
-    string final_msg;
+    const char *final_msg;
 };
 
 class kirke_death_fineff : public delayed_action_fineff
 {
 public:
-    kirke_death_fineff(string _final_msg)
+    kirke_death_fineff(const char *_final_msg)
             : delayed_action_fineff(DACT_KIRKE_HOGS, _final_msg)
     {
     }

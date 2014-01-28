@@ -81,7 +81,7 @@ static int crawl_mpr(lua_State *ls)
     if (ch < 0 || ch >= NUM_MESSAGE_CHANNELS)
         ch = MSGCH_PLAIN;
 
-    mpr(message, static_cast<msg_channel_type>(ch));
+    mprf(static_cast<msg_channel_type>(ch), "%s", message);
     return 0;
 }
 
@@ -190,16 +190,16 @@ static int crawl_enable_more(lua_State *ls)
 }
 
 /*
---- Wrapper for <code>cancelable_get_line()</code>.  Since that takes
+--- Wrapper for <code>cancellable_get_line()</code>.  Since that takes
 -- a pre-allocated buffer, an arbitrary 500-character limit is
 -- currently imposed.
--- @return Either a string if one is input, or nil if input is canceled
+-- @return Either a string if one is input, or nil if input is cancelled
 function c_input_line() */
 static int crawl_c_input_line(lua_State *ls)
 {
     char linebuf[500];
 
-    bool valid = !cancelable_get_line(linebuf, sizeof linebuf);
+    bool valid = !cancellable_get_line(linebuf, sizeof linebuf);
     if (valid)
         lua_pushstring(ls, linebuf);
     else
@@ -224,8 +224,8 @@ LUAWRAP(crawl_flush_input, flush_input_buffer(FLUSH_LUA))
 
 static char _lua_char(lua_State *ls, int ndx, char defval = 0)
 {
-    return (lua_isnone(ls, ndx) || !lua_isstring(ls, ndx)? defval
-            : lua_tostring(ls, ndx)[0]);
+    return lua_isnone(ls, ndx) || !lua_isstring(ls, ndx)? defval
+           : lua_tostring(ls, ndx)[0];
 }
 
 /*
@@ -508,7 +508,6 @@ static int crawl_regex(lua_State *ls)
     if (!s)
         return 0;
 
-
     text_pattern **tpudata =
             clua_new_userdata< text_pattern* >(ls, REGEX_METATABLE);
     if (tpudata)
@@ -656,7 +655,9 @@ static int crawl_article_a(lua_State *ls)
     return 1;
 }
 
-LUARET1(crawl_game_started, boolean, crawl_state.need_save)
+LUARET1(crawl_game_started, boolean, crawl_state.need_save
+                                     || crawl_state.map_stat_gen
+                                     || crawl_state.test)
 LUARET1(crawl_stat_gain_prompt, boolean, crawl_state.stat_gain_prompt)
 LUARET1(crawl_random2, number, random2(luaL_checkint(ls, 1)))
 LUARET1(crawl_one_chance_in, boolean, one_chance_in(luaL_checkint(ls, 1)))
@@ -719,7 +720,8 @@ static int crawl_worley_diff(lua_State *ls)
 static int crawl_split_bytes(lua_State *ls)
 {
     uint32_t val = lua_tonumber(ls,1);
-    uint8_t bytes[4] = {
+    uint8_t bytes[4] =
+    {
         (uint8_t)(val >> 24),
         (uint8_t)(val >> 16),
         (uint8_t)(val >> 8),
@@ -832,6 +834,7 @@ LUAWRAP(crawl_endgame, screen_end_game(luaL_checkstring(ls, 1)))
 LUAWRAP(crawl_tutorial_hunger, set_tutorial_hunger(luaL_checkint(ls, 1)))
 LUAWRAP(crawl_tutorial_skill, set_tutorial_skill(luaL_checkstring(ls, 1), luaL_checkint(ls, 2)))
 LUAWRAP(crawl_tutorial_hint, tutorial_init_hint(luaL_checkstring(ls, 1)))
+LUAWRAP(crawl_print_hint, print_hint(luaL_checkstring(ls, 1)))
 
 static int crawl_random_element(lua_State *ls)
 {
@@ -949,7 +952,7 @@ static int crawl_call_dlua(lua_State *ls)
             const char *msg = lua_tostring(dlua, -1);
             if (msg == NULL)
                 msg = "(error object is not a string)";
-            mpr(msg, MSGCH_ERROR);
+            mprf(MSGCH_ERROR, "%s", msg);
         }
 
         lua_settop(dlua, 0); // don't bother unwinding, just nuke the stack
@@ -969,7 +972,7 @@ static int crawl_call_dlua(lua_State *ls)
             lua_pushstring(ls, ret);
         else
         {
-            mpr("call_dlua: cannot pass non-scalars yet (TODO)", MSGCH_ERROR);
+            mprf(MSGCH_ERROR, "call_dlua: cannot pass non-scalars yet (TODO)");
             lua_pushnil(ls);
         }
 
@@ -995,7 +998,7 @@ static const struct luaL_reg crawl_clib[] =
     { "delay",          crawl_delay },
     { "random2",        crawl_random2 },
     { "one_chance_in",  crawl_one_chance_in },
-    { "random2avg"   ,  crawl_random2avg },
+    { "random2avg",     crawl_random2avg },
     { "coinflip",       crawl_coinflip },
     { "roll_dice",      crawl_roll_dice },
     { "x_chance_in_y",  crawl_x_chance_in_y },
@@ -1220,6 +1223,7 @@ static const struct luaL_reg crawl_dlib[] =
 { "tutorial_hunger", crawl_tutorial_hunger },
 { "tutorial_skill",  crawl_tutorial_skill },
 { "tutorial_hint",   crawl_tutorial_hint },
+{ "print_hint", crawl_print_hint },
 { "mark_game_won", _crawl_mark_game_won },
 { "hints_type", crawl_hints_type },
 

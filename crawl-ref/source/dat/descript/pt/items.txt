@@ -61,11 +61,6 @@ beef jerky
 
 Uma tira de carne de vaca, ou boi, seca.
 %%%%
-blessed double sword
-
-Uma arma mágica com duas lâminas afiadíssimas. Ela foi aprimorada pelo poder
-Shining One.
-%%%%
 blessed falchion
 
 Uma espada de lâmina lacerante que foi aprimorada com o pode Shining One.
@@ -140,6 +135,10 @@ book of envenomations
 
 Um livro de magia.
 %%%%
+book of fire
+
+Um livro de magia todo queimado.
+%%%%
 book of fixed level
 
 Um livro de magias.
@@ -147,10 +146,6 @@ Um livro de magias.
 book of fixed theme
 
 Um livro de magias.
-%%%%
-book of fire
-
-Um livro de magia todo queimado.
 %%%%
 book of flames
 
@@ -237,10 +232,6 @@ bread ration
 
 Uma refeição farta de pão dormido mas massudo.
 %%%%
-broad axe
-
-Um machado com uma grande lâmina.
-%%%%
 buckler
 
 Um escudo pequeno.
@@ -281,6 +272,10 @@ dart
 
 Uma pequena arma de arremesso.
 %%%%
+decaying skeleton
+
+Um esqueleto em decomposição.
+%%%%
 demon blade
 
 Uma arma terrível, forjada no fogo do Inferno.
@@ -293,22 +288,10 @@ demon whip
 
 Uma arma terrível, tramada nas profundezas do Inferno.
 %%%%
-dire flail
-
-Um mangual com espinhos em ambos extremos.
-%%%%
-double sword
-
-Uma arma mágica com duas lâminas bem afiadas.
-%%%%
 eggplant
 
 Uma berinjela podre pra você jogar nos desenvolvedores do Crawl. (Se você ver
 esta mensagem, é um bug.)
-%%%%
-empty ebony casket
-
-Uma caixa mágica após o seu poder ter sido gasto.
 %%%%
 eveningstar
 
@@ -354,10 +337,6 @@ hammer
 
 O tipo de coisa que se usa para martelar pregos, adaptado para combate.
 %%%%
-hand axe
-
-Machadinha de arremesso ou combate mano a mano.
-%%%%
 helmet
 
 Uma peça de armadura para a cabeça.
@@ -383,8 +362,9 @@ Esta lança leve foi projetada para ser arremessada e causar muito dano.
 large rock
 
 Uma pedra muito grande e muito pesada. {{
-    if string.find(you.race(), "Ogre")
+    if you.race() == "Ogre"
        or you.race() == "Troll"
+       or you.race() == "Formicid"
    then
        return ""
    else
@@ -434,10 +414,6 @@ Uma deliciosa e suculenta fruta alaranjada.
 pair of boots
 
 Um par de botas.
-%%%%
-pair of bracers
-
-Um par de braceletes.
 %%%%
 pair of gloves
 
@@ -500,10 +476,6 @@ rune of zot
 
 Um talismã que permite acesso ao domínio de Zot.
 %%%%
-sabre
-
-Uma espada com lâmina média e lacerante.
-%%%%
 sausage
 
 Uma deliciosa e suculenta fruta.
@@ -524,10 +496,6 @@ short sword
 
 Uma espada com uma lâmina curta e lacerante.
 %%%%
-decaying skeleton
-
-Um esqueleto em decomposição.
-%%%%
 slice of pizza
 
 Uma fatia de pizza: massa de pão achatada com molho de tomate, muzarela de
@@ -536,15 +504,6 @@ búfala e manjericão.
 snozzcumber
 
 Um vegetal repulsivo no formato de um pepino.
-%%%%
-spear
-
-Uma vara longa com uma lâmina pontiaguda em uma ponta. Pode ser tida em mãos ou
-arremessada.
-%%%%
-spiked flail
-
-Um mangual com grandes espinhos na bola de metal.
 %%%%
 staff of conjuration
 
@@ -598,10 +557,6 @@ Um dispositivo mágico capaz de imobilizar uma criatura.
 whip
 
 Um chicote.
-%%%%
-wizard hat
-
-Um chapéu de tecido cônico.
 %%%%
 young poisoner's handbook
 

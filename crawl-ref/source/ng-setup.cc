@@ -2,7 +2,7 @@
 
 #include "ng-setup.h"
 
-#include "abl-show.h"
+#include "ability.h"
 #include "decks.h"
 #include "dungeon.h"
 #include "files.h"
@@ -29,7 +29,6 @@
 #include "spl-util.h"
 #include "state.h"
 #include "stuff.h"
-#include "tilepick.h"
 #include "tutorial.h"
 
 #define MIN_START_STAT       3
@@ -43,12 +42,11 @@ static void _init_player(void)
     dlua.callfn("dgn_clear_data", "");
 }
 
-// Recall that demonspawn & demigods get more later on. {dlb}
 static void _species_stat_init(species_type which_species)
 {
-    int sb = 0; // strength base
-    int ib = 0; // intelligence base
-    int db = 0; // dexterity base
+    int s = 8; // strength
+    int i = 8; // intelligence
+    int d = 8; // dexterity
 
     // Note: The stats in in this list aren't intended to sum the same
     // for all races.  The fact that Mummies and Ghouls are really low
@@ -56,37 +54,39 @@ static void _species_stat_init(species_type which_species)
     // are supposed to be a really hard race). - bwr
     switch (which_species)
     {
-    default:                    sb =  6; ib =  6; db =  6;      break;  // 18
-    case SP_HUMAN:              sb =  6; ib =  6; db =  6;      break;  // 18
-    case SP_DEMIGOD:            sb =  9; ib = 10; db =  9;      break;  // 28
-    case SP_DEMONSPAWN:         sb =  6; ib =  7; db =  6;      break;  // 19
+    default:                    s =  8; i =  8; d =  8;      break;  // 24
+    case SP_HUMAN:              s =  8; i =  8; d =  8;      break;  // 24
+    case SP_DEMIGOD:            s = 11; i = 12; d = 11;      break;  // 34
+    case SP_DEMONSPAWN:         s =  8; i =  9; d =  8;      break;  // 25
 
-    case SP_HIGH_ELF:           sb =  5; ib =  9; db =  8;      break;  // 22
-    case SP_DEEP_ELF:           sb =  3; ib = 10; db =  8;      break;  // 21
-    case SP_SLUDGE_ELF:         sb =  6; ib =  7; db =  7;      break;  // 20
+    case SP_HIGH_ELF:           s =  7; i = 11; d = 10;      break;  // 28
+    case SP_DEEP_ELF:           s =  5; i = 12; d = 10;      break;  // 27
+    case SP_SLUDGE_ELF:         s =  8; i =  9; d =  9;      break;  // 26
 
-    case SP_DEEP_DWARF:         sb =  9; ib =  6; db =  6;      break;  // 21
+    case SP_DEEP_DWARF:         s = 11; i =  8; d =  8;      break;  // 27
 
-    case SP_TROLL:              sb = 13; ib =  2; db =  3;      break;  // 18
-    case SP_OGRE:               sb = 10; ib =  5; db =  3;      break;  // 18
+    case SP_TROLL:              s = 15; i =  4; d =  5;      break;  // 24
+    case SP_OGRE:               s = 12; i =  7; d =  5;      break;  // 24
 
-    case SP_MINOTAUR:           sb = 10; ib =  3; db =  3;      break;  // 16
-    case SP_GARGOYLE:           sb =  9; ib =  6; db =  3;      break;  // 18
-    case SP_HILL_ORC:           sb =  8; ib =  6; db =  4;      break;  // 18
-    case SP_LAVA_ORC:           sb =  8; ib =  6; db =  4;      break;  // 18
-    case SP_CENTAUR:            sb =  8; ib =  5; db =  2;      break;  // 15
-    case SP_NAGA:               sb =  8; ib =  6; db =  4;      break;  // 18
+    case SP_MINOTAUR:           s = 12; i =  5; d =  5;      break;  // 22
+    case SP_GARGOYLE:           s = 11; i =  8; d =  5;      break;  // 24
+    case SP_HILL_ORC:           s = 10; i =  8; d =  6;      break;  // 24
+    case SP_LAVA_ORC:           s = 10; i =  8; d =  6;      break;  // 24
+    case SP_CENTAUR:            s = 10; i =  7; d =  4;      break;  // 21
+    case SP_NAGA:               s = 10; i =  8; d =  6;      break;  // 24
 
-    case SP_MERFOLK:            sb =  6; ib =  5; db =  7;      break;  // 18
-    case SP_TENGU:              sb =  6; ib =  6; db =  7;      break;  // 19
+    case SP_MERFOLK:            s =  8; i =  7; d =  9;      break;  // 24
+    case SP_TENGU:              s =  8; i =  8; d =  9;      break;  // 25
+    case SP_FORMICID:           s = 12; i =  7; d =  6;      break;  // 25
+    case SP_VINE_STALKER:       s = 10; i =  8; d =  9;      break;  // 27
 
-    case SP_KOBOLD:             sb =  5; ib =  4; db =  8;      break;  // 17
-    case SP_HALFLING:           sb =  3; ib =  6; db =  9;      break;  // 18
-    case SP_SPRIGGAN:           sb =  2; ib =  7; db =  9;      break;  // 18
+    case SP_KOBOLD:             s =  7; i =  6; d = 10;      break;  // 23
+    case SP_HALFLING:           s =  5; i =  8; d = 11;      break;  // 24
+    case SP_SPRIGGAN:           s =  4; i =  9; d = 11;      break;  // 24
 
-    case SP_MUMMY:              sb =  9; ib =  5; db =  5;      break;  // 19
-    case SP_GHOUL:              sb =  9; ib =  1; db =  2;      break;  // 12
-    case SP_VAMPIRE:            sb =  5; ib =  8; db =  7;      break;  // 20
+    case SP_MUMMY:              s = 11; i =  7; d =  7;      break;  // 25
+    case SP_GHOUL:              s = 11; i =  3; d =  4;      break;  // 18
+    case SP_VAMPIRE:            s =  7; i = 10; d =  9;      break;  // 26
 
     case SP_RED_DRACONIAN:
     case SP_WHITE_DRACONIAN:
@@ -97,40 +97,15 @@ static void _species_stat_init(species_type which_species)
     case SP_PURPLE_DRACONIAN:
     case SP_MOTTLED_DRACONIAN:
     case SP_PALE_DRACONIAN:
-    case SP_BASE_DRACONIAN:     sb =  8; ib =  6; db =  4;      break;  // 18
+    case SP_BASE_DRACONIAN:     s = 10; i =  8; d =  6;      break;  // 24
 
-    case SP_FELID:              sb =  2; ib =  7; db =  9;      break;  // 18
-    case SP_OCTOPODE:           sb =  5; ib =  8; db =  5;      break;  // 18
+    case SP_FELID:              s =  4; i =  9; d = 11;      break;  // 24
+    case SP_OCTOPODE:           s =  7; i = 10; d =  7;      break;  // 24
     }
 
-    you.base_stats[STAT_STR] = sb + 2;
-    you.base_stats[STAT_INT] = ib + 2;
-    you.base_stats[STAT_DEX] = db + 2;
-}
-
-static void _give_last_paycheck(job_type which_job)
-{
-    switch (which_job)
-    {
-    case JOB_HEALER:
-        you.gold = 100;
-        break;
-
-    case JOB_WANDERER:
-    case JOB_WARPER:
-    case JOB_ARCANE_MARKSMAN:
-    case JOB_ASSASSIN:
-        you.gold = 50;
-        break;
-
-    default:
-        you.gold = 20;
-        break;
-
-    case JOB_MONK:
-        you.gold = 0;
-        break;
-    }
+    you.base_stats[STAT_STR] = s;
+    you.base_stats[STAT_INT] = i;
+    you.base_stats[STAT_DEX] = d;
 }
 
 // Randomly boost stats a number of times.
@@ -153,64 +128,37 @@ static void _jobs_stat_init(job_type which_job)
     int s = 0;   // strength mod
     int i = 0;   // intelligence mod
     int d = 0;   // dexterity mod
-    int hp = 0;  // HP base
-    int mp = 0;  // MP base
 
     // Note: Wanderers are correct, they've got a challenging background. - bwr
     switch (which_job)
     {
-    case JOB_FIGHTER:           s =  8; i =  0; d =  4; hp = 15; mp = 0; break;
-    case JOB_BERSERKER:         s =  9; i = -1; d =  4; hp = 15; mp = 0; break;
-    case JOB_GLADIATOR:         s =  7; i =  0; d =  5; hp = 14; mp = 0; break;
+    case JOB_FIGHTER:           s =  8; i =  0; d =  4; break;
+    case JOB_BERSERKER:         s =  9; i = -1; d =  4; break;
+    case JOB_GLADIATOR:         s =  7; i =  0; d =  5; break;
 
-    case JOB_SKALD:             s =  4; i =  4; d =  4; hp = 13; mp = 1; break;
-    case JOB_CHAOS_KNIGHT:      s =  4; i =  4; d =  4; hp = 13; mp = 1; break;
-    case JOB_DEATH_KNIGHT:      s =  5; i =  3; d =  4; hp = 13; mp = 2; break;
-    case JOB_ABYSSAL_KNIGHT:    s =  4; i =  4; d =  4; hp = 13; mp = 1; break;
-
-    case JOB_FARMER:            s =  4; i =  4; d =  4; hp = 12; mp = 2; break;
-
-    case JOB_HEALER:            s =  4; i =  4; d =  4; hp = 13; mp = 2; break;
-
-    case JOB_ASSASSIN:          s =  3; i =  3; d =  6; hp = 12; mp = 0; break;
-
-    case JOB_HUNTER:            s =  4; i =  3; d =  5; hp = 13; mp = 0; break;
-    case JOB_WARPER:            s =  3; i =  5; d =  4; hp = 12; mp = 1; break;
-    case JOB_ARCANE_MARKSMAN:   s =  3; i =  5; d =  4; hp = 12; mp = 1; break;
-
-    case JOB_MONK:              s =  3; i =  2; d =  7; hp = 13; mp = 0; break;
-    case JOB_TRANSMUTER:        s =  2; i =  5; d =  5; hp = 12; mp = 1; break;
-
-    case JOB_WIZARD:            s = -1; i = 10; d =  3; hp =  8; mp = 5; break;
-    case JOB_CONJURER:          s =  0; i =  7; d =  5; hp = 10; mp = 3; break;
-    case JOB_ENCHANTER:         s =  0; i =  7; d =  5; hp = 10; mp = 3; break;
-    case JOB_FIRE_ELEMENTALIST: s =  0; i =  7; d =  5; hp = 10; mp = 3; break;
-    case JOB_ICE_ELEMENTALIST:  s =  0; i =  7; d =  5; hp = 10; mp = 3; break;
-    case JOB_AIR_ELEMENTALIST:  s =  0; i =  7; d =  5; hp = 10; mp = 3; break;
-    case JOB_EARTH_ELEMENTALIST:s =  0; i =  7; d =  5; hp = 10; mp = 3; break;
-    case JOB_SUMMONER:          s =  0; i =  7; d =  5; hp = 10; mp = 3; break;
-    case JOB_VENOM_MAGE:        s =  0; i =  7; d =  5; hp = 10; mp = 3; break;
-    case JOB_NECROMANCER:       s =  0; i =  7; d =  5; hp = 10; mp = 3; break;
+    case JOB_SKALD:             s =  4; i =  4; d =  4; break;
+    case JOB_CHAOS_KNIGHT:      s =  4; i =  4; d =  4; break;
+    case JOB_DEATH_KNIGHT:      s =  5; i =  3; d =  4; break;
 
     case JOB_WANDERER:
-
-
-    {
         // Wanderers get their stats randomly distributed.
-        _wanderer_assign_remaining_stats(12);
-                                                        hp = 11; mp = 1; break;
-    }
+        _wanderer_assign_remaining_stats(12);           break;
 
-    case JOB_ARTIFICER:         s =  3; i =  4; d =  5; hp = 13; mp = 1; break;
-    default:                    s =  0; i =  0; d =  0; hp = 10; mp = 0; break;
+    case JOB_ARTIFICER:         s =  3; i =  4; d =  5; break;
+    default:                    s =  0; i =  0; d =  0; break;
+        // Wanderers get their stats randomly distributed.
+        _wanderer_assign_remaining_stats(12);           break;
+
+    case JOB_ARTIFICER:         s =  3; i =  4; d =  5; break;
+    default:                    s =  0; i =  0; d =  0; break;
     }
 
     you.base_stats[STAT_STR] += s;
     you.base_stats[STAT_INT] += i;
     you.base_stats[STAT_DEX] += d;
 
-    you.hp_max_perm = hp - 2;
-    you.mp_max_perm = mp - 1;
+    you.hp_max_perm = 0;
+    you.mp_max_perm = 0;
 }
 
 // Make sure no stats are unacceptably low
@@ -245,10 +193,14 @@ static void _give_bonus_items()
     _newgame_give_item(OBJ_SCROLLS, SCR_BLINKING);
 }
 
+void autopickup_starting_ammo(missile_type missile)
+{
+    if (Options.autopickup_starting_ammo)
+        you.force_autopickup[OBJ_MISSILES][missile] = 1;
+}
+
 void give_basic_mutations(species_type speci)
 {
-    // We should switch over to a size-based system
-    // for the fast/slow metabolism when we get around to it.
     switch (speci)
     {
     case SP_LAVA_ORC:
@@ -312,12 +264,9 @@ void give_basic_mutations(species_type speci)
         break;
     case SP_GARGOYLE:
         you.mutation[MUT_PETRIFICATION_RESISTANCE]   = 1;
-        you.mutation[MUT_TRAMPLE_RESISTANCE]         = 1;
         you.mutation[MUT_NEGATIVE_ENERGY_RESISTANCE] = 1;
-        you.mutation[MUT_COLD_RESISTANCE]            = 1;
-        you.mutation[MUT_FANGS]                      = 1;
-        you.mutation[MUT_TALONS]                     = 2;
-        you.mutation[MUT_SLOW_METABOLISM]            = 1;
+        you.mutation[MUT_SHOCK_RESISTANCE]           = 1;
+        you.mutation[MUT_UNBREATHING]                = 1;
         break;
     case SP_TENGU:
         you.mutation[MUT_BEAK]   = 1;
@@ -347,10 +296,25 @@ void give_basic_mutations(species_type speci)
         you.mutation[MUT_FAST]            = 1;
         you.mutation[MUT_CARNIVOROUS]     = 3;
         you.mutation[MUT_SLOW_METABOLISM] = 1;
+        you.mutation[MUT_JUMP]            = 1;
         break;
     case SP_OCTOPODE:
         you.mutation[MUT_CAMOUFLAGE]      = 1;
         you.mutation[MUT_GELATINOUS_BODY] = 1;
+        break;
+    case SP_FORMICID:
+        you.mutation[MUT_ANTENNAE]    = 3;
+        you.mutation[MUT_EXOSKELETON] = 1;
+        break;
+    case SP_DJINNI:
+        you.mutation[MUT_NEGATIVE_ENERGY_RESISTANCE] = 3;
+        break;
+    case SP_VINE_STALKER:
+        you.mutation[MUT_FANGS]          = 2;
+        you.mutation[MUT_ANTIMAGIC_BITE] = 1;
+        you.mutation[MUT_REGENERATION]   = 1;
+        you.mutation[MUT_MANA_SHIELD]    = 1;
+        you.mutation[MUT_NO_DEVICE_HEAL] = 1;
         break;
     default:
         break;
@@ -430,10 +394,21 @@ void newgame_make_item(int slot, equipment_type eqslot,
     // If the character is restricted in wearing armour of equipment
     // slot eqslot, hand out replacement instead.
     if (item.base_type == OBJ_ARMOUR && replacement != -1
-        && !can_wear_armour(item, false, true))
+        && !can_wear_armour(item, false, false))
     {
         item.sub_type = replacement;
     }
+    if (eqslot == EQ_WEAPON && replacement != -1
+        && !can_wield(&item, false, false))
+    {
+        item.sub_type = replacement;
+    }
+
+    if (item.base_type == OBJ_ARMOUR && !can_wear_armour(item, false, false))
+        return;
+
+    if (eqslot == EQ_WEAPON && !can_wield(&item, false, false))
+        return;
 
     if (eqslot != EQ_NONE && you.equip[eqslot] == -1)
         you.equip[eqslot] = slot;
@@ -462,24 +437,36 @@ static void _update_weapon(const newgame_def& ng)
 
     switch (ng.weapon)
     {
-    case WPN_ROCKS:
-        newgame_make_item(1, EQ_NONE, OBJ_MISSILES, MI_LARGE_ROCK, -1, 4 + plus);
-        newgame_make_item(2, EQ_NONE, OBJ_MISSILES, MI_THROWING_NET, -1, 2);
-        break;
-    case WPN_JAVELINS:
-        newgame_make_item(1, EQ_NONE, OBJ_MISSILES, MI_JAVELIN, -1, 5 + plus);
-        newgame_make_item(2, EQ_NONE, OBJ_MISSILES, MI_THROWING_NET, -1, 2);
-        break;
-    case WPN_DARTS:
-        newgame_make_item(1, EQ_NONE, OBJ_MISSILES, MI_DART, -1, 20 + 10 * plus);
-        newgame_make_item(2, EQ_NONE, OBJ_MISSILES, MI_THROWING_NET, -1, 2);
+    case WPN_THROWN:
+        if (species_can_throw_large_rocks(ng.species))
+        {
+            newgame_make_item(1, EQ_NONE, OBJ_MISSILES, MI_LARGE_ROCK, -1,
+                              4 + plus);
+            newgame_make_item(2, EQ_NONE, OBJ_MISSILES, MI_THROWING_NET, -1, 2);
+            autopickup_starting_ammo(MI_LARGE_ROCK);
+            autopickup_starting_ammo(MI_THROWING_NET);
+        }
+        else if (species_size(ng.species, PSIZE_TORSO) <= SIZE_SMALL)
+        {
+            newgame_make_item(1, EQ_NONE, OBJ_MISSILES, MI_TOMAHAWK, -1,
+                              8 + 2 * plus);
+            newgame_make_item(2, EQ_NONE, OBJ_MISSILES, MI_THROWING_NET, -1, 2);
+            autopickup_starting_ammo(MI_TOMAHAWK);
+            autopickup_starting_ammo(MI_THROWING_NET);
+        }
+        else
+        {
+            newgame_make_item(1, EQ_NONE, OBJ_MISSILES, MI_JAVELIN, -1,
+                              5 + plus);
+            newgame_make_item(2, EQ_NONE, OBJ_MISSILES, MI_THROWING_NET, -1, 2);
+            autopickup_starting_ammo(MI_JAVELIN);
+            autopickup_starting_ammo(MI_THROWING_NET);
+        }
         break;
     case WPN_BOW:
         newgame_make_item(1, EQ_NONE, OBJ_WEAPONS, WPN_BOW, -1, 1, plus, plus);
         newgame_make_item(2, EQ_NONE, OBJ_MISSILES, MI_ARROW, -1, 20);
-
-        // Autopickup ammo
-        you.force_autopickup[OBJ_MISSILES][MI_ARROW] = 1;
+        autopickup_starting_ammo(MI_ARROW);
 
         // Wield the bow instead.
         you.equip[EQ_WEAPON] = 1;
@@ -487,9 +474,7 @@ static void _update_weapon(const newgame_def& ng)
     case WPN_CROSSBOW:
         newgame_make_item(1, EQ_NONE, OBJ_WEAPONS, WPN_CROSSBOW, -1, 1, plus, plus);
         newgame_make_item(2, EQ_NONE, OBJ_MISSILES, MI_BOLT, -1, 20);
-
-        // Autopickup ammo
-        you.force_autopickup[OBJ_MISSILES][MI_BOLT] = 1;
+        autopickup_starting_ammo(MI_BOLT);
 
         // Wield the crossbow instead.
         you.equip[EQ_WEAPON] = 1;
@@ -497,9 +482,7 @@ static void _update_weapon(const newgame_def& ng)
     case WPN_SLING:
         newgame_make_item(1, EQ_NONE, OBJ_WEAPONS, WPN_SLING, -1, 1, plus, plus);
         newgame_make_item(2, EQ_NONE, OBJ_MISSILES, MI_SLING_BULLET, -1, 20);
-
-        // Autopickup ammo
-        you.force_autopickup[OBJ_MISSILES][MI_SLING_BULLET] = 1;
+        autopickup_starting_ammo(MI_SLING_BULLET);
 
         // Wield the sling instead.
         you.equip[EQ_WEAPON] = 1;
@@ -527,8 +510,7 @@ static void _give_items_skills(const newgame_def& ng)
 
         if (player_genus(GENPC_DRACONIAN))
         {
-            newgame_make_item(1, EQ_GLOVES, OBJ_ARMOUR, ARM_GLOVES, -1, 1, 0,
-                              TGLOV_DESC_GAUNTLETS);
+            newgame_make_item(1, EQ_GLOVES, OBJ_ARMOUR, ARM_GLOVES);
             newgame_make_item(3, EQ_BOOTS, OBJ_ARMOUR, ARM_BOOTS);
         }
         else
@@ -556,13 +538,9 @@ static void _give_items_skills(const newgame_def& ng)
 
         newgame_make_item(1, EQ_BODY_ARMOUR, OBJ_ARMOUR, ARM_LEATHER_ARMOUR,
                            ARM_ANIMAL_SKIN);
-        newgame_make_item(2, EQ_HELMET, OBJ_ARMOUR, ARM_HELMET, ARM_CAP);
-
-        // Small species get darts, the others nets.
-        if (you.body_size(PSIZE_BODY) < SIZE_MEDIUM)
-            newgame_make_item(3, EQ_NONE, OBJ_MISSILES, MI_DART, -1, 15);
-        else
-            newgame_make_item(3, EQ_NONE, OBJ_MISSILES, MI_THROWING_NET, -1, 3);
+        newgame_make_item(2, EQ_HELMET, OBJ_ARMOUR, ARM_HELMET, ARM_HAT);
+        newgame_make_item(3, EQ_NONE, OBJ_MISSILES, MI_THROWING_NET, -1, 3);
+        autopickup_starting_ammo(MI_THROWING_NET);
 
         // Skills.
         you.skills[SK_FIGHTING] = 2;
@@ -718,19 +696,18 @@ static void _give_items_skills(const newgame_def& ng)
         newgame_make_item(1, EQ_NONE, OBJ_POTIONS, POT_CURING);
         newgame_make_item(2, EQ_NONE, OBJ_POTIONS, POT_HEAL_WOUNDS);
 
-        you.skills[SK_FIGHTING]       = 2;
+        you.skills[SK_FIGHTING]       = 1;
         you.skills[SK_DODGING]        = 2;
-        you.skills[SK_INVOCATIONS]    = 4;
+        you.skills[SK_INVOCATIONS]    = 3;
         break;
 
     case JOB_SKALD:
-        newgame_make_item(0, EQ_WEAPON, OBJ_WEAPONS, WPN_SHORT_SWORD, -1, 1, 1, 1);
+        newgame_make_item(0, EQ_WEAPON, OBJ_WEAPONS, WPN_SHORT_SWORD, -1, 1, 0, 0);
         _update_weapon(ng);
 
         newgame_make_item(1, EQ_BODY_ARMOUR, OBJ_ARMOUR, ARM_LEATHER_ARMOUR,
                            ARM_ROBE);
-        newgame_make_item(2, EQ_NONE, OBJ_BOOKS, BOOK_WAR_CHANTS);
-        newgame_make_item(3, EQ_NONE, OBJ_POTIONS, POT_BERSERK_RAGE);
+        newgame_make_item(2, EQ_NONE, OBJ_BOOKS, BOOK_BATTLE);
 
         you.skills[SK_FIGHTING]     = 2;
         you.skills[SK_ARMOUR]       = 1;
@@ -755,6 +732,9 @@ static void _give_items_skills(const newgame_def& ng)
         newgame_make_item(5, EQ_NONE, OBJ_MISSILES, MI_DART, -1, 10);
         set_item_ego_type(you.inv[5], OBJ_MISSILES, SPMSL_DISPERSAL);
 
+        // Plain darts are maybe too weak for autopickup.
+        // autopickup_starting_ammo(MI_DART);
+
         you.skills[SK_FIGHTING]       = 2;
         you.skills[SK_ARMOUR]         = 1;
         you.skills[SK_DODGING]        = 2;
@@ -774,13 +754,13 @@ static void _give_items_skills(const newgame_def& ng)
         you.skills[SK_FIGHTING]             = 1;
         you.skills[range_skill(you.inv[1])] = 2;
         you.skills[SK_DODGING]              = 2;
-        you.skills[SK_SPELLCASTING]         = 2;
+        you.skills[SK_SPELLCASTING]         = 1;
         you.skills[SK_HEXES]                = 3;
         break;
 
     case JOB_WIZARD:
         newgame_make_item(0, EQ_BODY_ARMOUR, OBJ_ARMOUR, ARM_ROBE);
-        newgame_make_item(1, EQ_HELMET, OBJ_ARMOUR, ARM_WIZARD_HAT);
+        newgame_make_item(1, EQ_HELMET, OBJ_ARMOUR, ARM_HAT);
 
         newgame_make_item(2, EQ_NONE, OBJ_BOOKS, BOOK_MINOR_MAGIC);
 
@@ -798,7 +778,7 @@ static void _give_items_skills(const newgame_def& ng)
         newgame_make_item(2, EQ_NONE, OBJ_BOOKS, BOOK_CONJURATIONS);
 
         you.skills[SK_CONJURATIONS] = 4;
-        you.skills[SK_SPELLCASTING] = 1;
+        you.skills[SK_SPELLCASTING] = 2;
         you.skills[SK_DODGING]      = 2;
         you.skills[SK_STEALTH]      = 2;
         break;
@@ -812,13 +792,16 @@ static void _give_items_skills(const newgame_def& ng)
         // Gets some darts - this job is difficult to start off with.
         newgame_make_item(3, EQ_NONE, OBJ_MISSILES, MI_DART, -1, 12);
 
+        // Plain darts are maybe too weak for autopickup.
+        // autopickup_starting_ammo(MI_DART);
+
         if (you.species == SP_OGRE || you.species == SP_TROLL)
             you.inv[0].sub_type = WPN_CLUB;
 
         weap_skill = 1;
         you.skills[SK_THROWING]     = 1;
         you.skills[SK_HEXES]        = 3;
-        you.skills[SK_SPELLCASTING] = 1;
+        you.skills[SK_SPELLCASTING] = 2;
         you.skills[SK_DODGING]      = 2;
         you.skills[SK_STEALTH]      = 2;
         break;
@@ -828,7 +811,7 @@ static void _give_items_skills(const newgame_def& ng)
         newgame_make_item(1, EQ_NONE, OBJ_BOOKS, BOOK_CALLINGS);
 
         you.skills[SK_SUMMONINGS]   = 4;
-        you.skills[SK_SPELLCASTING] = 1;
+        you.skills[SK_SPELLCASTING] = 2;
         you.skills[SK_DODGING]      = 2;
         you.skills[SK_STEALTH]      = 2;
         break;
@@ -837,7 +820,7 @@ static void _give_items_skills(const newgame_def& ng)
         newgame_make_item(0, EQ_BODY_ARMOUR, OBJ_ARMOUR, ARM_ROBE);
         newgame_make_item(1, EQ_NONE, OBJ_BOOKS, BOOK_NECROMANCY);
 
-        you.skills[SK_SPELLCASTING] = 1;
+        you.skills[SK_SPELLCASTING] = 2;
         you.skills[SK_NECROMANCY]   = 4;
         you.skills[SK_DODGING]      = 2;
         you.skills[SK_STEALTH]      = 2;
@@ -850,9 +833,6 @@ static void _give_items_skills(const newgame_def& ng)
         newgame_make_item(1, EQ_NONE, OBJ_MISSILES, MI_ARROW, -1, 12);
         newgame_make_item(2, EQ_BODY_ARMOUR, OBJ_ARMOUR, ARM_ROBE);
         newgame_make_item(3, EQ_NONE, OBJ_BOOKS, BOOK_CHANGES);
-
-        // keep picking up sticks
-        you.force_autopickup[OBJ_MISSILES][MI_ARROW] = 1;
 
         you.skills[SK_FIGHTING]       = 1;
         you.skills[SK_UNARMED_COMBAT] = 3;
@@ -867,7 +847,7 @@ static void _give_items_skills(const newgame_def& ng)
 
         you.skills[SK_CONJURATIONS] = 1;
         you.skills[SK_FIRE_MAGIC]   = 3;
-        you.skills[SK_SPELLCASTING] = 1;
+        you.skills[SK_SPELLCASTING] = 2;
         you.skills[SK_DODGING]      = 2;
         you.skills[SK_STEALTH]      = 2;
         break;
@@ -878,7 +858,7 @@ static void _give_items_skills(const newgame_def& ng)
 
         you.skills[SK_CONJURATIONS] = 1;
         you.skills[SK_ICE_MAGIC]    = 3;
-        you.skills[SK_SPELLCASTING] = 1;
+        you.skills[SK_SPELLCASTING] = 2;
         you.skills[SK_DODGING]      = 2;
         you.skills[SK_STEALTH]      = 2;
         break;
@@ -889,7 +869,7 @@ static void _give_items_skills(const newgame_def& ng)
 
         you.skills[SK_CONJURATIONS] = 1;
         you.skills[SK_AIR_MAGIC]    = 3;
-        you.skills[SK_SPELLCASTING] = 1;
+        you.skills[SK_SPELLCASTING] = 2;
         you.skills[SK_DODGING]      = 2;
         you.skills[SK_STEALTH]      = 2;
         break;
@@ -901,11 +881,11 @@ static void _give_items_skills(const newgame_def& ng)
         newgame_make_item(3, EQ_NONE, OBJ_BOOKS, BOOK_GEOMANCY);
 
         // sandblast goes through a lot of stones
-        you.force_autopickup[OBJ_MISSILES][MI_STONE] = 1;
+        autopickup_starting_ammo(MI_STONE);
 
         you.skills[SK_TRANSMUTATIONS] = 1;
         you.skills[SK_EARTH_MAGIC]    = 3;
-        you.skills[SK_SPELLCASTING]   = 1;
+        you.skills[SK_SPELLCASTING]   = 2;
         you.skills[SK_DODGING]        = 2;
         you.skills[SK_STEALTH]        = 2;
         break;
@@ -917,7 +897,7 @@ static void _give_items_skills(const newgame_def& ng)
         newgame_make_item(1, EQ_NONE, OBJ_BOOKS, BOOK_YOUNG_POISONERS);
 
         you.skills[SK_POISON_MAGIC] = 4;
-        you.skills[SK_SPELLCASTING] = 1;
+        you.skills[SK_SPELLCASTING] = 2;
         you.skills[SK_DODGING]      = 2;
         you.skills[SK_STEALTH]      = 2;
         break;
@@ -933,9 +913,7 @@ static void _give_items_skills(const newgame_def& ng)
         set_item_ego_type(you.inv[4], OBJ_MISSILES, SPMSL_POISONED);
         newgame_make_item(5, EQ_NONE, OBJ_MISSILES, MI_NEEDLE, -1, 2);
         set_item_ego_type(you.inv[5], OBJ_MISSILES, SPMSL_CURARE);
-
-        // Autopickup ammo
-        you.force_autopickup[OBJ_MISSILES][MI_NEEDLE] = 1;
+        autopickup_starting_ammo(MI_NEEDLE);
 
         if (you.species == SP_OGRE || you.species == SP_TROLL)
             you.inv[0].sub_type = WPN_CLUB;
@@ -957,6 +935,16 @@ static void _give_items_skills(const newgame_def& ng)
 
         newgame_make_item(3, EQ_BODY_ARMOUR, OBJ_ARMOUR, ARM_LEATHER_ARMOUR,
                            ARM_ANIMAL_SKIN);
+
+        // This is meant to match the En/As start change-up, but Trolls have
+        // claws, so they don't get a starting melee weapon (see above).
+        // The +1 is meant to make this less sucky; it could be a better
+        // base type, but whips don't seem very hunter-ish.
+        if (you.species == SP_OGRE)
+        {
+            you.inv[0].sub_type = WPN_CLUB;
+            you.inv[0].plus = you.inv[0].plus2 = 1;
+        }
 
         // Skills.
         you.skills[SK_FIGHTING] = 2;
@@ -988,9 +976,15 @@ static void _give_items_skills(const newgame_def& ng)
         newgame_make_item(4, EQ_BODY_ARMOUR, OBJ_ARMOUR,
                            ARM_LEATHER_ARMOUR, ARM_ROBE);
 
+        // See Hunter notes above.
+        if (you.species == SP_OGRE)
+        {
+            you.inv[0].sub_type = WPN_CLUB;
+            you.inv[0].plus = you.inv[0].plus2 = 1;
+        }
+
         // Skills
         you.skills[SK_EVOCATIONS]  = 3;
-        you.skills[SK_TRAPS]       = 2;
         you.skills[SK_DODGING]     = 2;
         you.skills[SK_FIGHTING]    = 1;
         weap_skill                 = 1;
@@ -1005,14 +999,10 @@ static void _give_items_skills(const newgame_def& ng)
     if (you.species == SP_DEEP_DWARF)
         newgame_make_item(-1, EQ_NONE, OBJ_WANDS, WAND_HEAL_WOUNDS, -1, 1, 5);
 
-    // Zotdef: everyone gets a bonus two potions of curing, plus two
-    // free levels in Traps & Doors so they can replace old traps with
-    // better ones.
+    // Zotdef: everyone gets bonus two potions of curing.
+
     if (crawl_state.game_is_zotdef())
-    {
         newgame_make_item(-1, EQ_NONE, OBJ_POTIONS, POT_CURING, -1, 2);
-        you.skills[SK_TRAPS] += 2;
-    }
 
     if (weap_skill)
     {
@@ -1033,27 +1023,12 @@ static void _give_items_skills(const newgame_def& ng)
         you.skills[SK_SHIELDS] = 0;
     }
 
-    if (you.religion != GOD_NO_GOD)
+    if (!you_worship(GOD_NO_GOD))
     {
         you.worshipped[you.religion] = 1;
         set_god_ability_slots();
-        if (you.religion != GOD_XOM)
+        if (!you_worship(GOD_XOM))
             you.piety_max[you.religion] = you.piety;
-    }
-}
-
-// Adjust max_magic_points by species. {dlb}
-static void _give_species_bonus_mp()
-{
-    switch (you.species)
-    {
-    case SP_VAMPIRE:
-    case SP_DEMIGOD:
-        you.mp_max_perm++;
-        break;
-
-    default:
-        break;
     }
 }
 
@@ -1197,6 +1172,9 @@ static void _give_basic_spells(job_type which_job)
     case JOB_EARTH_ELEMENTALIST:
         which_spell = SPELL_SANDBLAST;
         break;
+    case JOB_SKALD:
+        which_spell = SPELL_INFUSION;
+        break;
     case JOB_TRANSMUTER:
         which_spell = SPELL_BEASTLY_APPENDAGE;
         break;
@@ -1221,19 +1199,25 @@ static void _give_basic_spells(job_type which_job)
     return;
 }
 
-// Give knowledge of things that aren't in the starting inventory.
 static void _give_basic_knowledge(job_type which_job)
 {
-    if (you.species == SP_VAMPIRE)
-        set_ident_type(OBJ_POTIONS, POT_BLOOD_COAGULATED, ID_KNOWN_TYPE);
+    // Identify all items in pack.
+    for (int i = 0; i < ENDOFPACK; ++i)
+    {
+        if (you.inv[i].defined())
+        {
+            set_ident_type(you.inv[i], ID_KNOWN_TYPE);
+            set_ident_flags(you.inv[i], ISFLAG_IDENT_MASK);
+        }
+    }
+
+    // Recognisable by appearance.
+    you.type_ids[OBJ_POTIONS][POT_BLOOD] = ID_KNOWN_TYPE;
+    you.type_ids[OBJ_POTIONS][POT_BLOOD_COAGULATED] = ID_KNOWN_TYPE;
+    you.type_ids[OBJ_POTIONS][POT_PORRIDGE] = ID_KNOWN_TYPE;
 
     switch (which_job)
     {
-    case JOB_ASSASSIN:
-    case JOB_VENOM_MAGE:
-        set_ident_type(OBJ_POTIONS, POT_POISON, ID_KNOWN_TYPE);
-        break;
-
     case JOB_ARTIFICER:
         set_ident_type(OBJ_SCROLLS, SCR_RECHARGING, ID_KNOWN_TYPE);
         break;
@@ -1341,7 +1325,6 @@ static void _setup_generic(const newgame_def& ng)
     update_vision_range();
 
     _jobs_stat_init(you.char_class);
-    _give_last_paycheck(you.char_class);
 
     unfocus_stats();
 
@@ -1372,21 +1355,16 @@ static void _setup_generic(const newgame_def& ng)
     initialise_item_descriptions();
 
     for (int i = 0; i < ENDOFPACK; ++i)
+    {
         if (you.inv[i].defined())
         {
-            // XXX: Why is this here? Elsewhere it's only ever used for runes.
-            you.inv[i].flags |= ISFLAG_BEEN_IN_INV;
-
-            // Identify all items in pack.
-            set_ident_type(you.inv[i], ID_KNOWN_TYPE);
-            set_ident_flags(you.inv[i], ISFLAG_IDENT_MASK);
-
             // link properly
             you.inv[i].pos.set(-1, -1);
             you.inv[i].link = i;
             you.inv[i].slot = index_to_letter(you.inv[i].link);
             item_colour(you.inv[i]);  // set correct special and colour
         }
+    }
 
     reassess_starting_skills();
     init_skill_order();
@@ -1394,26 +1372,12 @@ static void _setup_generic(const newgame_def& ng)
     init_train();
     init_training();
 
-    _give_species_bonus_mp();
-
     if (crawl_state.game_is_zotdef())
     {
         you.zot_points = 80;
 
         // There's little sense in training these skills in ZotDef
         you.train[SK_STEALTH] = 0;
-        you.train[SK_TRAPS]   = 0;
-    }
-
-    // If the item in slot 'a' is a throwable weapon like a dagger,
-    // inscribe it with {=f} to prevent it being autoquivered.
-    // (It's no fun to discover you've just thrown your +2 dagger
-    // because you ran out of needles for your blowgun!)
-    // FIXME: It ought to be possible to override this with autoinscribe rules.
-    if (you.inv[0].base_type == OBJ_WEAPONS
-        && is_throwable(&you, you.inv[0]))
-    {
-        you.inv[0].inscription = "=f";
     }
 
     // Apply autoinscribe rules to inventory.

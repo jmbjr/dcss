@@ -8,7 +8,7 @@ v této hluboké jeskyni je plno neslýchaného bohatství, stejně tak mnoho
 nebezpečí čekající na každého vetřelce. Jen málo z nich uniklo živích, a ještě
 méně si jich zachovalo kousek zdravého rozumu a mohlo vyprávět.
 
-žalář je 27 úrovní hluboký, ale upřímně řečeno, to je jen začátek.
+žalář je 16 úrovní hluboký, ale upřímně řečeno, to je jen začátek.
 %%%%
 Temple
 
@@ -34,14 +34,6 @@ bohatství, ale všechny kolemjdoucí si musí být vědomi legendární magick�
 zdatnosti tohoto druhu.
 
 Elfí sály jsou tří úrovňové.
-%%%%
-Dwarven Hall
-
-Tyto sály z jemně opracovaného kamene jsou obydlím hlubinných trpaslíků. Jejich
-schopnost jemného obrábění kovů jim umožnila vytvořit spoustu zbraní pro
-použití proti bytostem, jako jsi ty.
-
-Pouze jedna úroveň.
 %%%%
 Lair
 
@@ -103,14 +95,24 @@ hlouběji se nacházíte.
 Slizká jáma má pět pater a nachází se zde slizká runa. Vstup lze nalézt mezi
 Doupětem:6 a Doupětem:8.
 %%%%
-Vaults
+Hall of Blades
 
-Pravděpodobně dílo nějakého mocného šílence, Sklepení jsou prý místem mnoha
-velkých pokladů. Soudě dle krve rozstříknuté v hojném množství kolem vstupu zde
-lze narazit také na určité množství násilí.
+Bylo nebylo, kdysi se dýky, sekery a halapartny v noční čas scházely a tančili
+waltz, sníce o bitevních polích prosty člověka i zvířete. Ty časy jsou již
+dávno pryč, ony zbraně však zůstaly.
 
-Sklepení mají pět pater a nachází se zde stříbrná runa a také vstupy do dalších
-dvou částí. Vstup lze najít mezi 15. a 20. patrem hlavní části žaláře.
+Síň čepelí má pouze jedno podlaží a lze ji nalézt mezi Sklepením:3 a
+Sklepením:4.
+%%%%
+Crypt
+
+Obrovské úložiště starobylých nebožtíků. Vzduch je zapáchající a mrazivý, stěny
+chladné a vlhké. Všude jsou hojně rozeseté kosti a celým místem zaznívá
+pronikavý křik mučených duší neklidných zesnulých.
+
+Krypta má pět úrovní. V žaláři je k nalezení buď krypta nebo hvozd, a v
+případě, že krypta existuje, vchod do ní se nachází mezi sklepením:2 a
+sklepením:3, a obsahuje vchod do hrobky.
 %%%%
 Tomb
 
@@ -120,17 +122,6 @@ kteří se vrátili z tohoto místa čisté smrti je mimořádně krátký.
 
 Hrobka má tři úrovně a obsahuje zlatou runu.  Její vstup je buď v  kryptě: 2
 nebo kryptě: 3.
-%%%%
-Tomb:quote
-
-V hloubi každého srdce jest hrobka i žalář, a byť světla, hudba a povyk shůry
-občas může dát zapomenout na jejich bytí, a na ty, jež jsou zakopáni nebo
-uvězněni. Občas však, o půlnoci víc, tyto temná místa brány své otevřou. V
-takovouto hodinu, kdy mysl v nečinnosti jest, bez síly činu; když
-obrazotvornost jest zrcadlem, myšlenkám všem život vdechuje, bez moci výběru či
-kontroly; tehdy modli se nechť tvé smutky spí hlubokým spánkem a ať bratrstvo
-výčitek nezlomí jejich řetězy.
-    -Nathaniel Hawthorne, "Strašlivá mysl". 1835
 %%%%
 Hell
 
@@ -167,24 +158,27 @@ kteří se ženou za poklady, postupně vysávají všechen život.
 Tartaros má sedm podlaží a nalézá se zde kostěná runa. Lze se do něj dostat
 přes Předsíň pekel.
 %%%%
-Tartarus:quote
-
-V pekle jest chmurný a osamělý světa kus
-od všeho ostatního šera na hony vzdálený:
-Prostý, smutný je to kraj, kde se stíny nacházejí,
-Smutek jeho verš můj nikdy nepoví.
-    -Edward Arlington Robinson, “Svrchovanost”. 1897.
-%%%%
 Zot
 
 Část žaláře tak hrozivá, plna šílenství, zuřivosti a bláznovství, že byla
 bezpečně uzamčena před vstupem náhodných vetřelců. Jen ti nepomatenější
 dobrodruzi by se opovážili shromáždit požadované klíče, porušit pečeť a
-vstoupit hlouběji - a to vše jen kvůli marnivé naději, že získají bájný
+vstoupit hlouběji — a to vše jen kvůli marnivé naději, že získají bájný
 artefakt, který nikdo nikdy neviděl.
 
 Zotova říše má pět pater a lze vejít pouze když má vstupující u sebe alespoň
 tři runy.
+%%%%
+Forest
+
+V těchto temných a ponurých lesích leží doupě spriganů, faunů, tengu a dalších
+bytostí, které jsou schopny podmanit si mysl nezvaných hostů proti jejich vůli.
+Mocné magické iluze a překážky jsou zde v porovnání s jinými místy naprosto
+běžné.
+
+Začarovaný hvozd má pět úrovní. V žaláři je k nalezení buď krypta nebo hvozd, a
+v případě, že hvozd existuje, vchod do něj se nachází mezi sklepením:2 a
+sklepením:3, a obsahuje vchod do hrobky.
 %%%%
 Abyss
 
@@ -212,27 +206,18 @@ Pandemonium nemá konce. Portály lze v hojném počtu nalézt v hlubších patr
 žaláře, ale dostat se zpět už však nemusí být stejně jednoduché.
 
 V Pandemoniu se nachází ne méně než pět run:
-• ohnivá runa v příjemně vyhřáté říši Cerebově
-• zářná runa v zamořeném panství Mnolega
-• magická runa, střežena tajemnými silami Lom Lobona a jeho pohůnků
-• temná runa v stínovém příbytku Gloorxe Vloqa
-• démonické runy, které vlastní méně slavní pánové démonů
-%%%%
-Ziggurat
-
-Zigurat je zvláštní věž, sestávající ze sedmadvaceti pater neustále se
-zvětšujících bitevních arén, a každá z nich obsahuje více bohatství a nebezpečí
-než ta předchozí. Ať už tuto ohavnost vytvořil kdokoliv, za vstup si žádá
-vysokou cenu. Pozor však, protože zigurat není pro zbabělce - může se stát
-hrobem i pro ty nejstatečnější a nejschopnější. A ačkoliv se portál do bezpečí
-nachází na každém patře, po opuštění se již znovu nelze vrátit.
+ • ohnivá runa v příjemně vyhřáté říši Cerebově
+ • zářná runa v zamořeném panství Mnolega
+ • magická runa, střežena tajemnými silami Lom Lobona a jeho pohůnků
+ • temná runa v stínovém příbytku Gloorxe Vloqa
+ • démonické runy, které vlastní méně slavní pánové démonů
 %%%%
 Labyrinth
 
 Labyrint je obrovské, složité bludiště, navržené nějakou záludnou, zlovolnou
 duší, z důvodů, které jsou již dávno ztraceny v čase. Staré příběhy říkají, že
 labyrint byl postaven coby vězení pro hrozivého minotaura. Novější historky
-tvrdí, že tam stále je a stráží jediný východ ven - a také kupu pokladů, které
+tvrdí, že tam stále je a stráží jediný východ ven — a také kupu pokladů, které
 vzal bláznivým dobrodruhům, kteří se v bludišti ztratili a zemřeli tam hlady.
 Dávejte si v oněch měnících a klikatících se chodbách pozor, nebo i vaše věci
 skončí na minotaurově hromadě.

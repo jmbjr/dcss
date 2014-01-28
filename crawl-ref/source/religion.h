@@ -3,7 +3,6 @@
  * @brief Misc religion related functions.
 **/
 
-
 #ifndef RELIGION_H
 #define RELIGION_H
 
@@ -17,6 +16,8 @@
 #define HALF_MAX_PIETY (MAX_PIETY / 2)
 
 #define MAX_PENANCE    200
+
+#define NUM_VEHUMET_GIFTS 13
 
 bool is_evil_god(god_type god);
 bool is_good_god(god_type god);
@@ -54,6 +55,12 @@ int god_colour(god_type god);
 colour_t god_message_altar_colour(god_type god);
 bool player_can_join_god(god_type which_god);
 void god_pitch(god_type which_god);
+
+static inline bool you_worship(god_type god)
+{
+    return you.religion == god;
+}
+
 int had_gods();
 int piety_rank(int piety = -1);
 int piety_scale(int piety_change);
@@ -64,7 +71,8 @@ bool god_hates_killing(god_type god, const monster* mon);
 bool god_likes_fresh_corpses(god_type god);
 bool god_likes_butchery(god_type god);
 bool god_likes_spell(spell_type spell, god_type god);
-bool god_hates_spell(spell_type spell, god_type god);
+bool god_hates_spell(spell_type spell, god_type god,
+                     bool rod_spell = false);
 bool god_loathes_spell(spell_type spell, god_type god);
 bool god_can_protect_from_harm(god_type god);
 int elyvilon_lifesaving();

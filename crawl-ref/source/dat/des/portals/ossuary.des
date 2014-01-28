@@ -7,7 +7,7 @@
 # monsters, making the player choose between pressing on towards the loot or
 # leaving the vault.
 #
-# Flavour: Mini versions of Tomb:* and otherwise crypt like.
+# Flavour: Mini versions of Tomb and otherwise crypt like.
 #
 ##############################################################################
 
@@ -24,7 +24,7 @@ function ossuary_portal(e)
       finalmsg = "The hiss of flowing sand is almost imperceptible now.",
 
       verb = 'hiss',
-      -- This is always preceeded by an article, so...
+      -- This is always preceded by an article, so...
       noisemaker = 'avalanche of sand',
       ranges = {
         { 5000, 'rapid ' },  { 4000, '' },
@@ -36,22 +36,17 @@ function ossuary_portal(e)
   e.lua_marker('O',
       timed_marker {
         disappear = "The hiss of flowing sand is gone.",
-        desc = "sand-covered staircase",
         entity = 'staircase',
-        dst = "Ossuary",
-        overview = "sand-covered staircase",
         turns = timeout_turns_long,
         turns_short = timeout_turns_short,
         floor = "expired_portal",
         feat_tile = "dngn_portal_ossuary_gone",
         msg = messager })
   e.tags("uniq_ossuary no_monster_gen chance_ossuary")
-  e.chance("5%")
-  e.kfeat("O = enter_portal_vault")
-  e.colour("O = brown")
+  e.chance(500)
+  e.kfeat("O = enter_ossuary")
   e.colour("' = yellow")
   e.ftile("' = floor_sandstone")
-  e.tile("O = dngn_portal_ossuary")
   e.tile("c = wall_tomb")
 end
 
@@ -59,8 +54,7 @@ end
 -- : ossuary_setup_features(_G)
 -- Note that the function also defines < to be the exit portal.
 function ossuary_setup_features(e)
-        e.kfeat("< = exit_portal_vault")
-        e.colour("< = brown")
+  e.kfeat("< = exit_ossuary")
 end
 }}
 
@@ -152,6 +146,115 @@ MAP
 .............
 ENDMAP
 
+NAME: nicolae_ossuary_entry_catacombs
+FTILE: O1s+ABC = floor_sandstone
+COLOUR: 1s = yellow
+NSUBST: A = + / c, B = + / c, C = + / c, s = 1:O / 4:1 / *:1.....
+KMONS: O1 = orc skeleton / orc zombie w:5 / elf skeleton / elf zombie w:5 / \
+            human skeleton / human zombie w:5
+: ossuary_portal(_G)
+MAP
+ccccccccc
++'1'csAsc
+ccc+c+cAc
+cs+'''+sc
+ccc'''ccc
+cs+'''+sc
+cCc+c+cBc
+csCscsBsc
+ccccccccc
+ENDMAP
+
+NAME: nicolae_ossuary_entry_false_entrances
+NSUBST: O = O / >
+SHUFFLE: AB/AB/AB/BA
+SUBST: A = m, B = c
+FTILE: Om> = floor_sandstone
+: ossuary_portal(_G)
+MAP
+   xxxxx
+ +ccccccc+
+ c'''c'''c
+xc'O'A'O'cx
+xc'''B'''cx
+xccABBBAccx
+xc'''B'''cx
+xc'O'A'O'cx
+ c'''c'''c
+ +ccccccc+
+   xxxxx
+ENDMAP
+
+NAME: nicolae_ossuary_entry_giza
+NSUBST: M = 1:O / *:z
+KMONS: O = mummy
+KMONS: z = goblin zombie / hobgoblin zombie / kobold zombie / orc zombie
+FTILE: Oz = floor_sandstone
+COLOUR: z = yellow
+: ossuary_portal(_G)
+MAP
+          .
+         ...
+        ..c..
+       ..ccc..
+      ..ccMcc..
+     ..ccc+ccc..
+    ..c.......c..
+   ..ccc.....ccc..
+  ..ccMcc...ccMcc..
+ ..ccc+ccc.ccc+ccc..
+.....................
+ENDMAP
+
+NAME: nicolae_ossuary_entry_monument
+TAGS: transparent
+FTILE: G = floor_sandstone
+SUBST: - = '.
+: ossuary_portal(_G)
+MAP
+..G..
+.'''.
+G'O'G
+.'''.
+..G..
+ENDMAP
+
+NAME: nicolae_ossuary_entry_plus
+TAGS: transparent
+: if crawl.coinflip() then
+SUBST: Dd = +, o = O, p = '
+: else
+SUBST: d = +, D = c, o = '
+NSUBST: p = O / '
+: end
+FTILE: + = floor_sandstone
+: ossuary_portal(_G)
+MAP
+.........
+...cDc...
+..'cpc'..
+.ccc'ccc.
+.Dp'o''d.
+.ccc'ccc.
+..'cpc'..
+...cDc...
+.........
+ENDMAP
+
+NAME: nicolae_ossuary_entry_ruins
+TAGS: transparent
+FTILE: GO = floor_sandstone
+SUBST: c = -c, - = ''., ^ = '..
+: ossuary_portal(_G)
+MAP
+.......
+.cc-cc.
+.c---c.
+.--O--.
+.c---c.
+.cc-cc.
+.......
+ENDMAP
 
 #### The portal vaults ####################################
 
@@ -205,8 +308,7 @@ xxxxxxxxxxxxxxxxxxxxxx
 ENDMAP
 
 NAME:    ossuary_tomb_2
-# Generally have rooms full of either monsters or traps. To protect the
-# monsters, all doors are runed, no alarm traps, and mostly needle traps.
+# Generally have rooms full of either monsters or traps.
 WEIGHT:  40
 ORIENT:  encompass
 TAGS:    no_item_gen no_monster_gen no_rotate
@@ -222,16 +324,16 @@ SUBST:   1 = 1:20 2:10 .:20
 SUBST:   ~ = ~:20 .:10
 :end
 SUBST:   z = 1
-NSUBST:  B = 1:= / *:c
-NSUBST:  C = 1:= / *:c
-NSUBST:  D = 1:= / *:c
-NSUBST:  E = 1:= / *:c
-NSUBST:  F = 1:= / *:c
-NSUBST:  G = 1:= / *:c
-NSUBST:  H = 1:= / *:c
-NSUBST:  I = 1:= / *:c
-NSUBST:  J = 1:= / *:c
-NSUBST:  K = 1:= / *:c
+NSUBST:  B = 1:+ / *:c
+NSUBST:  C = 1:+ / *:c
+NSUBST:  D = 1:+ / *:c
+NSUBST:  E = 1:+ / *:c
+NSUBST:  F = 1:+ / *:c
+NSUBST:  G = 1:+ / *:c
+NSUBST:  H = 1:+ / *:c
+NSUBST:  I = 1:+ / *:c
+NSUBST:  J = 1:+ / *:c
+NSUBST:  K = 1:+ / *:c
 # loot: 12 items
 ITEM:    any scroll w:6 / any potion / any potion q:2 w:2
 MONS:    adder zombie / hobgoblin zombie / orc zombie / kobold zombie / nothing
@@ -315,15 +417,12 @@ NSUBST:  e = 1:1 / *:e
 NSUBST:  $ = 1:1 / *:$
 SUBST:   2 = 2 3:1 .:1
 SUBST:   3 = 3 2:1 .:1
-SUBST:   f = ~
 ITEM:    any scroll, any potion
 MONS:    mummy
 MONS:    rat zombie / jackal zombie / quokka zombie / adder zombie / \
          goblin zombie / hobgoblin zombie / kobold zombie
 MONS:    gnoll zombie / orc zombie / hound zombie / big kobold zombie / \
          human zombie / elf zombie / centaur zombie
-KFEAT:   ~ = needle trap w:20 / arrow trap / spear trap w:5 / floor w:20
-KFEAT:   f = needle trap w:20 / arrow trap / spear trap w:5 / floor w:20
 : ossuary_setup_features(_G)
 MAP
 xxxxxxxxxxxxxxxxxxxxxx
@@ -331,18 +430,18 @@ x........<..A........x
 x....................x
 x......cccccccc......x
 x...cccc3223+ecccc...x
-x~~cc.~~....ceec2cc~~x
+x..cc.......ceec2cc..x
 x..c<.ccccc.cccc..+..x
-x~~cc.+dddc...~~2cc~~x
+x..cc.+dddc.....2cc..x
 x..2ccccddc...cccc2..x
 x2.....cccccccc.....2x
 x..2....2.3.2.....2..x
 x..2.....2.3.2....2..x
 x2.....cccccccc.....2x
 x..2cccc3+ffc3cccc2..x
-x~~cc2.2.cccc.c$$cc~~x
-x..+.....~~~~.+$$<c..x
-x~~cc2.2.cccc.c$$cc~~x
+x..cc2.2.cccc.c$$cc..x
+x..+..........+$$<c..x
+x..cc2.2.cccc.c$$cc..x
 x...cccc3+ffc3cccc...x
 x......cccccccc......x
 x.......2.3.2........x
@@ -424,7 +523,7 @@ SUBST:  3 = 3.
 MAP
 ccccccccccccccccccccccccc
 c...c..3c..1c~~~ndddc131c
-c.A.c...G...+~~~nd2d=313c
+c.A.c...G...+~~~nd2d+313c
 c...c3......c~~~ndddc131c
 cc+cccG...Gccc+ccccccc+cc
 c...c......3c...c3.1c~~~c
@@ -432,7 +531,7 @@ c.<.+...G...c...G...c~~~c
 c...c...c3..c......3c~~~c
 ccccccccccccccG...Gcc~~~c
 c1.1cdddn~~~c3.....3c~~~c
-c.3.=d2dn~~~+...G...c~~~c
+c.3.+d2dn~~~+...G...c~~~c
 c3.3cdddn~~~c..3c3.1c~~~c
 cc+ccccccc+ccccccccccc+cc
 c1...3c.....c~~~c...c3.1c
@@ -444,7 +543,7 @@ cccG..3..Gccc...c...G...c
 c3.........3c3.3c1.3c3.1c
 c...........cc+ccccccc+cc
 c.....G.....c~~~ndddc3.3c
-c.....c.....+~~~nd2d=.3.c
+c.....c.....+~~~nd2d+.3.c
 c3...3c3...1c~~~ndddc1.1c
 ccccccccccccccccccccccccc
 ENDMAP
@@ -632,9 +731,9 @@ ITEM:    potion of curing / potion of heal wounds / potion of speed / \
          scroll of blinking w:5 / scroll of holy word / \
          scroll of curse armour w:5 / scroll of curse weapon w:5
 # There are three setups than can occur:
-# 10% - part of the loot in the closets, runed doors, bit more loot
-# 45% - doors are runed, traps are nasty, monsters asleep
-# 45% - doors are plain, traps are softer, monsters are awake
+# 10% - part of the loot in the closets, bit more loot
+# 45% - traps are nasty, monsters asleep
+# 45% - traps are softer, monsters are awake
 # TODO: rebalance after secret door removal.
 : if crawl.one_chance_in(10) then
 SUBST:   3 = d
@@ -643,7 +742,6 @@ SUBST:   M = 111.
 : elseif crawl.coinflip() then
 SUBST:   M = 111.
 : else
-SUBST:   = = +
 SUBST:   ~ = T
 SUBST:   3 = 2
 NSUBST:  M = 1:1 / *:.
@@ -657,18 +755,17 @@ KFEAT:   T = alarm trap w:20 / net trap / floor w:70
 KFEAT:   ^ = net trap w:15 / needle trap w:4 / spear trap w:1 / floor w:20
 COLOUR:  ^ = red
 KFEAT:   W = dart trap / floor w:20
-SUBST:   = = +
 : ossuary_setup_features(_G)
 MAP
            cccccccccccccccccccc
    ccccccccc3c3c3c3c3c3c3cddddccc
- ccc.....WWc=c=c=c=c=c=c=c^.....c
+ ccc.....WWc+c+c+c+c+c+c+c^.....c
 cc1.....WW~~~~~~~~~~~~~~~~^.....cc
 c......WWW~~~~~~~~~~~~~~~~^.....Mcc
 c1....AW<W~~~~~~~~~~~~~~~~^.....M<c
 c......WWW~~~~~~~~~~~~~~~~^.....Mcc
 cc1.....WW~~~~~~~~~~~~~~~~^.....cc
- ccc.....WWc=c=c=c=c=c=c=c^.....c
+ ccc.....WWc+c+c+c+c+c+c+c^.....c
    ccccccccc3c3c3c3c3c3c3cddddccc
            cccccccccccccccccccc
 ENDMAP
@@ -681,7 +778,7 @@ TAGS:    no_item_gen no_monster_gen no_rotate no_vmirror
 MONS:    orc skeleton / kobold skeleton / gnoll skeleton / orc skeleton
 MONS:    mummy
 MONS:    patrolling guardian mummy
-NSUBST:  = = 1:= / *:c
+NSUBST:  = = 1:+ / *:c
 # Loot: 22-30 items, with early loot!
 ITEM:    any scroll / any potion / nothing
 ITEM:    any scroll / any potion / nothing
@@ -823,7 +920,7 @@ MAP
            cc''cX''cX''cc.^d<<d..cc''Xc''Xc''cc
           cc''cX''cX''cc.^.4dd3^.^cc''Xc''Xc''cc
          cc''cX''cX''cc^..^.dd^.~.~cc''Xc''Xc''cc
-        cc''cX''cX''cccccccccccccc==cc''Xc''Xc''cc
+        cc''cX''cX''cccccccccccccc++cc''Xc''Xc''cc
        cc''cX''cX''''''''''''''''''''cc''Xc''Xc''cc
       cc''cX''cccXcXcXcXcXcXcXcXcXcXcXcc''Xc''Xc''cc
      cc''cX''''''''''''''''''''''''''''''''Xc''Xc''cc
@@ -896,7 +993,7 @@ ENDMAP
 #
 # At the end of the corridor is a second treasure room, this one also
 # containing more flying skeleton alarm traps, plus guardian mummies inside
-# 3x3 rooms with runed doors.
+# 3x3 rooms.
 #
 # The intent is that someone with a relatively high stealth skill (at least
 # for early) will be able to sneak past all of the flying skulls and grab the
@@ -920,11 +1017,11 @@ ITEM:    any scroll / any potion / any wand w:4
 KMONS:   V = guardian mummy
 KMONS:   X = flying skull
 SHUFFLE: VX
-SUBST:   x = c:20 o:8
-SUBST:   z = c:20 o:4
-SUBST:   y = c:20 o:1
+SUBST:   x = c:20 n:8
+SUBST:   z = c:20 n:4
+SUBST:   y = c:20 n:1
 SUBST:   $ = 1:10 2:1
-KFEAT:   L = runed_door
+KFEAT:   L = closed_door
 MARKER:  L = lua:message_at_spot ( \
                  "Something ancient and evil stirs ahead...", \
                  "warning" \
@@ -945,7 +1042,7 @@ cc.......cc
     cc.cc
    cc.cc                            ccccccccccccccccc
    cc..ccc                          c...............c
-    cc...cc                         c.=cc..xxx..cc=.c
+    cc...cc                         c.+cc..xxx..cc+.c
   ccc...ccc                         c.c4c..x3x..c4c.c
  cc......cccccccccccccccccccccccccccc.ccc..yzy..ccc.c
 cc........cc$c$c$c$c$cc.....cccccVccc...............c
@@ -955,7 +1052,7 @@ cc.cc......c+c+c+c+c+cc.GdG.cccccoccc.cxy..eee..yxx.c
 cc.c......cc$c$c$c$c$cc.....cccccXccc...............c
 cc.cc....cccccccccccccccccccccccccccc.ccc..yzy..ccc.c
  cc.....cc                          c.c4c..x3x..c4c.c
-  cc...cc                           c.=cc..xxx..cc=.c
+  cc...cc                           c.+cc..xxx..cc+.c
    ccccc                            c...............c
                                     ccccccccccccccccc
 ENDMAP

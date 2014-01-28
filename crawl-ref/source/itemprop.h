@@ -3,7 +3,6 @@
  * @brief Misc functions.
 **/
 
-
 #ifndef ITEMPROP_H
 #define ITEMPROP_H
 
@@ -37,15 +36,8 @@ iflags_t get_equip_race(const item_def &item) PURE;
 iflags_t get_equip_desc(const item_def &item) PURE;
 iflags_t get_species_race(species_type sp) IMMUTABLE;
 
-// helmet functions:
-void  set_helmet_random_desc(item_def &item);
-short get_helmet_desc(const item_def &item) PURE;
-
 bool  is_helmet(const item_def &item) PURE;
 bool  is_hard_helmet(const item_def &item) PURE;
-
-short get_gloves_desc(const item_def &item) PURE;
-void  set_gloves_random_desc(item_def &item);
 
 // ego items:
 bool set_item_ego_type(item_def &item, object_class_type item_type,
@@ -89,9 +81,10 @@ int weapon_rarity(int w_type) IMMUTABLE;
 int   cmp_weapon_size(const item_def &item, size_type size) PURE;
 bool  check_weapon_wieldable_size(const item_def &item, size_type size) PURE;
 
-hands_reqd_type hands_reqd(const item_def &item, size_type size) PURE;
-hands_reqd_type hands_reqd(object_class_type base_type, int sub_type,
-                           size_type size) IMMUTABLE;
+size_type weapon_size(const item_def &item) PURE;
+
+hands_reqd_type basic_hands_reqd(const item_def &item, size_type size) PURE;
+hands_reqd_type hands_reqd(const actor* ac, object_class_type base_type, int sub_type);
 
 bool is_giant_club_type(int wpn_type) IMMUTABLE;
 
@@ -104,6 +97,8 @@ bool convert2bad(item_def &item);
 int get_vorpal_type(const item_def &item) PURE;
 int get_damage_type(const item_def &item) PURE;
 int single_damage_type(const item_def &item) PURE;
+
+bool is_brandable_weapon(const item_def &wpn, bool allow_ranged);
 
 int weapon_str_weight(const item_def &wpn) PURE;
 
@@ -126,6 +121,7 @@ bool is_throwable(const actor *actor, const item_def &wpn,
                   bool force = false) PURE;
 launch_retval is_launched(const actor *actor, const item_def *launcher,
                           const item_def &missile) PURE;
+bool is_melee_weapon(const item_def &weapon) PURE;
 
 reach_type weapon_reach(const item_def &item) PURE;
 
@@ -146,7 +142,6 @@ bool ring_has_stackable_effect(const item_def &item) PURE;
 
 // food functions:
 bool is_blood_potion(const item_def &item) PURE;
-bool is_fizzing_potion(const item_def &item) PURE;
 bool food_is_meaty(int food_type) PURE;
 bool food_is_meaty(const item_def &item) PURE;
 bool food_is_veggie(int food_type) PURE;

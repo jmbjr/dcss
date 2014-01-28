@@ -4,7 +4,7 @@
 --
 -- To use this, please bind a key to the following commands:
 -- ===hit_closest         (Tab by default)
--- ===hit_adjacent        (Shift-Tab by default)
+-- ===hit_closest_nomove  (Shift-Tab by default)
 -- ===toggle_autothrow    (not bound by default)
 --
 -- This uses the very incomplete client monster and view bindings, and
@@ -15,8 +15,11 @@ local ATT_HOSTILE = 0
 local ATT_NEUTRAL = 1
 
 AUTOFIGHT_STOP = 30
+AUTOFIGHT_CAUGHT = false
 AUTOFIGHT_THROW = false
 AUTOFIGHT_THROW_NOMOVE = true
+AUTOFIGHT_FIRE_STOP = false
+AUTOMAGIC_ACTIVE = false
 
 local function delta_to_vi(dx, dy)
   local d2v = {
@@ -210,6 +213,11 @@ local function attack_fire(x,y)
   crawl.process_keys(move)
 end
 
+local function attack_fire_stop(x,y)
+  move = 'fr' .. vector_move(x, y) .. '.'
+  crawl.process_keys(move)
+end
+
 local function attack_reach(x,y)
   move = 'vr' .. vector_move(x, y) .. '.'
   crawl.process_keys(move)
@@ -224,6 +232,10 @@ local function set_stop_level(key, value, mode)
   AUTOFIGHT_STOP = tonumber(value)
 end
 
+local function set_af_caught(key, value, mode)
+  AUTOFIGHT_CAUGHT = string.lower(value) ~= "false"
+end
+
 local function set_af_throw(key, value, mode)
   AUTOFIGHT_THROW = string.lower(value) ~= "false"
 end
@@ -232,7 +244,15 @@ local function set_af_throw_nomove(key, value, mode)
   AUTOFIGHT_THROW_NOMOVE = string.lower(value) ~= "false"
 end
 
-local function hp_is_low()
+local function set_af_fire_stop(key, value, mode)
+  AUTOFIGHT_FIRE_STOP = string.lower(value) ~= "false"
+end
+
+function set_automagic(key, value, mode)
+  AUTOMAGIC_ACTIVE = string.lower(value) ~= "false"
+end
+
+function af_hp_is_low()
   local hp, mhp = you.hp()
   return (100*hp <= AUTOFIGHT_STOP*mhp)
 end
@@ -240,16 +260,24 @@ end
 function attack(allow_movement)
   local x, y, info = get_target(not allow_movement)
   local caught = you.caught()
-  if you.confused() then
+  if af_hp_is_low() then
+    crawl.mpr("You are too injured to fight recklessly!")
+  elseif you.confused() then
     crawl.mpr("You are too confused!")
   elseif caught then
-    crawl.mpr("You are " .. caught .. "!")
-  elseif hp_is_low() then
-    crawl.mpr("You are too injured to fight recklessly!")
+    if AUTOFIGHT_CAUGHT then
+      crawl.process_keys(delta_to_vi(1, 0)) -- Direction doesn't matter.
+    else
+      crawl.mpr("You are " .. caught .. "!")
+    end
   elseif info == nil then
     crawl.mpr("No target in view!")
   elseif info.attack_type == 3 then
-    attack_fire(x,y)
+    if AUTOFIGHT_FIRE_STOP then
+      attack_fire_stop(x,y)
+    else
+      attack_fire(x,y)
+    end
   elseif info.attack_type == 2 then
     attack_melee(x,y)
   elseif info.attack_type == 1 then
@@ -262,11 +290,43 @@ function attack(allow_movement)
 end
 
 function hit_closest()
+  if AUTOMAGIC_ACTIVE and you.spell_table()[AUTOMAGIC_SPELL_SLOT] then
+    mag_attack(true)
+  else
+    attack(true)
+  end
+end
+
+function hit_closest_nomove()
+  if AUTOMAGIC_ACTIVE and you.spell_table()[AUTOMAGIC_SPELL_SLOT] then
+    mag_attack(false)
+  else
+    attack(false)
+  end
+end
+
+function hit_nonmagic()
   attack(true)
 end
 
-function hit_adjacent()
+function hit_nonmagic_nomove()
   attack(false)
+end
+
+function hit_magic()
+  if you.spell_table()[AUTOMAGIC_SPELL_SLOT] then
+    mag_attack(true)
+  else
+    crawl.mpr("No spell in slot " .. AUTOMAGIC_SPELL_SLOT .. "!")
+  end
+end
+
+function hit_magic_nomove()
+  if you.spell_table()[AUTOMAGIC_SPELL_SLOT] then
+    mag_attack(false)
+  else
+    crawl.mpr("No spell in slot " .. AUTOMAGIC_SPELL_SLOT .. "!")
+  end
 end
 
 function toggle_autothrow()
@@ -275,5 +335,8 @@ function toggle_autothrow()
 end
 
 chk_lua_option.autofight_stop = set_stop_level
+chk_lua_option.autofight_caught = set_af_caught
 chk_lua_option.autofight_throw = set_af_throw
 chk_lua_option.autofight_throw_nomove = set_af_throw_nomove
+chk_lua_option.autofight_fire_stop = set_af_fire_stop
+chk_lua_option.automagic_enable = set_automagic

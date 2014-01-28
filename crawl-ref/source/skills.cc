@@ -12,7 +12,7 @@
 #include <string.h>
 #include <stdlib.h>
 
-#include "abl-show.h"
+#include "ability.h"
 #include "evoke.h"
 #include "exercise.h"
 #include "externs.h"
@@ -42,8 +42,8 @@
 // Note that they don't have to be equal, but it is important to make
 // sure that they're set so that the spending limit will always allow
 // for 1 skill point to be earned.
-#define MAX_COST_LIMIT           250
-#define MAX_SPENDING_LIMIT       250
+#define MAX_COST_LIMIT           265
+#define MAX_SPENDING_LIMIT       265
 
 static int _train(skill_type exsk, int &max_exp, bool simu = false);
 static void _train_skills(int exp, const int cost, const bool simu);
@@ -64,11 +64,11 @@ unsigned int skill_cost_needed(int level)
 int calc_skill_cost(int skill_cost_level)
 {
     const int cost[] = { 1, 2, 3, 4, 5,            // 1-5
-                         7, 9, 12, 15, 18,         // 6-10
-                         28, 40, 56, 76, 100,      // 11-15
-                         130, 165, 195, 215, 230,  // 16-20
-                         240, 248, 250, 250, 250,  // 21-25
-                         250, 250 };
+                         7, 8, 9, 13, 22,         // 6-10
+                         37, 48, 73, 98, 125,      // 11-15
+                         145, 170, 190, 212, 225,  // 16-20
+                         240, 255, 260, 265, 265,  // 21-25
+                         265, 265 };
 
     ASSERT_RANGE(skill_cost_level, 1, 27 + 1);
     return cost[skill_cost_level - 1];
@@ -298,7 +298,7 @@ static void _check_inventory_skills()
 {
     for (int i = 0; i < ENDOFPACK; ++i)
     {
-        // Exit early if ther's no more skill to check.
+        // Exit early if there's no more skill to check.
         if (you.stop_train.empty())
             return;
 
@@ -321,7 +321,7 @@ static void _check_spell_skills()
 {
     for (int i = 0; i < MAX_KNOWN_SPELLS; i++)
     {
-        // Exit early if ther's no more skill to check.
+        // Exit early if there's no more skill to check.
         if (you.stop_train.empty())
             return;
 
@@ -348,7 +348,7 @@ static void _check_abil_skills()
             you.stop_train.erase(it);
 
         if (abilities[i] == ABIL_TSO_DIVINE_SHIELD
-            && you.stop_train.find(SK_SHIELDS) != you.stop_train.end())
+            && you.stop_train.count(SK_SHIELDS))
         {
             you.stop_train.erase(SK_SHIELDS);
         }
@@ -399,7 +399,7 @@ static void _check_start_train()
             ++it;
 
     if (!skills.empty())
-        mpr("You resume training " + skill_names(skills) + ".");
+        mprf("You resume training %s.", skill_names(skills).c_str());
 
     you.start_train.clear();
 }
@@ -430,7 +430,7 @@ static void _check_stop_train()
 
     if (!skills.empty())
     {
-        mpr("You stop training " + skill_names(skills) + ".");
+        mprf("You stop training %s.", skill_names(skills).c_str());
         check_selected_skills();
     }
 
@@ -457,7 +457,6 @@ bool training_restricted(skill_type sk)
     case SK_ARMOUR:
     case SK_DODGING:
     case SK_STEALTH:
-    case SK_TRAPS:
     case SK_UNARMED_COMBAT:
     case SK_SPELLCASTING:
         return false;
@@ -575,13 +574,13 @@ void init_training()
     skills.init(0);
     for (int i = 0; i < NUM_SKILLS; ++i)
         if (skill_trained(i))
-            skills[i] = pow(you.skill_points[i], 2.0);
+            skills[i] = sqr(you.skill_points[i]);
 
     _scale_array(skills, EXERCISE_QUEUE_SIZE, true);
     _init_queue(you.exercises, skills);
 
     for (int i = 0; i < NUM_SKILLS; ++i)
-        skills[i] = pow(you.skill_points[i], 2.0);
+        skills[i] = sqr(you.skill_points[i]);
 
     _scale_array(skills, EXERCISE_QUEUE_SIZE, true);
     _init_queue(you.exercises_all, skills);
@@ -746,7 +745,7 @@ static bool _level_up_check(skill_type sk, bool simu)
 
 bool is_magic_skill(skill_type sk)
 {
-    return (sk > SK_LAST_MUNDANE && sk <= SK_LAST_MAGIC);
+    return sk > SK_LAST_MUNDANE && sk <= SK_LAST_MAGIC;
 }
 
 void train_skills(bool simu)
@@ -794,7 +793,6 @@ static void _train_skills(int exp, const int cost, const bool simu)
          you.skill_cost_level, cost, exp);
 #endif
 
-
     // We scale the training array to the amount of XP available in the pool.
     // That gives us the amount of XP available to train each skill.
     for (int i = 0; i < NUM_SKILLS; ++i)
@@ -816,7 +814,7 @@ static void _train_skills(int exp, const int cost, const bool simu)
     {
         // We randomize the order, to avoid a slight bias to first skills.
         // Being trained first can make a difference if skill cost increases.
-        random_shuffle(training_order.begin(), training_order.end());
+        shuffle_array(training_order);
         for (vector<skill_type>::iterator it = training_order.begin();
              it != training_order.end(); ++it)
         {
@@ -906,7 +904,7 @@ static void _train_skills(int exp, const int cost, const bool simu)
 
 bool skill_trained(int i)
 {
-    return (you.can_train[i] && you.train[i]);
+    return you.can_train[i] && you.train[i];
 }
 
 void train_skill(skill_type skill, int exp)
@@ -963,9 +961,9 @@ static int _train(skill_type exsk, int &max_exp, bool simu)
     const int spending_limit = min(MAX_SPENDING_LIMIT, max_exp);
     if (cost > spending_limit)
     {
-        int frac = (spending_limit * 10) / cost;
+        int frac = spending_limit * 10 / cost;
         cost = spending_limit;
-        skill_inc = (skill_inc * frac) / 10;
+        skill_inc = skill_inc * frac / 10;
     }
 
     if (skill_inc <= 0)

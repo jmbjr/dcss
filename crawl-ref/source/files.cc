@@ -32,8 +32,10 @@
 #include "externs.h"
 
 #include "abyss.h"
+#include "act-iter.h"
 #include "areas.h"
 #include "artefact.h"
+#include "branch.h"
 #include "chardump.h"
 #include "cloud.h"
 #include "clua.h"
@@ -63,7 +65,6 @@
 #include "mon-behv.h"
 #include "mon-death.h"
 #include "mon-place.h"
-#include "mon-iter.h"
 #include "mon-stuff.h"
 #include "mon-util.h"
 #include "mon-transit.h"
@@ -94,8 +95,6 @@
 #include "version.h"
 #include "view.h"
 #include "viewgeom.h"
-
-#include <dirent.h>
 
 #ifdef __ANDROID__
 #include <android/log.h>
@@ -257,12 +256,12 @@ string get_cache_name(const string &filename)
 
 bool is_absolute_path(const string &path)
 {
-    return (!path.empty()
-            && (path[0] == FILE_SEPARATOR
+    return !path.empty()
+           && (path[0] == FILE_SEPARATOR
 #ifdef TARGET_OS_WINDOWS
-                || path.find(':') != string::npos
+               || path.find(':') != string::npos
 #endif
-              ));
+             );
 }
 
 // Concatenates two paths, separating them with FILE_SEPARATOR if necessary.
@@ -299,7 +298,7 @@ string get_path_relative_to(const string &referencefile,
 string change_file_extension(const string &filename, const string &ext)
 {
     const string::size_type pos = filename.rfind('.');
-    return ((pos == string::npos? filename : filename.substr(0, pos)) + ext);
+    return (pos == string::npos? filename : filename.substr(0, pos)) + ext;
 }
 
 time_t file_modtime(const string &file)
@@ -391,7 +390,8 @@ string canonicalise_file_separator(const string &path)
 
 static vector<string> _get_base_dirs()
 {
-    const string rawbases[] = {
+    const string rawbases[] =
+    {
 #ifdef DATA_DIR_PATH
         DATA_DIR_PATH,
 #else
@@ -406,7 +406,8 @@ static vector<string> _get_base_dirs()
 #endif
     };
 
-    const string prefixes[] = {
+    const string prefixes[] =
+    {
         string("dat") + FILE_SEPARATOR,
 #ifdef USE_TILE_LOCAL
         string("dat/tiles") + FILE_SEPARATOR,
@@ -685,7 +686,7 @@ vector<player_save_info> find_all_saved_characters()
             static_cast<game_type>(i));
 
         const string savedir = _get_savefile_directory();
-        if (dirs.find(savedir) != dirs.end())
+        if (dirs.count(savedir))
             continue;
 
         dirs.insert(savedir);
@@ -876,8 +877,15 @@ static int _get_dest_stair_type(branch_type old_branch,
     if (stair_taken >= DNGN_ENTER_DIS && stair_taken <= DNGN_ENTER_TARTARUS)
         return player_in_hell() ? DNGN_ENTER_HELL : stair_taken;
 
-    if (stair_taken == DNGN_ENTER_PORTAL_VAULT)
+    if (
+#if TAG_MAJOR_VERSION == 34
+        stair_taken == DNGN_ENTER_PORTAL_VAULT ||
+#endif
+        stair_taken >= DNGN_ENTER_FIRST_PORTAL
+        && stair_taken <= DNGN_ENTER_LAST_PORTAL)
+    {
         return DNGN_STONE_ARCH;
+    }
 
     if (stair_taken == DNGN_ENTER_LABYRINTH)
     {
@@ -916,30 +924,10 @@ static void _place_player_on_stair(branch_type old_branch,
     you.moveto(dgn_find_nearby_stair(stair_type, dest_pos, find_first));
 }
 
-static void _close_level_gates()
-{
-    for (rectangle_iterator ri(0); ri; ++ri)
-    {
-        switch (grd(*ri))
-        {
-        case DNGN_ENTER_ABYSS:
-        case DNGN_ENTER_COCYTUS:
-        case DNGN_ENTER_DIS:
-        case DNGN_ENTER_GEHENNA:
-        case DNGN_ENTER_TARTARUS:
-        case DNGN_ENTER_PANDEMONIUM:
-        case DNGN_ENTER_LABYRINTH:
-        case DNGN_ENTER_PORTAL_VAULT:
-            remove_markers_and_listeners_at(*ri);
-            grd(*ri) = DNGN_STONE_ARCH;
-        default: ;
-        }
-    }
-}
-
 static void _clear_env_map()
 {
     env.map_knowledge.init(map_cell());
+    env.map_forgotten.reset();
 }
 
 static void _clear_clouds()
@@ -988,6 +976,8 @@ static void _grab_followers()
     const bool can_follow = branch_allows_followers(you.where_are_you);
 
     int non_stair_using_allies = 0;
+    int non_stair_using_summons = 0;
+
     monster* dowan = NULL;
     monster* duvessa = NULL;
 
@@ -1005,7 +995,13 @@ static void _grab_followers()
             dowan = fol;
 
         if (fol->wont_attack() && !mons_can_use_stairs(fol))
+        {
             non_stair_using_allies++;
+            // If the class can normally use stairs it
+            // must have been a summon
+            if (mons_class_can_use_stairs(fol->type))
+                non_stair_using_summons++;
+        }
 
         if (fol->type == MONS_PLAYER_GHOST
             && fol->hit_points < fol->max_hit_points / 2)
@@ -1041,11 +1037,18 @@ static void _grab_followers()
     {
         if (non_stair_using_allies > 0)
         {
-            // XXX: This assumes that the only monsters that are
-            // incapable of using stairs are zombified.
-            mprf("Your mindless thrall%s stay%s behind.",
-                 non_stair_using_allies > 1 ? "s" : "",
-                 non_stair_using_allies > 1 ? ""  : "s");
+            // Summons won't follow and will time out.
+            if (non_stair_using_summons > 0)
+            {
+                mprf("Your summoned %s left behind.",
+                     non_stair_using_allies > 1 ? "allies are" : "ally is");
+            }
+            else
+            {
+                // Permanent undead are left behind but stay.
+                mprf("Your mindless thrall%s behind.",
+                     non_stair_using_allies > 1 ? "s stay" : " stays");
+            }
         }
         memset(travel_point_distance, 0, sizeof(travel_distance_grid_t));
         vector<coord_def> places[2];
@@ -1079,6 +1082,8 @@ static void _grab_followers()
             continue;
         if (mons->type == MONS_BATTLESPHERE)
             end_battlesphere(mons, false);
+        if (mons->type == MONS_SPECTRAL_WEAPON)
+            end_spectral_weapon(mons, false);
         mons->flags &= ~MF_TAKING_STAIRS;
     }
 }
@@ -1240,7 +1245,7 @@ bool load_level(dungeon_feature_type stair_taken, load_mode_type load_mode,
         env.turns_on_level = -1;
 
         if (you.char_direction == GDT_GAME_START
-            && player_in_branch(BRANCH_MAIN_DUNGEON))
+            && player_in_branch(BRANCH_DUNGEON))
         {
             // If we're leaving the Abyss for the first time as a Chaos
             // Knight of Lugonu (who start out there), enable normal monster
@@ -1265,8 +1270,9 @@ bool load_level(dungeon_feature_type stair_taken, load_mode_type load_mode,
 
         if (!crawl_state.game_is_tutorial()
             && !crawl_state.game_is_zotdef()
+            && !Options.seed
             && !player_in_branch(BRANCH_ABYSS)
-            && (!player_in_branch(BRANCH_MAIN_DUNGEON) || you.depth > 2)
+            && (!player_in_branch(BRANCH_DUNGEON) || you.depth > 2)
             && one_chance_in(3))
         {
             load_ghost(true);
@@ -1281,8 +1287,6 @@ bool load_level(dungeon_feature_type stair_taken, load_mode_type load_mode,
         dprf("Loading old level '%s'.", level_name.c_str());
         _restore_tagged_chunk(you.save, level_name, TAG_LEVEL, "Level file is invalid.");
 
-        // POST-LOAD tasks :
-        link_items();
         _redraw_all();
     }
 
@@ -1298,11 +1302,6 @@ bool load_level(dungeon_feature_type stair_taken, load_mode_type load_mode,
     }
     env.final_effects.clear();
     los_changed();
-
-    // Closes all the gates if you're on the way out.
-    // Before marker activation since it removes some.
-    if (make_changes && you.char_direction == GDT_ASCENDING)
-        _close_level_gates();
 
     // Markers must be activated early, since they may rely on
     // events issued later, e.g. DET_ENTERING_LEVEL or
@@ -1492,17 +1491,6 @@ bool load_level(dungeon_feature_type stair_taken, load_mode_type load_mode,
             }
         }
 
-        // If butchering was interrupted by switching levels (banishment)
-        // then switch back from butchering tool if there's no hostiles
-        // nearby.
-        handle_interrupted_swap(true);
-
-        // Forget about interrupted butchering, since we probably aren't going
-        // to get back to the corpse in time to finish things.
-        // But do not reset the weapon swap if we swapped weapons
-        // because of a transformation.
-        maybe_clear_weapon_swap();
-
         ash_detect_portals(is_map_persistent());
     }
     // Initialize halos, etc.
@@ -1531,11 +1519,17 @@ static void _save_level(const level_id& lid)
     _write_tagged_chunk(lid.describe(), TAG_LEVEL);
 }
 
-#define SAVEFILE(file, savefn) \
-    do                        \
-    {                         \
-        writer w(you.save, file);           \
-        savefn(w);                \
+#if TAG_MAJOR_VERSION == 34
+# define CHUNK(short, long) short
+#else
+# define CHUNK(short, long) long
+#endif
+
+#define SAVEFILE(short, long, savefn)           \
+    do                                          \
+    {                                           \
+        writer w(you.save, CHUNK(short, long)); \
+        savefn(w);                              \
     } while (false)
 
 // Stack allocated string's go in separate function, so Valgrind doesn't
@@ -1543,33 +1537,33 @@ static void _save_level(const level_id& lid)
 static void _save_game_base()
 {
     /* Stashes */
-    SAVEFILE("st", StashTrack.save);
+    SAVEFILE("st", "stashes", StashTrack.save);
 
 #ifdef CLUA_BINDINGS
     /* lua */
-    SAVEFILE("lua", clua.save);
+    SAVEFILE("lua", "lua", clua.save);
 #endif
 
     /* kills */
-    SAVEFILE("kil", you.kills->save);
+    SAVEFILE("kil", "kills", you.kills->save);
 
     /* travel cache */
-    SAVEFILE("tc", travel_cache.save);
+    SAVEFILE("tc", "travel_cache", travel_cache.save);
 
     /* notes */
-    SAVEFILE("nts", save_notes);
+    SAVEFILE("nts", "notes", save_notes);
 
     /* tutorial/hints mode */
     if (crawl_state.game_is_hints_tutorial())
-        SAVEFILE("tut", save_hints);
+        SAVEFILE("tut", "tutorial", save_hints);
 
     /* messages */
-    SAVEFILE("msg", save_messages);
+    SAVEFILE("msg", "messages", save_messages);
 
     /* tile dolls (empty for ASCII)*/
 #ifdef USE_TILE
     // Save the current equipment into a file.
-    SAVEFILE("tdl", save_doll_file);
+    SAVEFILE("tdl", "tiles_doll", save_doll_file);
 #endif
 
     _write_tagged_chunk("you", TAG_YOU);
@@ -1620,7 +1614,8 @@ void save_game(bool leave_game, const char *farewellmsg)
     // If just save, early out.
     if (!leave_game)
     {
-        you.save->commit();
+        if (!crawl_state.disables[DIS_SAVE_CHECKPOINTS])
+            you.save->commit();
         return;
     }
 
@@ -1681,7 +1676,7 @@ bool load_ghost(bool creating_level)
     if (!inf.valid())
     {
         if (wiz_cmd && !creating_level)
-            mpr("No ghost files for this level.", MSGCH_PROMPT);
+            mprf(MSGCH_PROMPT, "No ghost files for this level.");
         return false;                 // no such ghost.
     }
 
@@ -1746,7 +1741,7 @@ bool load_ghost(bool creating_level)
             unplaced_ghosts--;
             if (!mons->alive())
             {
-                mpr("Placed ghost is not alive.", MSGCH_DIAGNOSTICS);
+                mprf(MSGCH_DIAGNOSTICS, "Placed ghost is not alive.");
                 ghost_errors = true;
             }
             else if (mons->type != MONS_PLAYER_GHOST)
@@ -1819,9 +1814,9 @@ static bool _restore_game(const string& filename)
 
     const int minorVersion = crawl_state.minorVersion;
 
-    if (you.save->has_chunk("st"))
+    if (you.save->has_chunk(CHUNK("st", "stashes")))
     {
-        reader inf(you.save, "st", minorVersion);
+        reader inf(you.save, CHUNK("st", "stashes"), minorVersion);
         StashTrack.load(inf);
     }
 
@@ -1836,35 +1831,35 @@ static bool _restore_game(const string& filename)
     }
 #endif
 
-    if (you.save->has_chunk("kil"))
+    if (you.save->has_chunk(CHUNK("kil", "kills")))
     {
-        reader inf(you.save, "kil", minorVersion);
+        reader inf(you.save, CHUNK("kil", "kills"),minorVersion);
         you.kills->load(inf);
     }
 
-    if (you.save->has_chunk("tc"))
+    if (you.save->has_chunk(CHUNK("tc", "travel_cache")))
     {
-        reader inf(you.save, "tc", minorVersion);
+        reader inf(you.save, CHUNK("tc", "travel_cache"), minorVersion);
         travel_cache.load(inf, minorVersion);
     }
 
-    if (you.save->has_chunk("nts"))
+    if (you.save->has_chunk(CHUNK("nts", "notes")))
     {
-        reader inf(you.save, "nts", minorVersion);
+        reader inf(you.save, CHUNK("nts", "notes"), minorVersion);
         load_notes(inf);
     }
 
     /* hints mode */
-    if (you.save->has_chunk("tut"))
+    if (you.save->has_chunk(CHUNK("tut", "tutorial")))
     {
-        reader inf(you.save, "tut", minorVersion);
+        reader inf(you.save, CHUNK("tut", "tutorial"), minorVersion);
         load_hints(inf);
     }
 
     /* messages */
-    if (you.save->has_chunk("msg"))
+    if (you.save->has_chunk(CHUNK("msg", "messages")))
     {
-        reader inf(you.save, "msg", minorVersion);
+        reader inf(you.save, CHUNK("msg", "messages"), minorVersion);
         load_messages(inf);
     }
 
@@ -2030,7 +2025,7 @@ static bool _read_char_chunk(package *save)
         if (major == 33 && minor == TAG_MINOR_0_11)
             return true;
 #endif
-        return (major == TAG_MAJOR_VERSION && minor <= TAG_MINOR_VERSION);
+        return major == TAG_MAJOR_VERSION && minor <= TAG_MINOR_VERSION;
     }
     catch (short_read_exception &E)
     {
@@ -2169,8 +2164,8 @@ void save_ghost(bool force)
 #endif // BONES_DIAGNOSTICS
 
     // No ghosts on D:1, D:2, or the Temple.
-    if (!force && (you.depth < 3 && player_in_branch(BRANCH_MAIN_DUNGEON)
-                   || player_in_branch(BRANCH_ECUMENICAL_TEMPLE)))
+    if (!force && (you.depth < 3 && player_in_branch(BRANCH_DUNGEON)
+                   || player_in_branch(BRANCH_TEMPLE)))
     {
         return;
     }
@@ -2183,8 +2178,7 @@ void save_ghost(bool force)
     {
 #ifdef BONES_DIAGNOSTICS
         if (do_diagnostics)
-            mpr("Ghost file for this level already exists.",
-                MSGCH_DIAGNOSTICS);
+            mprf(MSGCH_DIAGNOSTICS, "Ghost file for this level already exists.");
 #endif
         fclose(gfile);
         return;
@@ -2196,8 +2190,7 @@ void save_ghost(bool force)
     {
 #ifdef BONES_DIAGNOSTICS
         if (do_diagnostics)
-            mpr("Could not find any ghosts for this level.",
-                MSGCH_DIAGNOSTICS);
+            mprf(MSGCH_DIAGNOSTICS, "Could not find any ghosts for this level.");
 #endif
         return;
     }
@@ -2312,35 +2305,4 @@ vector<string> get_title_files()
                 titles.push_back(files[j]);
     }
     return titles;
-}
-
-void sighup_save_and_exit()
-{
-    if (crawl_state.seen_hups == 0)
-    {
-        mpr("sighup_save_and_exit() called without a HUP signal; please"
-            "file a bug report", MSGCH_ERROR);
-        return;
-    }
-
-    if (crawl_state.saving_game || crawl_state.updating_scores)
-        return;
-
-    // Set up an alarm to force-kill Crawl if it rudely ignores the
-    // hangup signal.
-    alarm(10);
-
-    interrupt_activity(AI_FORCE_INTERRUPT);
-
-    crawl_state.saving_game = true;
-    if (crawl_state.need_save)
-    {
-        mpr("Received HUP signal, saved and exited game.", MSGCH_ERROR);
-
-        // save_game(true) exits from the game. The "true" is also required
-        // to save changes to the current level.
-        save_game(true, "Received HUP signal, saved game.");
-    }
-    else
-        end(0, false, "Received HUP signal, game already saved.");
 }

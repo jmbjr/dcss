@@ -1,6 +1,8 @@
-define(["jquery", "comm", "client", "./enums",
-        "./dungeon_renderer", "./cell_renderer", "./util"],
-function ($, comm, client, enums, dungeon_renderer, cr, util) {
+define(["jquery", "comm", "client", "./enums", "./dungeon_renderer",
+        "./cell_renderer", "./util", "./options"],
+function ($, comm, client, enums, dungeon_renderer, cr, util, options) {
+    "use strict";
+
     var chunk_size = 50;
 
     // Helpers
@@ -36,7 +38,7 @@ function ($, comm, client, enums, dungeon_renderer, cr, util) {
         }
 
         if (item.tiles && item.tiles.length > 0
-            && dungeon_renderer.display_mode == "tiles")
+            && options.get("tile_display_mode") == "tiles")
         {
             var renderer = new cr.DungeonCellRenderer();
             var canvas = $("<canvas>");
@@ -659,6 +661,23 @@ function ($, comm, client, enums, dungeon_renderer, cr, util) {
         if (item.hotkeys && item.hotkeys.length)
             comm.send_message("input", { data: [ item.hotkeys[0] ] });
     }
+
+    options.add_listener(function ()
+    {
+        if (options.get("tile_font_crt_size") === 0)
+        {
+            $("#crt").css("font-size", "");
+            $("#menu").css("font-size", "");
+        }
+        else
+        {
+            $("#crt").css("font-size",
+                options.get("tile_font_crt_size") + "px");
+            $("#menu").css("font-size",
+                options.get("tile_font_crt_size") + "px");
+        }
+        client.center_element($("#menu"));
+    });
 
     $(document).off("game_init.menu")
                .on("game_init.menu", function () {

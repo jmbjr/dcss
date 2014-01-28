@@ -1,7 +1,7 @@
 %%%%
 A closed door
 
-Koka durvis. Lai atvērtu, vienkārši uzejiet tām virsū vai nospiediet 'o'.
+Koka durvis. Lai atvērtu, vienkārši uzejiet tām virsū vai nospiediet „o”.
 %%%%
 A dry fountain
 
@@ -54,8 +54,4 @@ A silver wall
 A sarcophagus
 
 Sens sarkofāgs. Tas izskatās tukšs.
-%%%%
-A sealed sarcophagus
-
-Šis senais sarkofāgs ir cieši noslēgts.
 %%%%

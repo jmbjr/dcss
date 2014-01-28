@@ -22,6 +22,7 @@ void cluaopen_options(lua_State *ls);
 void cluaopen_travel(lua_State *ls);
 void cluaopen_view(lua_State *ls);
 void cluaopen_you(lua_State *ls);
+void cluaopen_spells(lua_State *ls);
 
 void cluaopen_globals(lua_State *ls);
 
@@ -79,8 +80,6 @@ void dluaopen_colour(lua_State *ls);
 class map_lines;
 int dgn_map_add_transform(lua_State *ls,
                           string (map_lines::*add)(const string &s));
-
-void clua_push_item(lua_State *ls, item_def *item);
 
 struct monster_info;
 void lua_push_moninf(lua_State *ls, monster_info *mi);

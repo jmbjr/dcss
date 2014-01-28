@@ -10,7 +10,7 @@
 
 bool actor::observable() const
 {
-    return (crawl_state.game_is_arena() || is_player() || you.can_see(this));
+    return crawl_state.game_is_arena() || is_player() || you.can_see(this);
 }
 
 bool actor::see_cell(const coord_def &p) const
@@ -24,17 +24,19 @@ bool actor::see_cell(const coord_def &p) const
 bool player::see_cell(const coord_def &p) const
 {
     if (!map_bounds(p))
-        return false;
-    if (crawl_state.game_is_arena() && is_player())
+        return false; // Players can't see (-1,-1) but maybe can see (0,0).
+    if (crawl_state.game_is_arena())
         return true;
+    if (!in_bounds(pos()))
+        return false; // A non-arena player at (0,0) can't see anything.
     if (xray_vision)
-        return ((pos() - p).abs() <= dist_range(you.current_vision));
+        return (pos() - p).abs() <= dist_range(current_vision);
     return actor::see_cell(p);
 }
 
 bool actor::can_see(const actor *target) const
 {
-    return (target->visible_to(this) && see_cell(target->pos()));
+    return target->visible_to(this) && see_cell(target->pos());
 }
 
 bool actor::see_cell_no_trans(const coord_def &p) const
@@ -44,38 +46,7 @@ bool actor::see_cell_no_trans(const coord_def &p) const
 
 bool player::trans_wall_blocking(const coord_def &p) const
 {
-    return (see_cell(p) && !see_cell_no_trans(p));
-}
-
-const los_base* actor::get_los()
-{
-    los = los_glob(pos(), LOS_DEFAULT);
-    return &los;
-}
-
-const los_base* player::get_los()
-{
-    if (crawl_state.game_is_arena() && is_player())
-    {
-        // env.show.init iterates over these bounds for arena
-        los = los_glob(crawl_view.vgrdc, LOS_ARENA,
-                       circle_def(LOS_MAX_RANGE, C_SQUARE));
-        return &los;
-    }
-    else if (xray_vision)
-    {
-        los = los_glob(pos(), LOS_ARENA,
-                       circle_def(you.current_vision, C_ROUND));
-        return &los;
-    }
-    else
-        return actor::get_los();
-}
-
-const los_base* actor::get_los_no_trans()
-{
-    los_no_trans = los_glob(pos(), LOS_NO_TRANS);
-    return &los_no_trans;
+    return see_cell(p) && !see_cell_no_trans(p);
 }
 
 bool player::can_see(const actor* a) const

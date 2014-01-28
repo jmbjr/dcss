@@ -4,7 +4,6 @@
 **/
 
 #include "AppHdr.h"
-#include <dirent.h>
 
 #ifdef TARGET_OS_WINDOWS
 # ifdef TARGET_COMPILER_VC
@@ -15,10 +14,11 @@
 # include <wincrypt.h>
 # include <io.h>
 #else
-#include <unistd.h>
-#include <fcntl.h>
-#include <sys/types.h>
-#include <sys/stat.h>
+# include <dirent.h>
+# include <unistd.h>
+# include <fcntl.h>
+# include <sys/types.h>
+# include <sys/stat.h>
 #endif
 
 #include "files.h"
@@ -95,7 +95,7 @@ bool read_urandom(char *buf, int len)
     {
         int res = fread(buf, 1, len, seed_f);
         fclose(seed_f);
-        return (res == len);
+        return res == len;
     }
 
     return false;
@@ -202,7 +202,6 @@ int fdatasync(int fd)
 # endif
 #endif
 
-
 // The old school way of doing short delays via low level I/O sync.
 // Good for systems like old versions of Solaris that don't have usleep.
 #ifdef NEED_USLEEP
@@ -232,17 +231,16 @@ void usleep(unsigned long time)
 # endif
 #endif
 
-
 bool file_exists(const string &name)
 {
 #ifdef TARGET_OS_WINDOWS
     DWORD lAttr = GetFileAttributesW(OUTW(name));
-    return (lAttr != INVALID_FILE_ATTRIBUTES
-            && !(lAttr & FILE_ATTRIBUTE_DIRECTORY));
+    return lAttr != INVALID_FILE_ATTRIBUTES
+           && !(lAttr & FILE_ATTRIBUTE_DIRECTORY);
 #else
     struct stat st;
     const int err = ::stat(OUTS(name), &st);
-    return (!err && S_ISREG(st.st_mode));
+    return !err && S_ISREG(st.st_mode);
 #endif
 }
 
@@ -251,12 +249,12 @@ bool dir_exists(const string &dir)
 {
 #ifdef TARGET_OS_WINDOWS
     DWORD lAttr = GetFileAttributesW(OUTW(dir));
-    return (lAttr != INVALID_FILE_ATTRIBUTES
-            && (lAttr & FILE_ATTRIBUTE_DIRECTORY));
+    return lAttr != INVALID_FILE_ATTRIBUTES
+           && (lAttr & FILE_ATTRIBUTE_DIRECTORY);
 #elif defined(HAVE_STAT)
     struct stat st;
     const int err = ::stat(OUTS(dir), &st);
-    return (!err && S_ISDIR(st.st_mode));
+    return !err && S_ISDIR(st.st_mode);
 #else
     DIR *d = opendir(OUTS(dir));
     const bool exists = !!d;
@@ -269,7 +267,7 @@ bool dir_exists(const string &dir)
 
 static inline bool _is_good_filename(const string &s)
 {
-    return (s != "." && s != "..");
+    return s != "." && s != "..";
 }
 
 // Returns the names of all files in the given directory. Note that the

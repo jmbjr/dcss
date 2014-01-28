@@ -7,6 +7,7 @@
 
 #include "dgn-layouts.h"
 
+#include "coord.h"
 #include "coordit.h"
 #include "dungeon.h"
 #include "libutil.h"
@@ -287,7 +288,7 @@ void dgn_build_chaotic_city_level(dungeon_feature_type force_wall)
 
         dungeon_feature_type feature = DNGN_FLOOR;
         if (one_chance_in(10))
-            feature = coinflip()? DNGN_DEEP_WATER : DNGN_LAVA;
+            feature = coinflip() ? DNGN_DEEP_WATER : DNGN_LAVA;
 
         _octa_room(room, oblique_max, feature);
     }
@@ -325,6 +326,25 @@ static int _trail_random_dir(int pos, int bound, int margin)
     return dir;
 }
 
+static bool _viable_trail_start_location(const coord_def &c)
+{
+    if (grd(c) != DNGN_ROCK_WALL && grd(c) != DNGN_FLOOR
+        || map_masked(c, MMT_VAULT))
+    {
+        return false;
+    }
+    for (orth_adjacent_iterator ai(c); ai; ++ai)
+    {
+        if (in_bounds(*ai)
+            && grd(*ai) == DNGN_ROCK_WALL
+            && !map_masked(*ai, MMT_VAULT))
+        {
+            return true;
+        }
+    }
+    return false;
+}
+
 static void _make_trail(int xs, int xr, int ys, int yr, int corrlength,
                         int intersect_chance, int no_corr,
                         coord_def& begin, coord_def& end)
@@ -341,18 +361,21 @@ static void _make_trail(int xs, int xr, int ys, int yr, int corrlength,
         pos.x = xs + random2(xr);
         pos.y = ys + random2(yr);
     }
-    while (grd(pos) != DNGN_ROCK_WALL && grd(pos) != DNGN_FLOOR
-           || map_masked(pos, MMT_VAULT) && tries-- > 0);
+    while (!_viable_trail_start_location(pos) && tries-- > 0);
 
     if (tries < 0)
         return;
 
+    tries = 200;
     // assign begin position
     begin = pos;
 
     // wander
     while (finish < no_corr)
     {
+        if (!(tries--)) // give up after 200 tries
+            return;
+
         dir.reset();
 
         // Put something in to make it go to parts of map it isn't in now.
@@ -494,7 +517,6 @@ static bool _octa_room(dgn_region& region, int oblique_max,
     }
 
     oblique = oblique_max;
-
 
     for (x = tl.x; x < br.x; x++)
     {
@@ -1112,7 +1134,8 @@ static bool _may_overwrite_pos(coord_def c)
     const dungeon_feature_type grid = grd(c);
 
     // Don't overwrite any stairs or branch entrances.
-    if (grid >= DNGN_ENTER_SHOP && grid <= DNGN_EXIT_PORTAL_VAULT
+    if (grid >= DNGN_ENTER_SHOP && grid <= DNGN_TELEPORTER
+        || grid >= DNGN_ENTER_FIRST_PORTAL && grid <= DNGN_EXIT_LAST_PORTAL
         || grid == DNGN_EXIT_HELL)
     {
         return false;
@@ -1120,7 +1143,7 @@ static bool _may_overwrite_pos(coord_def c)
 
     // Don't overwrite feature if there's a monster or item there.
     // Otherwise, items/monsters might end up stuck in deep water.
-    return (!monster_at(c) && igrd(c) == NON_ITEM);
+    return !monster_at(c) && igrd(c) == NON_ITEM;
 }
 
 static void _build_river(dungeon_feature_type river_type) //mv

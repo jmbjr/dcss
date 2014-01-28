@@ -1,7 +1,10 @@
 define(["jquery", "./map_knowledge", "./dungeon_renderer", "./view_data",
-        "./tileinfo-player", "./tileinfo-main", "./tileinfo-dngn", "./enums"],
+        "./tileinfo-player", "./tileinfo-main", "./tileinfo-dngn", "./enums",
+        "./player", "./options"],
 function ($, map_knowledge, dungeon_renderer, view_data,
-          player, main, dngn, enums) {
+          tileinfo_player, main, dngn, enums, player, options) {
+    "use strict";
+
     var minimap_colours = [
         "black",       // MF_UNSEEN
         "darkgrey",    // MF_FLOOR
@@ -60,6 +63,8 @@ function ($, map_knowledge, dungeon_renderer, view_data,
         block.width(width);
         canvas.width = width;
         cell_w = cell_h = Math.floor(width / gxm);
+        if (options.get("tile_map_pixels") > 0)
+            cell_w = cell_h = Math.min(cell_w, options.get("tile_map_pixels"));
         block.height(gym * cell_h);
         canvas.height = gym * cell_h;
         ctx = canvas.getContext("2d");
@@ -68,6 +73,12 @@ function ($, map_knowledge, dungeon_renderer, view_data,
         overlay.width = canvas.width;
         overlay.height = canvas.height;
         overlay_ctx = overlay.getContext("2d");
+
+        if (cell_x !== 0 || cell_y !== 0)
+        {
+            clear();
+            center();
+        }
 
         $("#minimap, #minimap_overlay").css("display", display);
     }
@@ -86,7 +97,7 @@ function ($, map_knowledge, dungeon_renderer, view_data,
 
         if (cell) cell.fg = enums.prepare_fg_flags(cell.fg || 0);
 
-        if (cell && cell.fg.value == player.PLAYER)
+        if (cell && cell.fg.value == tileinfo_player.PLAYER)
             return enums.MF_PLAYER;
         else
             return map_cell.mf || enums.MF_UNSEEN;
@@ -148,6 +159,8 @@ function ($, map_knowledge, dungeon_renderer, view_data,
     {
         cell = cell || map_knowledge.get(x, y);
         var feat = get_cell_map_feature(cell);
+        if (x == player.pos.x && y == player.pos.y)
+            feat = enums.MF_PLAYER;
         set(x, y, minimap_colours[feat]);
     }
 

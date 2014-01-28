@@ -57,8 +57,10 @@ enum monster_info_flags
     MB_NAME_REPLACE, // [art] foo does
     MB_NAME_UNQUALIFIED, // Foo does...
     MB_NAME_THE, // The foo does....
+#if TAG_MAJOR_VERSION == 34
     MB_FADING_AWAY,
     MB_MOSTLY_FADED,
+#endif
     MB_FEAR_INSPIRING,
     MB_WITHDRAWN,
     MB_ATTACHED,
@@ -78,7 +80,9 @@ enum monster_info_flags
     MB_FIREWOOD,
     MB_TWO_WEAPONS,
     MB_NO_REGEN,
+#if TAG_MAJOR_VERSION == 34
     MB_SUPPRESSED,
+#endif
     MB_ROLLING,
     MB_RANGED_ATTACK,
     MB_NO_NAME_TAG,
@@ -94,6 +98,15 @@ enum monster_info_flags
     MB_RETCHING,
     MB_WEAK,
     MB_DIMENSION_ANCHOR,
+    MB_CONTROL_WINDS,
+    MB_WIND_AIDED,
+    MB_SUMMONED_NO_STAIRS, // Temp. summoned and capped monsters
+    MB_SUMMONED_CAPPED,    // Expiring due to summons cap
+    MB_TOXIC_RADIANCE,
+    MB_GRASPING_ROOTS,
+    MB_FIRE_VULN,
+    MB_TORNADO,
+    MB_TORNADO_COOLDOWN,
     NUM_MB_FLAGS
 };
 
@@ -123,6 +136,7 @@ struct monster_info_base
     CrawlHashTable props;
     string constrictor_name;
     vector<string> constricting_name;
+    monster_spells spells;
 
     uint32_t client_id;
 };
@@ -160,12 +174,16 @@ struct monster_info : public monster_info_base
 
     monster_info& operator=(const monster_info& p)
     {
-        this->~monster_info();
-        new (this) monster_info(p);
+        if (this != &p)
+        {
+            this->~monster_info();
+            new (this) monster_info(p);
+        }
         return *this;
     }
 
-    void to_string(int count, string& desc, int& desc_colour, bool fullname = true) const;
+    void to_string(int count, string& desc, int& desc_colour,
+                   bool fullname = true, const char *adjective = nullptr) const;
 
     /* only real equipment is visible, miscellany is for mimic items */
     unique_ptr<item_def> inv[MSLOT_LAST_VISIBLE_SLOT + 1];
@@ -182,6 +200,7 @@ struct monster_info : public monster_info_base
             short xl_rank;
             short damage;
             short ac;
+            monster_type acting_part;
         } ghost;
     } u;
 
@@ -209,6 +228,7 @@ struct monster_info : public monster_info_base
     string common_name(description_level_type desc = DESC_PLAIN) const;
     string proper_name(description_level_type desc = DESC_PLAIN) const;
     string full_name(description_level_type desc = DESC_PLAIN, bool use_comma = false) const;
+    string chimera_part_names() const;
 
     vector<string> attributes() const;
 
@@ -264,11 +284,32 @@ struct monster_info : public monster_info_base
 
     bool is_named() const
     {
-        return (!mname.empty() || mons_is_unique(type));
+        return !mname.empty() || mons_is_unique(type);
+    }
+
+    bool is_spellcaster() const
+    {
+        return mons_class_flag(this->type, M_SPELLCASTER) || this->props.exists("custom_spells");
+    }
+
+    bool is_actual_spellcaster() const
+    {
+        return mons_class_flag(this->type, M_ACTUAL_SPELLS) || this->props.exists("actual_spellcaster");
+    }
+
+    bool is_priest() const
+    {
+        return mons_class_flag(this->type, M_PRIEST) || this->props.exists("priest");
+    }
+
+    bool is_natural_caster() const
+    {
+        return mons_class_flag(this->type, M_FAKE_SPELLS) || this->props.exists("fake_spells");
     }
 
 protected:
     string _core_name() const;
+    string _base_name() const;
     string _apply_adjusted_description(description_level_type desc, const string& s) const;
 };
 

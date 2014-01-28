@@ -33,7 +33,7 @@
 
 FontWrapper* FontWrapper::create()
 {
-    return (new FTFontWrapper());
+    return new FTFontWrapper();
 }
 
 FTFontWrapper::FTFontWrapper() :
@@ -273,7 +273,7 @@ void FTFontWrapper::load_glyph(unsigned int c, ucs_t uchar)
 unsigned int FTFontWrapper::map_unicode(ucs_t uchar)
 {
     unsigned int c;  // index in m_glyphs
-    if (m_glyphmap.find(uchar) == m_glyphmap.end())
+    if (!m_glyphmap.count(uchar))
     {
         // work out which glyph we can overwrite if we've gone over MAX_GLYPHS
         if (m_glyphs_top == MAX_GLYPHS)
@@ -592,7 +592,7 @@ formatted_string FTFontWrapper::split(const formatted_string &str,
         if (++num_lines >= max_lines || !space_idx)
         {
             int ellipses;
-            if (space_idx && (space_idx - line_end > 2))
+            if (space_idx && space_idx - line_end > 2)
                 ellipses = space_idx;
             else
                 ellipses = line_end - 2;

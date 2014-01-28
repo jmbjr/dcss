@@ -10,7 +10,6 @@
 
 #include "player.h"
 
-bool wizard_create_portal(const coord_def& pos = you.pos());
 bool wizard_create_feature(const coord_def& pos = you.pos());
 void wizard_list_branches();
 void wizard_reveal_traps();
@@ -21,7 +20,7 @@ void wizard_interlevel_travel();
 void wizard_list_levels();
 void wizard_recreate_level();
 void wizard_clear_used_vaults();
-void debug_make_trap(void);
+bool debug_make_trap(const coord_def& pos = you.pos());
 bool debug_make_shop(const coord_def& pos = you.pos());
 void debug_place_map(bool primary);
 void wizard_primary_vault();

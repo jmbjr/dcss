@@ -5,6 +5,10 @@
 
 #include "AppHdr.h"
 
+#ifndef TARGET_OS_WINDOWS
+#include <unistd.h>
+#endif
+
 #include "externs.h"
 
 #include "dbg-util.h"
@@ -15,7 +19,6 @@
 #include "menu.h"
 #include "message.h"
 #include "misc.h"
-// #include "mon-util.h"
 #include "monster.h"
 #include "player.h"
 #include "religion.h"
@@ -32,6 +35,7 @@ game_state::game_state()
       saving_game(false), updating_scores(false), seen_hups(0),
       map_stat_gen(false), type(GAME_TYPE_NORMAL),
       last_type(GAME_TYPE_UNSPECIFIED), arena_suspended(false),
+      generating_level(false),
       dump_maps(false), test(false), script(false), build_db(false),
       tests_selected(), show_more_prompt(true),
       terminal_resize_handler(NULL), terminal_resize_check(NULL),
@@ -40,7 +44,7 @@ game_state::game_state()
       lua_calls_no_turn(0), stat_gain_prompt(false),
       level_annotation_shown(false), viewport_monster_hp(false),
 #ifndef USE_TILE_LOCAL
-      mlist_targetting(false),
+      mlist_targeting(false),
 #else
       title_screen(true),
 #endif
@@ -48,6 +52,13 @@ game_state::game_state()
 {
     reset_cmd_repeat();
     reset_cmd_again();
+#ifdef TARGET_OS_WINDOWS
+    no_gdb = "Non-UNIX Platform -> not running gdb.";
+#elif defined DEBUG_DIAGNOSTICS
+    no_gdb = "Debug build -> run gdb yourself.";
+#else
+    no_gdb = access("/usr/bin/gdb", 1) ? "GDB not installed." : 0;
+#endif
 }
 
 void game_state::add_startup_error(const string &err)
@@ -77,13 +88,13 @@ void game_state::show_startup_errors()
 
 bool game_state::is_replaying_keys() const
 {
-    return (crawl_state.doing_prev_cmd_again
-            || crawl_state.is_repeating_cmd());
+    return crawl_state.doing_prev_cmd_again
+           || crawl_state.is_repeating_cmd();
 }
 
 bool game_state::is_repeating_cmd() const
 {
-    return (repeat_cmd != CMD_NO_CMD);
+    return repeat_cmd != CMD_NO_CMD;
 }
 
 void game_state::cancel_cmd_repeat(string reason)
@@ -166,8 +177,8 @@ void game_state::cant_cmd_any(string reason)
 
 // The method is called to prevent the "no repeating zero turns
 // commands" message that input() generates (in the absence of
-// cancelling the repeition) for a repeated command that took no
-// turns.  A wrapper around cancel_cmd_repeat(), its only purpose it
+// cancelling the repetition) for a repeated command that took no
+// turns.  A wrapper around cancel_cmd_repeat(), its only purpose is
 // to make it clear why cancel_cmd_repeat() is being called.
 void game_state::zero_turns_taken()
 {
@@ -219,9 +230,8 @@ bool interrupt_cmd_repeat(activity_interrupt_type ai,
             monster_info mi(mon);
             set_auto_exclude(mon);
 
-            string text = get_monster_equipment_desc(mi, DESC_WEAPON);
-            text += " comes into view.";
-            mpr(text, MSGCH_WARN);
+            mprf(MSGCH_WARN, "%s comes into view.",
+                 get_monster_equipment_desc(mi, DESC_WEAPON).c_str());
         }
 
         if (crawl_state.game_is_hints())
@@ -320,7 +330,7 @@ bool game_state::is_god_acting() const
     ASSERT(!(god_act.depth == 0 && god_act.which_god != GOD_NO_GOD));
     ASSERT(!(god_act.depth == 0 && !god_act_stack.empty()));
 
-    return (god_act.depth > 0);
+    return god_act.depth > 0;
 }
 
 bool game_state::is_god_retribution() const
@@ -401,7 +411,7 @@ vector<god_act_state> game_state::other_gods_acting() const
 
 bool game_state::is_mon_acting() const
 {
-    return (mon_act != NULL);
+    return mon_act != NULL;
 }
 
 monster* game_state::which_mon_acting() const
@@ -539,18 +549,18 @@ void game_state::dump()
 
 bool game_state::player_is_dead() const
 {
-    return (updating_scores && !need_save);
+    return updating_scores && !need_save;
 }
 
 bool game_state::game_standard_levelgen() const
 {
-    return (game_is_normal() || game_is_hints());
+    return game_is_normal() || game_is_hints();
 }
 
 bool game_state::game_is_normal() const
 {
     ASSERT(type < NUM_GAME_TYPE);
-    return (type == GAME_TYPE_NORMAL || type == GAME_TYPE_UNSPECIFIED);
+    return type == GAME_TYPE_NORMAL || type == GAME_TYPE_UNSPECIFIED;
 }
 
 bool game_state::game_is_tutorial() const
@@ -585,7 +595,7 @@ bool game_state::game_is_hints() const
 
 bool game_state::game_is_hints_tutorial() const
 {
-    return (game_is_hints() || game_is_tutorial());
+    return game_is_hints() || game_is_tutorial();
 }
 
 string game_state::game_type_name() const

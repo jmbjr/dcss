@@ -44,6 +44,7 @@ struct game_state
     bool need_save;         // Set to true when game has started.
     bool saving_game;       // Set to true while in save_game.
     bool updating_scores;   // Set to true while updating hiscores.
+    const char* no_gdb;     // reason for not running gdb
 
     int  seen_hups;         // Set to true if SIGHUP received.
 
@@ -54,9 +55,11 @@ struct game_state
     bool last_game_won;
     bool arena_suspended;   // Set if the arena has been temporarily
                             // suspended.
+    bool generating_level;
 
     bool dump_maps;         // Dump map Lua to stderr on fresh parse.
     bool test;              // Set if we want to run self-tests and exit.
+    bool test_list;         // Show available tests and exit.
     bool script;            // Set if we want to run a Lua script and exit.
     bool build_db;          // Set if we want to rebuild the db and exit.
     vector<string> tests_selected; // Tests to be run.
@@ -89,10 +92,10 @@ struct game_state
     bool viewport_monster_hp;
 
 #ifndef USE_TILE_LOCAL
-    // Are we currently targetting using the mlist?
+    // Are we currently targeting using the mlist?
     // This is global because the monster pane uses this when
     // drawing.
-    bool mlist_targetting;
+    bool mlist_targeting;
 #else
     bool title_screen;
 #endif

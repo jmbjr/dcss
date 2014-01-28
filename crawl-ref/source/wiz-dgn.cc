@@ -7,6 +7,7 @@
 
 #include "wiz-dgn.h"
 
+#include "act-iter.h"
 #include "branch.h"
 #include "cio.h"
 #include "coord.h"
@@ -26,7 +27,6 @@
 #include "maps.h"
 #include "message.h"
 #include "misc.h"
-#include "mon-iter.h"
 #include "options.h"
 #include "place.h"
 #include "player.h"
@@ -44,75 +44,57 @@
 #ifdef WIZARD
 static dungeon_feature_type _find_appropriate_stairs(bool down)
 {
-    if (player_in_connected_branch() || player_in_branch(BRANCH_ABYSS))
-    {
-        int depth = you.depth;
-        if (down)
-            depth++;
-        else
-            depth--;
-
-        // Can't go down from bottom level of a branch.
-        if (depth > brdepth[you.where_are_you])
-        {
-            mpr("Can't go down from the bottom of a branch.");
-            return DNGN_UNSEEN;
-        }
-        // Going up from top level of branch
-        else if (depth == 0)
-        {
-            // Special cases
-            if (player_in_branch(BRANCH_VESTIBULE_OF_HELL))
-                return DNGN_EXIT_HELL;
-            else if (player_in_branch(BRANCH_ABYSS))
-                return DNGN_EXIT_ABYSS;
-            else if (player_in_branch(BRANCH_MAIN_DUNGEON))
-                return DNGN_STONE_STAIRS_UP_I;
-
-            dungeon_feature_type stairs = your_branch().exit_stairs;
-
-            if (stairs < DNGN_RETURN_FROM_FIRST_BRANCH
-                || stairs > DNGN_RETURN_FROM_LAST_BRANCH)
-            {
-                mpr("This branch has no exit stairs defined.");
-                return DNGN_UNSEEN;
-            }
-            return stairs;
-        }
-        // Branch non-edge cases
-        else if (depth >= 1)
-        {
-            if (down)
-                return DNGN_STONE_STAIRS_DOWN_I;
-            else
-                return DNGN_ESCAPE_HATCH_UP;
-        }
-        else
-        {
-            mpr("Bug in determining level exit.");
-            return DNGN_UNSEEN;
-        }
-    }
-
-    switch (you.where_are_you)
-    {
-    case BRANCH_LABYRINTH:
-        if (down)
-        {
-            mpr("Can't go down in the Labyrinth.");
-            return DNGN_UNSEEN;
-        }
-        else
-            return DNGN_ESCAPE_HATCH_UP;
-
-    case BRANCH_PANDEMONIUM:
+    if (you.where_are_you == BRANCH_PANDEMONIUM)
         if (down)
             return DNGN_TRANSIT_PANDEMONIUM;
         else
             return DNGN_EXIT_PANDEMONIUM;
 
-    default:
-        return DNGN_EXIT_PORTAL_VAULT;
+    int depth = you.depth;
+    if (down)
+        depth++;
+    else
+        depth--;
+
+    // Can't go down from bottom level of a branch.
+    if (depth > brdepth[you.where_are_you])
+    {
+        mpr("Can't go down from the bottom of a branch.");
+        return DNGN_UNSEEN;
+    }
+    // Going up from top level of branch
+    else if (depth == 0)
+    {
+        // Special cases
+        if (player_in_branch(BRANCH_VESTIBULE))
+            return DNGN_EXIT_HELL;
+        else if (player_in_branch(BRANCH_ABYSS))
+            return DNGN_EXIT_ABYSS;
+        else if (player_in_branch(BRANCH_DUNGEON))
+            return DNGN_STONE_STAIRS_UP_I;
+
+        dungeon_feature_type stairs = your_branch().exit_stairs;
+
+        if (stairs < DNGN_RETURN_FROM_FIRST_BRANCH
+            || stairs > DNGN_RETURN_FROM_LAST_BRANCH)
+        {
+            mpr("This branch has no exit stairs defined.");
+            return DNGN_UNSEEN;
+        }
+        return stairs;
+    }
+    // Branch non-edge cases
+    else if (depth >= 1)
+    {
+        if (down)
+            return DNGN_STONE_STAIRS_DOWN_I;
+        else
+            return DNGN_ESCAPE_HATCH_UP;
+    }
+    else
+    {
+        mpr("Bug in determining level exit.");
+        return DNGN_UNSEEN;
     }
 }
 
@@ -158,7 +140,7 @@ static void _wizard_go_to_level(const level_pos &pos)
         stair_taken = DNGN_STONE_STAIRS_DOWN_I;
 
     if (pos.id.branch != you.where_are_you && pos.id.depth == 1
-        && pos.id.branch != BRANCH_MAIN_DUNGEON)
+        && pos.id.branch != BRANCH_DUNGEON)
     {
         stair_taken = branches[pos.id.branch].entry_stairs;
     }
@@ -207,44 +189,17 @@ void wizard_interlevel_travel()
     _wizard_go_to_level(pos);
 }
 
-bool wizard_create_portal(const coord_def& pos)
-{
-    mpr("Destination for portal:", MSGCH_PROMPT);
-
-    string dummy;
-    level_id dest = prompt_translevel_target(TPF_ALLOW_UPDOWN
-        | TPF_SHOW_PORTALS_ONLY, dummy).p.id;
-
-    if (dest.depth < 1 || dest.depth > brdepth[dest.branch])
-    {
-        canned_msg(MSG_OK);
-        return false;
-    }
-
-    map_wiz_props_marker *marker = new map_wiz_props_marker(you.pos());
-    marker->set_property("dst", dest.describe());
-    marker->set_property("feature_description",
-                         "wizard portal, dest = " + dest.describe());
-    marker->set_property("feature_description_long",
-                         "It's a multi-use portal.");
-    env.markers.add(marker);
-    env.markers.clear_need_activate();
-    dungeon_terrain_changed(pos, DNGN_ENTER_PORTAL_VAULT, false);
-    mprf("A portal to %s appears before you.", dest.describe().c_str());
-    return true;
-}
-
 bool wizard_create_feature(const coord_def& pos)
 {
     const bool mimic = (pos != you.pos());
     char specs[256];
     dungeon_feature_type feat;
     if (mimic)
-        mpr("Create what kind of feature mimic? ", MSGCH_PROMPT);
+        mprf(MSGCH_PROMPT, "Create what kind of feature mimic? ");
     else
-        mpr("Create which feature? ", MSGCH_PROMPT);
+        mprf(MSGCH_PROMPT, "Create which feature? ");
 
-    if (cancelable_get_line(specs, sizeof(specs)) || specs[0] == 0)
+    if (cancellable_get_line_autohist(specs, sizeof(specs)) || specs[0] == 0)
     {
         canned_msg(MSG_OK);
         return false;
@@ -300,7 +255,8 @@ bool wizard_create_feature(const coord_def& pos)
     }
 
     if (mimic && !is_valid_mimic_feat(feat)
-        && !yesno("This isn't a valid feature mimic. Create it anyway? "))
+        && !yesno("This isn't a valid feature mimic. Create it anyway? ",
+                  true, 'n'))
     {
         canned_msg(MSG_OK);
         return false;
@@ -309,8 +265,8 @@ bool wizard_create_feature(const coord_def& pos)
     if (feat == DNGN_ENTER_SHOP)
         return debug_make_shop(pos);
 
-    if (feat == DNGN_ENTER_PORTAL_VAULT)
-        return wizard_create_portal(pos);
+    if (feat_is_trap(feat, true))
+        return debug_make_trap(pos);
 
     env.tile_flv(pos).feat = 0;
     env.tile_flv(pos).special = 0;
@@ -327,6 +283,8 @@ bool wizard_create_feature(const coord_def& pos)
         if (map_bounds(right) && feat_is_door(grd(right)))
             tile_init_flavour(right);
     }
+    if (pos == you.pos() && cell_is_solid(pos))
+        you.wizmode_teleported_into_rock = true;
 
     return true;
 }
@@ -337,11 +295,10 @@ void wizard_list_branches()
     {
         if (parent_branch((branch_type)i) == NUM_BRANCHES)
             continue;
-        else if (startdepth[i] != -1)
+        else if (brentry[i].is_valid())
         {
-            mprf(MSGCH_DIAGNOSTICS, "Branch %d (%s) is on level %d of %s",
-                 i, branches[i].longname, startdepth[i],
-                 branches[parent_branch((branch_type)i)].abbrevname);
+            mprf(MSGCH_DIAGNOSTICS, "Branch %d (%s) is on %s",
+                 i, branches[i].longname, brentry[i].describe().c_str());
         }
         else if (is_random_subbranch((branch_type)i))
         {
@@ -353,10 +310,13 @@ void wizard_list_branches()
     if (!you.props.exists(OVERFLOW_TEMPLES_KEY))
         return;
 
-    mpr("----", MSGCH_DIAGNOSTICS);
-    mpr("Overflow temples: ", MSGCH_DIAGNOSTICS);
+    mprf(MSGCH_DIAGNOSTICS, "----");
+    mprf(MSGCH_DIAGNOSTICS, "Overflow temples: ");
 
     CrawlVector &levels = you.props[OVERFLOW_TEMPLES_KEY].get_vector();
+
+    vector<string> temple_strings;
+    vector<string> god_names;
 
     for (unsigned int i = 0; i < levels.size(); i++)
     {
@@ -371,10 +331,11 @@ void wizard_list_branches()
         if (temples.empty())
             continue;
 
-        vector<string> god_names;
+        temple_strings.clear();
 
         for (unsigned int j = 0; j < temples.size(); j++)
         {
+            god_names.clear();
             CrawlHashTable &temple_hash = temples[j];
             CrawlVector    &gods        = temple_hash[TEMPLE_GODS_KEY];
 
@@ -384,12 +345,14 @@ void wizard_list_branches()
 
                 god_names.push_back(god_name(god));
             }
+            temple_strings.push_back(
+                comma_separated_line(god_names.begin(), god_names.end()));
         }
 
         mprf(MSGCH_DIAGNOSTICS, "%u on D:%u (%s)", temples.size(),
              i + 1,
-             comma_separated_line(god_names.begin(),
-                                   god_names.end()).c_str()
+             comma_separated_line(temple_strings.begin(),
+                                  temple_strings.end(), "; ", "; ").c_str()
           );
     }
 }
@@ -425,33 +388,37 @@ static int find_trap_slot()
     return -1;
 }
 
-void debug_make_trap()
+bool debug_make_trap(const coord_def& pos)
 {
     char requested_trap[80];
     int trap_slot  = find_trap_slot();
     trap_type trap = TRAP_UNASSIGNED;
-    int gridch     = grd(you.pos());
+    int gridch     = grd(pos);
 
     if (trap_slot == -1)
     {
         mpr("Sorry, this level can't take any more traps.");
-        return;
+        return false;
     }
 
     if (gridch != DNGN_FLOOR)
     {
         mpr("You need to be on a floor square to make a trap.");
-        return;
+        return false;
     }
 
     msgwin_get_line("What kind of trap? ",
                     requested_trap, sizeof(requested_trap));
     if (!*requested_trap)
-        return;
+        return false;
 
     string spec = lowercase_string(requested_trap);
     vector<trap_type> matches;
     vector<string>    match_names;
+
+    if (spec == "random" || spec == "any")
+        trap = TRAP_RANDOM;
+
     for (int t = TRAP_DART; t < NUM_TRAPS; ++t)
     {
         const trap_type tr = static_cast<trap_type>(t);
@@ -473,7 +440,7 @@ void debug_make_trap()
         if (matches.empty())
         {
             mprf("I know no traps named \"%s\".", spec.c_str());
-            return;
+            return false;
         }
         // Only one match, use that
         else if (matches.size() == 1)
@@ -484,21 +451,24 @@ void debug_make_trap()
             prefix += spec;
             prefix += "', possible matches are: ";
             mpr_comma_separated_list(prefix, match_names);
-
-            return;
+            return false;
         }
     }
 
-    if (place_specific_trap(you.pos(), trap))
+    bool success = place_specific_trap(you.pos(), trap);
+    if (success)
     {
         mprf("Created a %s trap, marked it undiscovered.",
-             trap_name(trap).c_str());
+             (trap == TRAP_RANDOM) ? "random"
+                                   : trap_name(trap).c_str());
     }
     else
         mpr("Could not create trap - too many traps on level.");
 
     if (trap == TRAP_SHAFT && !is_valid_shaft_level())
         mpr("NOTE: Shaft traps aren't valid on this level.");
+
+    return success;
 }
 
 bool debug_make_shop(const coord_def& pos)
@@ -549,7 +519,7 @@ bool debug_make_shop(const coord_def& pos)
 
     place_spec_shop(pos, new_shop_type, representative);
     link_items();
-    mprf("Done.");
+    mpr("Done.");
     return true;
 }
 
@@ -680,7 +650,7 @@ void debug_place_map(bool primary)
     mesclr();
     mprf(MSGCH_PROMPT, primary ? "Enter map name: " :
          "Enter map name (prefix it with * for local placement): ");
-    if (cancelable_get_line(what_to_make, sizeof what_to_make,
+    if (cancellable_get_line(what_to_make, sizeof what_to_make,
                             primary ? &primary_hist : &mini_hist))
     {
         canned_msg(MSG_OK);
@@ -732,7 +702,7 @@ static int _debug_time_explore()
                          pi2.elapsed_interlevel + pi2.elapsed_resting +
                          pi2.elapsed_other);
 
-    return (you.num_turns - start);
+    return you.num_turns - start;
 }
 
 static void _debug_destroy_doors()
@@ -834,7 +804,7 @@ void wizard_recreate_level()
     level_id lev = level_id::current();
     dungeon_feature_type stair_taken = DNGN_STONE_STAIRS_DOWN_I;
 
-    if (lev.depth == 1 && lev != BRANCH_MAIN_DUNGEON)
+    if (lev.depth == 1 && lev != BRANCH_DUNGEON)
         stair_taken = branches[lev.branch].entry_stairs;
 
     leaving_level_now(stair_taken);
@@ -866,7 +836,7 @@ void wizard_abyss_speed()
     mprf(MSGCH_PROMPT, "Set abyss speed to what? (now %d, higher value = "
                        "higher speed) ", you.abyss_speed);
 
-    if (!cancelable_get_line(specs, sizeof(specs)))
+    if (!cancellable_get_line(specs, sizeof(specs)))
     {
         const int speed = atoi(specs);
         if (speed || specs[0] == '0')

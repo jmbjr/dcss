@@ -1,7 +1,10 @@
-define(["jquery", "comm", "client", "./dungeon_renderer", "./display", "./minimap",
-        "./settings", "./enums", "./messages",
-        "./text", "./menu", "./player"],
-function ($, comm, client, dungeon_renderer, display, minimap, settings, enums, messages) {
+define(["jquery", "comm", "client", "./dungeon_renderer", "./display",
+        "./minimap", "./enums", "./messages", "./options", "./text", "./menu",
+        "./player"],
+function ($, comm, client, dungeon_renderer, display, minimap, enums, messages,
+          options) {
+    "use strict";
+
     var layout_parameters = null, ui_state, input_mode;
     var stat_width = 42;
     var msg_height = 6;
@@ -11,6 +14,7 @@ function ($, comm, client, dungeon_renderer, display, minimap, settings, enums, 
     {
         layout_parameters = null;
         ui_state = -1;
+        options.clear();
     }
 
     $(document).on("game_preinit game_cleanup", init);
@@ -51,7 +55,7 @@ function ($, comm, client, dungeon_renderer, display, minimap, settings, enums, 
 
         // Determine height of messages area
         old_html = $("#messages").html();
-        old_scroll_top = $("#messages_container").scrollTop();
+        var old_scroll_top = $("#messages_container").scrollTop();
         s = "";
         for (var i = 0; i < msg_height+1; i++)
             s = s + "<br>";
@@ -89,18 +93,32 @@ function ($, comm, client, dungeon_renderer, display, minimap, settings, enums, 
         minimap.update_overlay();
     }
 
+    options.add_listener(function () {
+        if (layout_parameters)
+            layout(layout_parameters, true);
+        display.invalidate(true);
+        display.display();
+    });
+
     function toggle_full_window_dungeon_view(full)
     {
         // Toggles the dungeon view for X map mode
         if (layout_parameters == null) return;
         if (full)
         {
-            dungeon_renderer.fit_to(layout_parameters.window_width - 5,
-                                    layout_parameters.window_height - 5,
-                                    show_diameter);
-            $("#right_column").hide();
-            messages.hide();
-            minimap.stop_minimap_farview();
+            var width = layout_parameters.remaining_width;
+            var height = layout_parameters.remaining_height;
+
+            if (options.get("tile_level_map_hide_sidebar") === true) {
+                width = layout_parameters.window_width - 5;
+                $("#right_column").hide();
+            }
+            if (options.get("tile_level_map_hide_messages") === true) {
+                height = layout_parameters.window_height - 5;
+                messages.hide();
+            }
+
+            dungeon_renderer.fit_to(width, height, show_diameter);
         }
         else
         {
@@ -110,6 +128,7 @@ function ($, comm, client, dungeon_renderer, display, minimap, settings, enums, 
             $("#right_column").show();
             messages.show();
         }
+        minimap.stop_minimap_farview();
         display.invalidate(true);
         display.display();
     }
@@ -174,47 +193,11 @@ function ($, comm, client, dungeon_renderer, display, minimap, settings, enums, 
     }
 
     var renderer_settings = {
-        display_mode: "tiles",
         glyph_mode_font_size: 24,
-        glyph_mode_font: "monospace",
-        smooth_scaling: false
+        glyph_mode_font: "monospace"
     };
 
-    settings.set_defaults(renderer_settings);
     $.extend(dungeon_renderer, renderer_settings);
-
-    settings.set_defaults({ tile_scaling: 1 });
-
-    $(document).off("settings_changed.game");
-    $(document).on("settings_changed.game", function (ev, map) {
-        var relayout = false;
-        for (key in renderer_settings)
-        {
-            if (key in map)
-            {
-                dungeon_renderer[key] = settings.get(key);
-                relayout = true;
-            }
-        }
-        if ("tile_scaling" in map)
-        {
-            var scaling = Number(settings.get("tile_scaling"));
-            if (isFinite(scaling) && scaling > 0)
-            {
-                if (scaling != dungeon_renderer.x_scale)
-                {
-                    dungeon_renderer.tile_scaling = scaling;
-                    relayout = true;
-                }
-            }
-            else
-            {
-                settings.set("tile_scaling", dungeon_renderer.tile_scaling);
-            }
-        }
-        if (relayout && layout_parameters)
-            layout(layout_parameters, true);
-    });
 
     $(document).ready(function () {
         $(window)

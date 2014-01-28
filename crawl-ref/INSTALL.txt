@@ -54,8 +54,8 @@ usually available as MinGW; and as of version 0.13, compilation with MSVC
 There's no reason Crawl shouldn't work on other modern systems, especially
 Unixy ones, although some porting may be needed.
 
-Windows 9X and ME are no longer supported but you may probably build for
-them with relatively minor changes.
+Windows 9X and ME are no longer supported; you might have some luck using
+cygwin but a native build is probably a lost cause.
 
 
 Source Code Checkout
@@ -293,6 +293,12 @@ Building on Windows (MSVC)
 * In the Crawl source, run gen-all.cmd which is in source/util/. This step
   must be executed any time you update to a new version of the source (or
   if you have modified tile data or unrandarts).
+
+* The first time you compile, you need to build the Contribs solution. This
+  compiles various libraries which crawl itself needs to build. This only
+  needs to be performed the first time you build, or if the contribs are
+  ever updated (extremely rare). To do this open and compile Contribs.sln
+  in source/contrib.
 
 * Open crawl-ref.sln in Visual Studio, this is in source/MSVC/.
 

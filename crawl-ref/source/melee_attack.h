@@ -45,6 +45,9 @@ public:
     bool         can_cleave;
     list<actor*> cleave_targets;
     bool         cleaving;        // additional attack from cleaving
+    bool jumping_attack;
+    bool jump_blocked;
+    coord_def attack_position;
 
     // Miscast to cause after special damage is done. If miscast_level == 0
     // the miscast is discarded if special_damage_message isn't empty.
@@ -57,7 +60,9 @@ public:
 public:
     melee_attack(actor *attacker, actor *defender,
                  int attack_num = -1, int effective_attack_num = -1,
-                 bool is_cleaving = false);
+                 bool is_cleaving = false, bool is_jump_attack = false,
+                 bool is_jump_blocked = false,
+                 coord_def attack_pos = coord_def(0, 0));
 
     // Applies attack damage and other effects.
     bool attack();
@@ -87,7 +92,6 @@ private:
     int calc_stat_to_hit_base();
     int calc_stat_to_dam_base();
     int apply_defender_ac(int damage, int damage_max = 0, bool half_ac = false);
-    int fire_res_apply_cerebov_downgrade(int res);
 
     /* Attack effects */
     void check_autoberserk();
@@ -121,7 +125,7 @@ private:
     /* Brand / Attack Effects */
     // Returns true if the defender is banished.
     bool distortion_affects_defender();
-    void antimagic_affects_defender();
+    void antimagic_affects_defender(bool amplify_effect);
     void pain_affects_defender();
     void chaos_affects_defender();
     void chaos_affects_attacker();

@@ -10,10 +10,8 @@ enum area_centre_type
     AREA_LIQUID,
     AREA_ORB,
     AREA_UMBRA,
-    AREA_SUPPRESSION,
     AREA_QUAD,
     AREA_DISJUNCTION,
-    AREA_SOUL_AURA,
     AREA_HOT,
 };
 
@@ -33,7 +31,7 @@ bool silenced(const coord_def& p);
 // Does the given point lie within a halo?
 bool haloed(const coord_def& p);
 
-// or is the ground there liquified?
+// or is the ground there liquefied?
 bool liquefied(const coord_def& p, bool check_actual = true);
 
 // Is it enlightened by the orb?
@@ -47,10 +45,6 @@ bool disjunction_haloed(const coord_def& p);
 
 // ...or endarkened by an umbra?
 bool umbraed(const coord_def& p);
-
-bool suppressed(const coord_def& p);
-
-bool soul_aura(const coord_def& p);
 
 // ...or is the area hot?
 bool heated(const coord_def& p);

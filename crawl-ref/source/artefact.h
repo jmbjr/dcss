@@ -45,6 +45,7 @@ struct unrandart_entry
     const char *name;        // true name of unrandart
     const char *unid_name;   // un-id'd name of unrandart
     const char *type_name;   // custom item type
+    const char *inscrip;     // extra inscription
 
     object_class_type base_type;
     uint8_t           sub_type;
@@ -60,15 +61,10 @@ struct unrandart_entry
     void (*equip_func)(item_def* item, bool* show_msgs, bool unmeld);
     void (*unequip_func)(item_def* item, bool* show_msgs);
     void (*world_reacts_func)(item_def* item);
-    // An item can't be a melee weapon and launcher at the same time, so have
-    // the functions relevant to those item types share a union.
-    union
-    {
-        void (*melee_effects)(item_def* item, actor* attacker,
-                              actor* defender, bool mondied, int damage);
-        setup_missile_type (*launch)(item_def* item, bolt* beam,
-                                     string* ammo_name, bool* returning);
-    } fight_func;
+    void (*melee_effects)(item_def* item, actor* attacker,
+                          actor* defender, bool mondied, int damage);
+    setup_missile_type (*launch)(item_def* item, bolt* beam,
+                                 string* ammo_name, bool* returning);
     bool (*evoke_func)(item_def *item, int* pract, bool* did_work,
                        bool* unevokable);
 };
@@ -125,6 +121,7 @@ void reveal_randapp_artefact(item_def &item);
 
 bool make_item_randart(item_def &item, bool force_mundane = false);
 bool make_item_unrandart(item_def &item, int unrand_index);
+void setup_unrandart(item_def &item);
 
 bool randart_is_bad(const item_def &item);
 bool randart_is_bad(const item_def &item, artefact_properties_t &proprt);

@@ -21,7 +21,7 @@
 #include "externs.h"
 #include "options.h"
 
-#include "abl-show.h"
+#include "ability.h"
 #include "art-enum.h"
 #include "artefact.h"
 #include "branch.h"
@@ -119,7 +119,8 @@ struct dump_params
     }
 };
 
-static dump_section_handler dump_handlers[] = {
+static dump_section_handler dump_handlers[] =
+{
     { "header",         _sdump_header        },
     { "stats",          _sdump_stats         },
     { "location",       _sdump_location      },
@@ -294,7 +295,7 @@ static void _sdump_transform(dump_params &par)
             }
             break;
         case TRAN_FUNGUS:
-            text += "You " + verb + " an sentient fungus.";
+            text += "You " + verb + " a sentient fungus.";
             break;
         case TRAN_TREE:
             text += "You " + verb + " an animated tree.";
@@ -307,6 +308,9 @@ static void _sdump_transform(dump_params &par)
             break;
         case TRAN_WISP:
             text += "You " + verb + " a barely coherent strand of gas.";
+            break;
+        case TRAN_SHADOW:
+            text += "You " + verb + " a swirling mass of dark shadows.";
             break;
         case TRAN_NONE:
             break;
@@ -501,7 +505,6 @@ static string _sdump_turns_place_info(PlaceInfo place_info, string name = "")
     unsigned int global_non_interlevel =
         gi.turns_total - gi.turns_interlevel;
 
-
     a = TO_PERCENT(place_info.turns_total, gi.turns_total);
     b = TO_PERCENT(non_interlevel, global_non_interlevel);
     c = TO_PERCENT(place_info.turns_interlevel, place_info.turns_total);
@@ -653,7 +656,7 @@ static void _sdump_notes(dump_params &par)
  //---------------------------------------------------------------
 static void _sdump_location(dump_params &par)
 {
-    if (you.depth == 0 && player_in_branch(BRANCH_MAIN_DUNGEON))
+    if (you.depth == 0 && player_in_branch(BRANCH_DUNGEON))
         par.text += "You escaped";
     else if (par.se)
         par.text += "You were " + prep_branch_level_name();
@@ -667,7 +670,7 @@ static void _sdump_location(dump_params &par)
 static void _sdump_religion(dump_params &par)
 {
     string &text(par.text);
-    if (you.religion != GOD_NO_GOD)
+    if (!you_worship(GOD_NO_GOD))
     {
         if (par.se)
             text += "You worshipped ";
@@ -676,7 +679,7 @@ static void _sdump_religion(dump_params &par)
         text += god_name(you.religion);
         text += ".\n";
 
-        if (you.religion != GOD_XOM)
+        if (!you_worship(GOD_XOM))
         {
             if (!player_under_penance())
             {
@@ -687,7 +690,7 @@ static void _sdump_religion(dump_params &par)
             {
                 string verb = par.se ? "was" : "is";
 
-                text += god_name(you.religion);
+                text += uppercase_first(god_name(you.religion));
                 text += " " + verb + " demanding penance.\n";
             }
         }
@@ -719,13 +722,13 @@ static bool _dump_item_origin(const item_def &item)
         && item_type_known(item))
     {
         const int spec_ench = get_armour_ego_type(item);
-        return (spec_ench != SPARM_NORMAL);
+        return spec_ench != SPARM_NORMAL;
     }
 
     if (fs(IODS_EGO_WEAPON) && item.base_type == OBJ_WEAPONS
         && item_type_known(item))
     {
-        return (get_weapon_brand(item) != SPWPN_NORMAL);
+        return get_weapon_brand(item) != SPWPN_NORMAL;
     }
 
     if (fs(IODS_JEWELLERY) && item.base_type == OBJ_JEWELLERY)
@@ -749,7 +752,7 @@ static bool _dump_item_origin(const item_def &item)
     const int refpr = Options.dump_item_origin_price;
     if (refpr == -1)
         return false;
-    return ((int)item_value(item, false) >= refpr);
+    return (int)item_value(item, false) >= refpr;
 #undef fs
 }
 
@@ -1194,14 +1197,26 @@ static string _describe_action_subtype(caction_type type, int subtype)
                 return uppercase_first(tn);
             subtype = get_unrand_entry(subtype)->sub_type;
         }
-        return ((subtype == -1) ? "Unarmed"
-                : uppercase_first(item_base_name(OBJ_WEAPONS, subtype)));
+        return (subtype == -1) ? "Unarmed"
+               : uppercase_first(item_base_name(OBJ_WEAPONS, subtype));
     case CACT_CAST:
         return spell_title((spell_type)subtype);
     case CACT_INVOKE:
     case CACT_ABIL:
         return ability_name((ability_type)subtype);
     case CACT_EVOKE:
+        if (subtype >= UNRAND_START && subtype <= UNRAND_LAST)
+            return uppercase_first(get_unrand_entry(subtype)->name);
+
+        if (subtype >= 1 << 16)
+        {
+            item_def dummy;
+            dummy.base_type = (object_class_type)(subtype >> 16);
+            dummy.sub_type  = subtype & 0xffff;
+            dummy.quantity  = 1;
+            return uppercase_first(dummy.name(DESC_PLAIN, true));
+        }
+
         switch ((evoc_type)subtype)
         {
         case EVOC_WAND:
@@ -1210,8 +1225,12 @@ static string _describe_action_subtype(caction_type type, int subtype)
             return "Rod";
         case EVOC_DECK:
             return "Deck";
+#if TAG_MAJOR_VERSION == 34
         case EVOC_MISC:
             return "Miscellaneous";
+#endif
+        case EVOC_TOME:
+            return "tome";
         default:
             return "Error";
         }
@@ -1360,13 +1379,51 @@ void dump_map(FILE *fp, bool debug, bool dist)
 {
     if (debug)
     {
+#ifdef COLOURED_DUMPS
+        // Usage: make EXTERNAL_DEFINES="-DCOLOURED_DUMPS"
+        // To read the dumps, cat them or use less -R.
+        // ansi2html can be used to make html.
+
+        fprintf(fp, "Vaults used:\n");
+        for (size_t i = 0; i < env.level_vaults.size(); ++i)
+        {
+            const vault_placement &vp(*env.level_vaults[i]);
+            fprintf(fp, "  \e[3%dm%s\e[0m at (%d,%d) size (%d,%d)\n",
+                    6 - (int)i % 6, vp.map.name.c_str(),
+                    vp.pos.x, vp.pos.y, vp.size.x, vp.size.y);
+        }
+        fprintf(fp, "  (bright = stacked, \e[37;1mwhite\e[0m = not in level_map_ids)\n");
+        size_t last_nv = 0;
+        int    last_v = 0;
+#endif
         // Write the whole map out without checking for mappedness. Handy
         // for debugging level-generation issues.
         for (int y = 0; y < GYM; ++y)
         {
             for (int x = 0; x < GXM; ++x)
             {
-                if (you.pos() == coord_def(x, y))
+#ifdef COLOURED_DUMPS
+                size_t nv = 0;
+                for (size_t i = 0; i < env.level_vaults.size(); ++i)
+                    if (env.level_vaults[i]->map.in_map(coord_def(x, y)
+                           - env.level_vaults[i]->pos))
+                    {
+                        nv++;
+                    }
+                int v = env.level_map_ids[x][y];
+                if (v == INVALID_MAP_INDEX)
+                    v = -1;
+                if (nv != last_nv || v != last_v)
+                {
+                    if (nv)
+                        fprintf(fp, "\e[%d;3%dm", nv != 1, 6 - v % 6);
+                    else
+                        fprintf(fp, "\e[0m");
+                    last_nv = nv;
+                    last_v = v;
+                }
+#endif
+                if (dist && you.pos() == coord_def(x, y))
                     fputc('@', fp);
                 else if (testbits(env.pgrid[x][y], FPROP_HIGHLIGHT))
                     fputc('?', fp);
@@ -1376,6 +1433,8 @@ void dump_map(FILE *fp, bool debug, bool dist)
                 {
                     fputc('0' + travel_point_distance[x][y], fp);
                 }
+                else if (grd[x][y] >= NUM_FEATURES)
+                    fputc('!', fp);
                 else
                 {
                     fputs(OUTS(stringize_glyph(
@@ -1383,7 +1442,13 @@ void dump_map(FILE *fp, bool debug, bool dist)
                 }
             }
             fputc('\n', fp);
+#ifdef COLOURED_DUMPS
+            last_v = 0; // force a colour code, because of less+libvte
+#endif
         }
+#ifdef COLOURED_DUMPS
+        fprintf(fp, "\e[0m");
+#endif
     }
     else
     {
@@ -1453,7 +1518,7 @@ static bool _write_dump(const string &fname, dump_params &par, bool quiet)
         succeeded = true;
         if (!quiet)
 #ifdef DGAMELAUNCH
-            mprf("Char dumped successfully.");
+            mpr("Char dumped successfully.");
 #else
             mprf("Char dumped to '%s'.", file_name.c_str());
 #endif
@@ -1467,7 +1532,8 @@ static bool _write_dump(const string &fname, dump_params &par, bool quiet)
 void display_notes()
 {
     formatted_scroller scr;
-    scr.set_flags(MF_START_AT_END);
+    scr.set_flags(MF_START_AT_END | MF_ALWAYS_SHOW_MORE);
+    scr.set_more();
     scr.set_tag("notes");
     scr.set_highlighter(new MenuHighlighter);
     scr.set_title(new MenuEntry("Turn   | Place    | Note"));
@@ -1518,7 +1584,6 @@ void whereis_record(const char *status)
 }
 #endif
 
-
 ///////////////////////////////////////////////////////////////////////////////
 // Turn timestamps
 //
@@ -1563,7 +1628,7 @@ static bool _dgl_unknown_timestamp_file(const string &filename)
         reader r(inh);
         const uint32_t file_version = unmarshallInt(r);
         fclose(inh);
-        return (file_version != DGL_TIMESTAMP_VERSION);
+        return file_version != DGL_TIMESTAMP_VERSION;
     }
     return false;
 }

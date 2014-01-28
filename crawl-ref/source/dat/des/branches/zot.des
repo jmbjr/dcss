@@ -2,7 +2,7 @@
 # zot.des: The ultimate goal. The Orb must be placed (Z). These maps can and
 #          should be serious challenges! Players dying on Zot:5 are okay :)
 #
-# Content: Zot entry vaults (these are on D:27 and contain the portal)
+# Content: Zot entry vaults (these are on Depths:$ and contain the portal)
 #          Zot vaults, mini and not so mini
 #          Zot hall (on Zot:5)
 #          Vaults that define the floor/wall colours for Zot:1-5
@@ -14,7 +14,7 @@
 function st_zot_vaults_setup(e)
     e.tags("no_item_gen")
     e.depth("Zot:1-4")
-    e.kmons("D = mottled dragon / dragon w:25 / ice dragon w:25 /\
+    e.kmons("D = mottled dragon / fire dragon w:25 / ice dragon w:25 /\
                storm dragon w:20 / shadow dragon w:20 / golden dragon /\
                iron dragon w:5 / quicksilver dragon w:5 / bone dragon w:5 /\
                lindwurm w:2 / fire drake w:2 / death drake w:2 /\
@@ -82,49 +82,6 @@ function callback.grunt_zot_stairs_overgrown_oklobify(data, triggerable,
     crawl.mpr("Another plant grows acid sacs!", "warning")
   end
 end
-
-function callback.grunt_zot_stairs_roulette_spawn_doors(data, triggerable,
-                                                        triggerer, marker, ev)
-  if data.triggered then
-    return
-  end
-
-  data.triggered = true
-
-  dgn.persist.grunt_zot_stairs_roulette_doors_spawned = true
-
-  for p in iter.slave_iterator("hidden_door", 1) do
-    dgn.terrain_changed(p.x, p.y, "clear_stone_wall", false, false, false)
-  end
-end
-
-function callback.grunt_zot_stairs_roulette_door_open(data, triggerable,
-                                                      triggerer, marker, ev)
-  if data.triggered then
-    return
-  end
-
-  if dgn.persist.grunt_zot_stairs_roulette_doors_spawned == false then
-    return
-  end
-
-  data.triggered = true
-
-  crawl.mpr("Several panes of glass retract into the floor.")
-  for p in iter.slave_iterator("hidden_door", 1) do
-    dgn.terrain_changed(p.x, p.y, "floor", false, false, false)
-  end
-end
-
-function callback.grunt_zot_stairs_roulette_teleport(data, triggerable,
-                                                     triggerer, marker, ev)
-  slave = dgn.find_marker_positions_by_prop("dest", data.dest)
-  if you.teleport_to(slave[1].x, slave[1].y) then
-      crawl.mpr("Your surroundings suddenly seem different.")
-  else
-      crawl.mpr("There is a strange hissing noise.")
-  end
-end
 }}
 
 ##############################################################################
@@ -161,7 +118,7 @@ ENDMAP
 
 NAME:   evilmike_zot_entry_round
 TAGS:   no_monster_gen zot_entry
-PLACE:  D:27
+PLACE:  Depths:$
 ORIENT: float
 SUBST:  = = nnn+
 SUBST:  c: c:70 v:20 b:10
@@ -171,7 +128,7 @@ SUBST:  - = ^ .:90
 KFEAT:  O = enter_zot
 SUBST:  4 = 122223
 MONS:   patrolling nonbase draconian
-MONS:   dragon / ice dragon / storm dragon / shadow dragon / bone dragon / golden dragon
+MONS:   fire dragon / ice dragon / storm dragon / shadow dragon / bone dragon / golden dragon
 MONS:   patrolling base draconian
 MAP
 xxxxxxxxxxxxxxxxxxxxxx
@@ -202,12 +159,12 @@ ENDMAP
 # Sorry, no wand of wishing in this one
 NAME:   evilmike_zot_entry_castle
 TAGS:   no_monster_gen zot_entry layout_city
-PLACE:  D:27
+PLACE:  Depths:$
 ORIENT: float
 NSUBST: O = 1:O / *:n
-SUBST:  ^ = ^.
+SUBST:  ^ = ^..
 SUBST:  s = ccc=
-KFEAT:  ^ = alarm trap / blade trap / bolt trap
+KFEAT:  ^ = alarm trap
 KFEAT:  O = enter_zot
 KFEAT:  n = stone_arch
 FTILE:  "OnDx = floor_marble
@@ -217,7 +174,7 @@ COLOUR: x = magenta
 FTILE:  .+cm^1234$ = floor_hall
 SUBST:  D = +, "' = .
 MONS:   patrolling nonbase draconian
-MONS:   dragon / ice dragon / storm dragon / shadow dragon / bone dragon / golden dragon
+MONS:   fire dragon / ice dragon / storm dragon / shadow dragon / bone dragon / golden dragon
 MONS:   w:20 patrolling base draconian / nothing
 MONS:   base draconian ; glaive | halberd
 MAP
@@ -250,7 +207,7 @@ ENDMAP
 
 NAME:   evilmike_zot_entry_gauntlet
 TAGS:   no_monster_gen zot_entry
-PLACE:  D:27
+PLACE:  Depths:$
 ORIENT: float
 SUBST:  b: v.., v: c.
 TILE:   X = wall_zot_magenta
@@ -260,7 +217,6 @@ KPROP:  O-X = no_tele_into
 SUBST:  X = c
 SUBST:  - = ., D = +
 KFEAT:  O = enter_zot
-KFEAT:  + = runed_door
 # easy: 1, 2
 : if crawl.coinflip() then
 MONS:   pale draconian, steam dragon
@@ -275,7 +231,7 @@ MONS:   green draconian, swamp dragon
 : end
 # hard: 5, 6
 : if crawl.coinflip() then
-MONS:   red draconian, dragon
+MONS:   red draconian, fire dragon
 : else
 MONS:   white draconian, ice dragon
 : end
@@ -318,7 +274,7 @@ ENDMAP
 
 NAME:   evilmike_zot_entry_argh
 TAGS:   no_monster_gen patrolling zot_entry
-PLACE:  D:27
+PLACE:  Depths:$
 ORIENT: float
 KFEAT:  O = enter_zot
 # Grey dracs can escape from the islands if they have water. This is intentional.
@@ -333,7 +289,7 @@ COLOUR: . = white
 FTILE:  -23O = floor_hall
 SUBST:  - = .
 MONS:   draconian zealot / draconian caller
-MONS:   dragon / ice dragon / storm dragon / shadow dragon / bone dragon / golden dragon
+MONS:   fire dragon / ice dragon / storm dragon / shadow dragon / bone dragon / golden dragon
 MONS:   base draconian
 KMONS:  O = nonbase draconian
 MAP
@@ -366,7 +322,7 @@ ENDMAP
 
 NAME:   evilmike_zot_entry_hall
 TAGS:   no_monster_gen patrolling zot_entry
-PLACE:  D:27
+PLACE:  Depths:$
 ORIENT: float
 KFEAT:  O = enter_zot
 TILE:   X = wall_zot_magenta
@@ -379,7 +335,7 @@ SUBST:  v: ....cnXblw, z:..cnXblw
 NSUBST: d = 5:3 / 2:2 / *:.
 SUBST:  D = +
 MONS:   nonbase draconian
-MONS:   dragon / ice dragon / storm dragon / shadow dragon / bone dragon / golden dragon
+MONS:   fire dragon / ice dragon / storm dragon / shadow dragon / bone dragon / golden dragon
 MONS:   base draconian
 MAP
                    cccccccccccc
@@ -399,7 +355,7 @@ ENDMAP
 
 NAME:   evilmike_zot_entry_basic
 TAGS:   no_monster_gen zot_entry
-PLACE:  D:27
+PLACE:  Depths:$
 ORIENT: float
 KFEAT:  O = enter_zot
 TILE:   c = wall_zot_magenta
@@ -409,7 +365,7 @@ KPROP:  O- = no_tele_into
 SUBST:  - = .
 NSUBST: d = 5:3 / 2:2 / 1:1
 MONS:   patrolling nonbase draconian
-MONS:   dragon / ice dragon / storm dragon / shadow dragon / bone dragon / golden dragon
+MONS:   fire dragon / ice dragon / storm dragon / shadow dragon / bone dragon / golden dragon
 MONS:   patrolling base draconian
 MAP
 ....d....
@@ -425,7 +381,7 @@ ENDMAP
 
 NAME:   evilmike_zot_entry_diamond
 TAGS:   no_monster_gen zot_entry
-PLACE:  D:27
+PLACE:  Depths:$
 ORIENT: float
 KFEAT:  O = enter_zot
 KFEAT:  A = stone_arch
@@ -437,7 +393,7 @@ SUBST:  - = .
 NSUBST: 2 = 2:2 / *:.
 NSUBST: 1 = 2:1 / *:2
 MONS:   patrolling nonbase draconian
-MONS:   dragon / ice dragon / storm dragon / shadow dragon / bone dragon / golden dragon
+MONS:   fire dragon / ice dragon / storm dragon / shadow dragon / bone dragon / golden dragon
 MONS:   patrolling base draconian
 MAP
       ..1..
@@ -461,14 +417,14 @@ ENDMAP
 
 NAME:   grunt_zot_entry_hairpin
 TAGS:   no_monster_gen patrolling zot_entry
-PLACE:  D:27
+PLACE:  Depths:$
 ORIENT: float
 KFEAT:  O = enter_zot
 COLOUR: ABC-_ = magenta
 FTILE:  ABC-_O = floor_hall
 SUBST:  _ = ., A = 1, B = 2, C = c, - = +
 MONS:   golden dragon / storm dragon / shadow dragon / bone dragon / \
-        dragon / ice dragon
+        fire dragon / ice dragon
 MONS:   nonbase draconian, base draconian
 MAP
       cccccccccccccccccccc
@@ -490,32 +446,32 @@ ENDMAP
 
 NAME:   grunt_zot_entry_funnels
 TAGS:   no_monster_gen patrolling zot_entry
-PLACE:  D:27
+PLACE:  Depths:$
 ORIENT: float
 KFEAT:  O = enter_zot
 COLOUR: 123c+. = magenta
 FTILE:  123c+.O = floor_hall
 MONS:   golden dragon / storm dragon / shadow dragon / bone dragon / \
-        dragon / ice dragon
+        fire dragon / ice dragon
 MONS:   nonbase draconian, base draconian
 MAP
       @       @
     cc+cc   cc+cc
     c...ccccc...c
     cc...ccc...cc
- ccc cc.3.c.3.cc ccc
- c.cc cc.....cc cc.c
-@+..cc cc.2.cc cc..+@
- c...cc cc+cc cc...c
+ cccxcc.3.c.3.ccxccc
+ c.ccxcc.....ccxcc.c
+@+..ccxcc.2.ccxcc..+@
+ c...ccxcc+ccxcc...c
  cc.3.ccc...ccc.3.cc
   cc...c..1..c...cc
   ccc.2+.1O1.+2.ccc
   cc...c..1..c...cc
  cc.3.ccc...ccc.3.cc
- c...cc cc+cc cc...c
-@+..cc cc.2.cc cc..+@
- c.cc cc.....cc cc.c
- ccc cc.3.c.3.cc ccc
+ c...ccxcc+ccxcc...c
+@+..ccxcc.2.ccxcc..+@
+ c.ccxcc.....ccxcc.c
+ cccxcc.3.c.3.ccxccc
     cc...ccc...cc
     c...ccccc...c
     cc+cc   cc+cc
@@ -524,7 +480,7 @@ ENDMAP
 
 NAME:   grunt_zot_entry_pinwheel
 TAGS:   no_monster_gen patrolling zot_entry
-PLACE:  D:27
+PLACE:  Depths:$
 ORIENT: float
 KFEAT:  O = enter_zot
 KFEAT:  A = stone_arch
@@ -532,7 +488,7 @@ COLOUR: 123c+. = magenta
 FTILE:  123c+.AO = floor_hall
 NSUBST: A = 1:O / *:A
 MONS:   golden dragon / storm dragon / shadow dragon / bone dragon / \
-        dragon / ice dragon
+        fire dragon / ice dragon
 MONS:   nonbase draconian, base draconian
 MAP
        @
@@ -558,14 +514,14 @@ ENDMAP
 
 NAME:   grunt_zot_entry_bicorn
 TAGS:   transparent no_monster_gen patrolling zot_entry
-PLACE:  D:27
+PLACE:  Depths:$
 ORIENT: float
 KFEAT:  O = enter_zot
 COLOUR: 123c+_ = magenta
 FTILE:  123+_OT = floor_hall
 SUBST:  _ = .
 MONS:   golden dragon / storm dragon / shadow dragon / bone dragon / \
-        dragon / ice dragon
+        fire dragon / ice dragon
 MONS:   nonbase draconian, base draconian
 MAP
             .....
@@ -589,14 +545,14 @@ ENDMAP
 
 NAME:   grunt_zot_entry_tricorne
 TAGS:   transparent no_monster_gen patrolling zot_entry
-PLACE:  D:27
+PLACE:  Depths:$
 ORIENT: float
 KFEAT:  O = enter_zot
 COLOUR: ABC-_ = magenta
 FTILE:  ABC-_O = floor_hall
 SUBST:  _ = ., A = 1, B = 3, C = c, - = +
 MONS:   golden dragon / storm dragon / shadow dragon / bone dragon / \
-        dragon / ice dragon
+        fire dragon / ice dragon
 MONS:   nonbase draconian, base draconian
 MAP
 @......               ......@
@@ -629,14 +585,14 @@ ENDMAP
 
 NAME:   grunt_zot_entry_gee_three
 TAGS:   transparent no_monster_gen patrolling zot_entry
-PLACE:  D:27
+PLACE:  Depths:$
 ORIENT: float
 KFEAT:  O = enter_zot
 COLOUR: ABC-_ = magenta
 FTILE:  ABC-_O = floor_hall
 SUBST:  _ = ., A = 1, B = 3, C = c, - = +
 MONS:   golden dragon / storm dragon / shadow dragon / bone dragon / \
-        dragon / ice dragon
+        fire dragon / ice dragon
 MONS:   nonbase draconian, base draconian
 MAP
            .........
@@ -675,7 +631,7 @@ ENDMAP
 
 NAME:   grunt_zot_entry_alcove
 TAGS:   transparent no_monster_gen patrolling zot_entry
-PLACE:  D:27
+PLACE:  Depths:$
 ORIENT: float
 KFEAT:  O = enter_zot
 COLOUR: 1C-_ = magenta
@@ -683,7 +639,7 @@ FTILE:  1C-_O = floor_hall
 SUBST:  _ = ., C = c
 NSUBST: @ = 1:@ / *:.
 MONS:   golden dragon / storm dragon / shadow dragon / bone dragon / \
-        dragon / ice dragon
+        fire dragon / ice dragon
 MONS:   nonbase draconian, base draconian
 MAP
      ccccccc
@@ -714,7 +670,7 @@ ENDMAP
 
 # There's few vaults on Zot:5, tone down their chances.
 NAME: dummy_balancer_zot
-DEPTH: Zot:5
+DEPTH: Zot:$
 TAGS: dummy
 ORIENT: float
 WEIGHT: 60
@@ -724,7 +680,7 @@ ENDMAP
 
 NAME:   lemuel_baited_zot_trap
 TAGS:   allow_dup extra luniq
-DEPTH:  Zot:*
+DEPTH:  Zot
 WEIGHT: 20
 KFEAT:  * = Zot trap
 KITEM:  * = any good_item
@@ -747,7 +703,7 @@ ENDMAP
 
 NAME:   lemuel_zot_upstairs
 TAGS:   allow_dup extra luniq
-DEPTH:  Zot:2-5
+DEPTH:  Zot:2-
 ORIENT: float
 SUBST:  . = .^
 KFEAT:  ^ = zot trap
@@ -831,7 +787,7 @@ ENDMAP
 # Lake of fire
 #
 NAME:  lemuel_lake_of_fire
-DEPTH: Zot:*
+DEPTH: Zot
 SUBST: * =*l
 KMONS: * = orb of fire
 KFEAT: * = l
@@ -851,7 +807,7 @@ ENDMAP
 # Globe of electric golems
 #
 NAME:  lemuel_golem_globe
-DEPTH: Zot:*
+DEPTH: Zot
 TAGS:  no_rotate
 KFEAT: T = teleport trap
 KFEAT: m = iron_grate
@@ -1085,7 +1041,7 @@ ITEM:    wand of cold, staff of cold, book of frost, book of ice
 SUBST:   w = l
 SUBST:   W = l..
 : else
-MONS:    fire giant, dragon
+MONS:    fire giant, fire dragon
 MARKER:  F = lua:fog_machine { cloud_type = "flame", pow_min = 5, \
               pow_max = 15, delay = 10, size = 2, walk_dist = 0, \
               spread_rate= 0 }
@@ -1148,13 +1104,10 @@ ORIENT: float
 MONS:   w:4 oklob sapling / w:4 oklob plant / w:6 burning bush / \
         w:6 lightning spire / nothing
 MONS:   ice statue / silver statue / orange crystal statue / \
-        curse skull / w:5 nothing
+        patrolling curse skull / w:5 nothing
 SUBST:  3 = 11.
 # Not quite the orb, but but close enough
 ITEM:   crystal ball of energy
-SUBST:  . = .:9 ~:1
-KFEAT:  ~ = dart trap / arrow trap / bolt trap / blade trap / \
-            needle trap / spear trap / net trap
 SUBST:  } = }:80 >, ) = ):80 >, ] = ]:80 >
 MAP
         xxxxxxxxx
@@ -1312,33 +1265,6 @@ W........WW..
 WWW..W..WW..
 ..W..W..W..
  .WWWWWWW.
-ENDMAP
-
-NAME:   lightli_zot_lavacorridor
-TAGS:   no_monster_gen
-DEPTH:  Zot:1-4
-KPROP:  l = no_cloud_gen
-MONS:   w:4 purple draconian / w:1 nonbase purple draconian
-SUBST:  o = **|
-NSUBST:  1 = 1 / 1.
-MAP
-c.@@@.c
-clllllc
-clllllc
-clllllc
-clllllc
-clllllc
-clllllc
-clllllc
-clllllc
-clllllc
-c11111c
-c1*o*1c
-c1o|o1c
-c1*o*1c
-c11>11c
-cccnccc
-   @
 ENDMAP
 
 #################
@@ -1560,8 +1486,8 @@ xxxxxxxxxxxxxxxxxxxx.xxx@xx.xxxx
 ENDMAP
 
 # A mighty hoard indeed...
-# Intented to be an extreme visual spectacle.
-# Obviously lowering the amount of gold in stacks in necessary.
+# Intended to be an extreme visual spectacle.
+# Obviously lowering the amount of gold in stacks is necessary.
 # There's about 800 gold.
 NAME:   st_grand_hoard_of_tiamat
 TAGS:   no_monster_gen
@@ -1840,44 +1766,6 @@ ENDMAP
 
 ##########################################################################
 
-NAME: nicolae_zot_lich_garden
-DEPTH: Zot
-TAGS: no_monster_gen no_item_gen no_trap_gen
-SUBST: P = P., ; = ;;.
-NSUBST: A = 1:A / *:.
-KITEM: f = apple / orange / apricot / nothing
-KMONS: L = lich
-KMONS: A = ancient lich
-KMONS: C = curse toe
-KMONS: P = plant
-KMONS: B = butterfly
-KMONS: k = giant goldfish
-COLOUR: .tPCALfB = green
-FTILE: .tPCALfB = floor_grass
-KFEAT: ; = .
-KFEAT: k = w
-MAP
-        ;@@@;
-      ;;;;;;;;;
-    tt;;;PBPB;;;tt
-   tttttPPPPPPPtttt;
-  ;ttAfPP.L..B.tAtt;;;
- ;PPttP..P.P.PP.ftP;;;
- ;P..B.PPP.B.PPP.PPB;@
-;;PP..PPPwwwC.P.BPPP;@
-;;;;B.L.wkwwww.L.ttP;@
-;@;PP.BPwwwwkw...fttt;
- @;;P..PP.wwwPPBttttt
-  @;PP.PPP..PPB.PPttt
-  ;;;Ptt.P.PPPPPP;;;;
-  ;;;ttfAttPP;B;;;;;
-    ;tttttt;;;;;;@
-     ;;tt;;;;;;;
-        ;;;;;
-ENDMAP
-
-##########################################################################
-
 NAME:    hangedman_zot_spectrum
 TAGS:    no_monster_gen
 DEPTH:   Zot:1-4
@@ -1940,7 +1828,7 @@ MONS:    ettin / stone giant w:5 / fire giant / frost giant
 MONS:    base draconian w:18 / death cob w:1 / guardian mummy w:1
 MONS:    glowing shapeshifter w:20 / sphinx w:15 / quicksilver dragon w:20 / \
          iron dragon w:20 / shadow dragon / golden dragon
-MONS:    dragon / ice dragon / storm dragon w:8 / moth of wrath w:12 / \
+MONS:    fire dragon / ice dragon / storm dragon w:8 / moth of wrath w:12 / \
          ghost moth w:5 / tentacled monstrosity w:5 / bone dragon w:5
 MONS:    titan / lich / deep elf annihilator w:3 / deep elf high priest w:4 / \
          deep elf sorcerer w:3 / giant orange brain w:3
@@ -2090,97 +1978,6 @@ MAP
          ...xxxxxxx..
           ..........
             ......
-ENDMAP
-
-####
-# Care for a little gambling, adventurer?
-NAME: grunt_zot_stairs_roulette
-DEPTH: Zot, !Zot:$
-TAGS: no_monster_gen
-ORIENT: float
-
-MONS: golden dragon / quicksilver dragon / storm dragon / shadow dragon
-MONS: killer klown
-
-# Written out in full so we don't get zealots:
-MONS: draconian monk w:1 / draconian knight w:1 / \
-      draconian scorcher w:1 / draconian annihilator w:1 / \
-      draconian shifter w:1 / draconian caller w:1 / \
-      base draconian w:12
-
-KFEAT: hijk = teleporter
-KFEAT: O = floor
-{{
-dgn.persist.grunt_zot_stairs_roulette_doors_spawned = false
-
-local spawndoors = TriggerableFunction:new{
-    func="callback.grunt_zot_stairs_roulette_spawn_doors",
-    repeated=true,
-    data={triggered=false} }
-spawndoors:add_triggerer(DgnTriggerer:new{type="player_los"})
-lua_marker('O', spawndoors)
-lua_marker('O', props_marker {hidden_door=1})
-
-local tm = TriggerableFunction:new{
-    func="callback.grunt_zot_stairs_roulette_door_open",
-    repeated = true, data={triggered=false}
-    }
-tm:add_triggerer(DgnTriggerer:new{type="player_move"})
-lua_marker('-', tm)
-
-local tele1 = TriggerableFunction:new{
-    func="callback.grunt_zot_stairs_roulette_teleport",
-    repeated=true,
-    data={dest=1} }
-tele1:add_triggerer(DgnTriggerer:new{type="player_move"})
-lua_marker('h', tele1)
-
-local tele2 = TriggerableFunction:new{
-    func="callback.grunt_zot_stairs_roulette_teleport",
-    repeated=true,
-    data={dest=2} }
-tele2:add_triggerer(DgnTriggerer:new{type="player_move"})
-lua_marker('i', tele2)
-
-local tele3 = TriggerableFunction:new{
-    func="callback.grunt_zot_stairs_roulette_teleport",
-    repeated=true,
-    data={dest=3} }
-tele3:add_triggerer(DgnTriggerer:new{type="player_move"})
-lua_marker('j', tele3)
-
-local tele4 = TriggerableFunction:new{
-    func="callback.grunt_zot_stairs_roulette_teleport",
-    repeated=true,
-    data={dest=4} }
-tele4:add_triggerer(DgnTriggerer:new{type="player_move"})
-lua_marker('k', tele4)
-
-lua_marker('d', props_marker {dest=1})
-lua_marker('e', props_marker {dest=2})
-lua_marker('f', props_marker {dest=3})
-lua_marker('g', props_marker {dest=4})
-}}
-SHUFFLE: defg, }])>
-SUBST: ] = ]>, ) = )>
-MAP
-    ....@....
- nnnnn.n.n.nnnnn
- nd..n.nhn.n1.en
- n.U.n.nnn.n...n
-.n...nn...nn..1n.
-.nnnn.nnOnn.nnnn.
-....nn=---=nn....
-.nnn.n-}-]-n.nnn.
-@.in.O--U--O.nj.@
-.nnn.n-)->-n.nnn.
-....nn=---=nn....
-.nnnn.nnOnn3nnnn.
-.n222nn...nn333n.
- n..2n.nnn.n333n
- nf.2n.nkn.n33gn
- nnnnn.n.n.nnnnn
-    ....@....
 ENDMAP
 
 ####
@@ -2403,7 +2200,7 @@ DEPTH:  Zot, !Zot:$
 ORIENT: east
 SUBST:  } = }:80 >, ] = ]:80 >, ) = ):80 >
 MONS:   nonbase draconian, base draconian w:30 / nothing, moth of wrath
-MONS:   dragon w:30 / ice dragon w:30 / shadow dragon w:20 / \
+MONS:   fire dragon w:30 / ice dragon w:30 / shadow dragon w:20 / \
         storm dragon w:50 / bone dragon w:30 / golden dragon w:35
 MONS:   Killer Klown / electric golem w:5 / curse toe w:5 / nothing
 MONS:   orb of fire
@@ -2447,29 +2244,116 @@ TAGS: no_pool_fixup no_monster_gen
 DEPTH: Zot, !Zot:$
 ORIENT: north
 SUBST: l : lw
-SHUFFLE: ]})>, 123
-MONS: ghost moth, moth of wrath, moth of suppression
+SHUFFLE: ]})>, 12
+MONS: ghost moth, moth of wrath
 MONS: any base draconian
 MAP
 xxxxxxxxxxxxxxxxxxxxxxxxxxx
 xxx......xxxxxxxxx......xxx
-xx.4.]....xxx}xxx....).4.xx
+xx.3.]....xxx}xxx....).3.xx
 x...llll...x...x...llll...x
-x..llllll.1..2..3.llllll..x
+x..llllll.1..2..1.llllll..x
 x..llllll.........llllll..x
 x...llll...........llll...x
-xx...........4...........xx
-xxx......4.......4......xxx
-xxxx..4.............4..xxxx
+xx...........3...........xx
+xxx......3.......3......xxx
+xxxx..3.............3..xxxx
 xxxxx.................xxxxx
 xxxx...................xxxx
 xxx.....................xxx
 xx...lll...........lll...xx
 xx..lllll..x...x..lllll..xx
 xx...lll...x...x...lll...xx
-xxx...4...xx...xx...4...xxx
+xxx...3...xx...xx...3...xxx
 xxxx.....xxx...xxx.....xxxx
 xxxxxxxxxxx@@@@@xxxxxxxxxxx
+ENDMAP
+
+NAME: nicolae_zot_crop_circle
+DEPTH: Zot, !Zot:1
+TAGS: no_monster_gen transparent
+SHUFFLE: {[(
+NSUBST: p = 8:1 / *:2
+KMONS: 1 = plant
+KMONS: 2 = death cob
+MAP
+   ..@..
+  .......
+ ...ppp...
+...p...p...
+..p.....p..
+@.p..{..p.@
+..p.....p..
+...p...p...
+ ...ppp...
+  .......
+   ..@..
+ENDMAP
+
+
+NAME: nicolae_zot_stationary_front
+DEPTH: Zot
+ORIENT: float
+TAGS: transparent no_pool_fixup patrolling
+SHUFFLE: Gg/Gg/Gg/Hh, Pp/Pp/Pp/Qq
+SUBST: GP = x, g = r, p = c, HQ = @, hq = .
+COLOUR: r = red, c = blue
+KMONS: R = nonbase red draconian
+KMONS: C = nonbase white draconian
+KMONS: D = fire dragon
+KMONS: I = ice dragon
+KFEAT: r = c
+MAP
+    xxx                   xxx
+   xxrxx                 xxrxx
+  xxrrrxx               xxrrrxx
+ xxrrlrrxx             xxrrlrrxx
+xxrrlllrrxx           xxrrlllrrxx
+xrrllDllrrxxxxxxPxxxxxxrrllDllrrxxxxxxPxxxxx
+rrll...llrrcccccpcccccrrll...llrrcccccpccccc
+@....R..........C..........R..........C....@
+rrrrrgrrrrrccw.....wccrrrrrgrrrrrccw.....wcc
+xxxxxGxxxxxxcww...wwcxxxxxxGxxxxxxcww...wwcx
+           xccwwIwwccx           xccwwIwwccx
+           xxccwwwccxx           xxccwwwccxx
+            xxcccccxx             xxcccccxx
+             xxxxxxx               xxxxxxx
+ENDMAP
+
+NAME:    hangedman_zot_diagonal_lockstep
+TAGS:    transparent extra decor
+DEPTH:   Zot
+ITEM:    % no_pickup
+KFEAT:   Z = known zot trap
+SHUFFLE: ABCDEFG, defg / hijk / mnop / qrst, defg, hjik, mnop
+SUBST:   A : xbvcZ, B : xbvc, C : xxbvc, D : xxbvc, EFG = x
+SUBST:   d : xxZ, h = x, e : xx., i : xx., f : x.., j : x.., m : x..
+SUBST:   gknopqrst = .
+:  if you.depth() == dgn.br_depth(you.branch()) then
+SUBST:  { = {([ <:5 Z:5
+:  elseif you.depth() == "1" then
+SUBST:  { = {:40 })]> d:20 Z:20
+:  else
+SUBST:  { = {([<})]> d:20 Z:20
+:  end
+MAP
+             Dq...iC
+        .....rD...Ch..
+        .......x.x...p
+        ...mF...x...o.
+       Es..F...x.x....
+ ......tE.x..kx...x..eB
+ ........x...Cj....x.xd
+A..fB...x.x.....G...x..
+.A.xg.nG...{...Gn.gx.A.
+..x...G.....x.x...Bf..A
+dx.x....jC...x........
+Be..x...Ck..x.Et......
+ ....x.x...F..sE
+ .o...x...Fm...
+ p...x.x.......
+ ..hC...Dr.....
+   Ci...qD
 ENDMAP
 
 ##############################################################################
@@ -2481,7 +2365,7 @@ ENDMAP
 ##############################################################################
 
 NAME:       hall_of_Zot
-PLACE:      Zot:5
+PLACE:      Zot:$
 ORIENT:     north
 TAGS:       no_dump layout_halls
 LFLAGS:     no_tele_control
@@ -2519,6 +2403,8 @@ COLOUR:   c = magenta
 TILE:     c = dngn_stone_wall_magenta
 
 KITEM:    Z = Orb of Zot
+
+validate {{ return has_exit_from_glyph('Z') }}
 
 MAP
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX

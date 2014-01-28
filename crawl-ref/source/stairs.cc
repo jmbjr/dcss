@@ -5,6 +5,7 @@
 #include <sstream>
 
 #include "abyss.h"
+#include "act-iter.h"
 #include "areas.h"
 #include "branch.h"
 #include "chardump.h"
@@ -24,22 +25,20 @@
 #include "mapmark.h"
 #include "message.h"
 #include "misc.h"
-#include "mon-iter.h"
 #include "notes.h"
 #include "options.h"
 #include "ouch.h"
 #include "output.h"
 #include "place.h"
 #include "random.h"
+#include "religion.h"
 #include "spl-clouds.h"
 #include "spl-damage.h"
 #include "spl-other.h"
-#include "spl-summoning.h"
 #include "spl-transloc.h"
 #include "stash.h"
 #include "state.h"
 #include "stuff.h"
-#include "tagstring.h"
 #include "terrain.h"
 #ifdef USE_TILE_LOCAL
  #include "tilepick.h"
@@ -76,9 +75,8 @@ bool check_annotation_exclusion_warning()
         && next_level_id != level_id::current()
         && is_connected_branch(next_level_id))
     {
-        mpr("Warning, next level annotated: " +
-            colour_string(get_level_annotation(next_level_id), YELLOW),
-            MSGCH_PROMPT);
+        mprf(MSGCH_PROMPT, "Warning, next level annotated: <yellow>%s</yellow>",
+             get_level_annotation(next_level_id).c_str());
         might_be_dangerous = true;
         crawl_state.level_annotation_shown = true;
     }
@@ -86,7 +84,7 @@ bool check_annotation_exclusion_warning()
              && feat_is_travelable_stair(grd(you.pos()))
              && !strstr(get_exclusion_desc(you.pos()).c_str(), "cloud"))
     {
-        mpr("This staircase is marked as excluded!", MSGCH_WARN);
+        mprf(MSGCH_WARN, "This staircase is marked as excluded!");
         might_be_dangerous = true;
     }
 
@@ -230,8 +228,7 @@ void leaving_level_now(dungeon_feature_type stair_used)
 {
     process_sunlights(true);
 
-    if (player_in_branch(BRANCH_ZIGGURAT)
-        && stair_used == DNGN_EXIT_PORTAL_VAULT)
+    if (stair_used == DNGN_EXIT_ZIGGURAT)
     {
         if (you.depth == 27)
             you.zigs_completed++;
@@ -286,8 +283,8 @@ static void _update_travel_cache(const level_id& old_level,
         // to Hell as shortcuts between dungeon levels, which won't work,
         // and will confuse the dickens out of the player (well, it confused
         // the dickens out of me when it happened).
-        if (new_level_id == BRANCH_MAIN_DUNGEON
-            && old_level == BRANCH_VESTIBULE_OF_HELL)
+        if ((new_level_id == BRANCH_DUNGEON || new_level_id == BRANCH_DEPTHS)
+            && old_level == BRANCH_VESTIBULE)
         {
             old_level_info.clear_stairs(DNGN_EXIT_HELL);
         }
@@ -298,7 +295,7 @@ static void _update_travel_cache(const level_id& old_level,
         // and that we can descend that downstair and get back to where we
         // came from. This assumption is guaranteed false when climbing out
         // of one of the branches of Hell.
-        if (new_level_id != BRANCH_VESTIBULE_OF_HELL
+        if (new_level_id != BRANCH_VESTIBULE
             || !is_hell_subbranch(old_level.branch))
         {
             // Set the new level's stair, assuming arbitrarily that going
@@ -400,11 +397,8 @@ void up_stairs(dungeon_feature_type force_stair)
         you.depth = 0;
         mpr("You have escaped!");
 
-        for (int i = 0; i < ENDOFPACK; i++)
-        {
-            if (you.inv[i].defined() && you.inv[i].base_type == OBJ_ORBS)
-                ouch(INSTANT_DEATH, NON_MONSTER, KILLED_BY_WINNING);
-        }
+        if (player_has_orb())
+            ouch(INSTANT_DEATH, NON_MONSTER, KILLED_BY_WINNING);
 
         ouch(INSTANT_DEATH, NON_MONSTER, KILLED_BY_LEAVING);
     }
@@ -412,14 +406,14 @@ void up_stairs(dungeon_feature_type force_stair)
     _player_change_level_reset();
     _player_change_level_upstairs(force_stair);
 
-    if (old_level.branch == BRANCH_VESTIBULE_OF_HELL
-        && !player_in_branch(BRANCH_VESTIBULE_OF_HELL))
+    if (old_level.branch == BRANCH_VESTIBULE
+        && !player_in_branch(BRANCH_VESTIBULE))
     {
         mpr("Thank you for visiting Hell. Please come again soon.");
     }
 
     // Fixup exits from the Hell branches.
-    if (player_in_branch(BRANCH_VESTIBULE_OF_HELL))
+    if (player_in_branch(BRANCH_VESTIBULE))
     {
         switch (old_level.branch)
         {
@@ -445,7 +439,7 @@ void up_stairs(dungeon_feature_type force_stair)
         mprf("Welcome back to %s!",
              branches[you.where_are_you].longname);
         if ((brdepth[old_level.branch] > 1
-             || old_level.branch == BRANCH_VESTIBULE_OF_HELL)
+             || old_level.branch == BRANCH_VESTIBULE)
             && !you.branches_left[old_level.branch])
         {
             string old_branch_string = branches[old_level.branch].longname;
@@ -469,16 +463,15 @@ void up_stairs(dungeon_feature_type force_stair)
 
     _update_travel_cache(old_level, stair_pos);
 
-    env.map_shadow = env.map_knowledge;
     // Preventing obvious finding of stairs at your position.
-    env.map_shadow(you.pos()).flags |= MAP_SEEN_FLAG;
+    env.map_seen.set(you.pos());
 
     viewwindow();
 
     seen_monsters_react();
 
     if (!allow_control_teleport(true))
-        mpr("You sense a powerful magical force warping space.", MSGCH_WARN);
+        mprf(MSGCH_WARN, "You sense a powerful magical force warping space.");
 
     request_autopickup();
 }
@@ -501,25 +494,30 @@ level_id stair_destination(coord_def pos, bool for_real)
 level_id stair_destination(dungeon_feature_type feat, const string &dst,
                            bool for_real)
 {
-    if (branches[you.where_are_you].exit_stairs == feat)
+#if TAG_MAJOR_VERSION == 34
+    if (feat == DNGN_ESCAPE_HATCH_UP && player_in_branch(BRANCH_LABYRINTH))
+        feat = DNGN_EXIT_LABYRINTH;
+#endif
+    if (branches[you.where_are_you].exit_stairs == feat
+        && parent_branch(you.where_are_you) < NUM_BRANCHES
+        && feat != DNGN_EXIT_ZIGGURAT)
     {
-        if (feat == DNGN_ESCAPE_HATCH_UP)
-            feat = DNGN_EXIT_PORTAL_VAULT; // silly Labyrinths
-        else if (parent_branch(you.where_are_you) < NUM_BRANCHES)
+        level_id lev = brentry[you.where_are_you];
+        if (!lev.is_valid())
         {
-            level_id lev = level_id(parent_branch(you.where_are_you),
-                                    startdepth[you.where_are_you]);
-            if (lev.depth == -1)
-            {
-                // Wizmode, the branch wasn't generated this game.
-                // Pick the middle of the range instead.
-                lev.depth = (branches[you.where_are_you].mindepth
-                             + branches[you.where_are_you].maxdepth) / 2;
-            }
-
-            return lev;
+            // Wizmode, the branch wasn't generated this game.
+            // Pick the middle of the range instead.
+            lev = level_id(branches[you.where_are_you].parent_branch,
+                           (branches[you.where_are_you].mindepth
+                            + branches[you.where_are_you].maxdepth) / 2);
+            ASSERT(lev.is_valid());
         }
+
+        return lev;
     }
+
+    if (feat >= DNGN_EXIT_FIRST_PORTAL && feat <= DNGN_EXIT_LAST_PORTAL)
+        feat = DNGN_EXIT_PANDEMONIUM;
 
     switch (feat)
     {
@@ -536,16 +534,15 @@ level_id stair_destination(dungeon_feature_type feat, const string &dst,
         return level_id(you.where_are_you, you.depth - 1);
 
     case DNGN_EXIT_HELL:
-        if (you.hell_exit)
-            return level_id(you.hell_branch, you.hell_exit);
+        // If set, it would be found as a branch exit.
         if (you.wizard)
         {
             if (for_real)
             {
-                mpr("Error: no Hell exit level, how in the Vestibule did "
-                        "you get here? Let's go to D:1.", MSGCH_ERROR);
+                mprf(MSGCH_ERROR, "Error: no Hell exit level, how in the "
+                                  "Vestibule did you get here? Let's go to D:1.");
             }
-            return level_id(BRANCH_MAIN_DUNGEON, 1);
+            return level_id(BRANCH_DUNGEON, 1);
         }
         else
             die("hell exit without return destination");
@@ -570,6 +567,7 @@ level_id stair_destination(dungeon_feature_type feat, const string &dst,
     case DNGN_EXIT_THROUGH_ABYSS:
         return level_id(BRANCH_ABYSS);
 
+#if TAG_MAJOR_VERSION == 34
     case DNGN_ENTER_PORTAL_VAULT:
         if (dst.empty())
         {
@@ -579,19 +577,19 @@ level_id stair_destination(dungeon_feature_type feat, const string &dst,
                 return level_id();
         }
         return level_id::parse_level_id(dst);
+#endif
 
     case DNGN_ENTER_HELL:
         if (for_real && !player_in_hell())
-        {
-            you.hell_branch = you.where_are_you;
-            you.hell_exit = you.depth;
-        }
-        return level_id(BRANCH_VESTIBULE_OF_HELL);
+            brentry[BRANCH_VESTIBULE] = level_id::current();
+        return level_id(BRANCH_VESTIBULE);
 
     case DNGN_EXIT_ABYSS:
         if (you.char_direction == GDT_GAME_START)
-            return level_id(BRANCH_MAIN_DUNGEON, 1);
+            return level_id(BRANCH_DUNGEON, 1);
+#if TAG_MAJOR_VERSION == 34
     case DNGN_EXIT_PORTAL_VAULT:
+#endif
     case DNGN_EXIT_PANDEMONIUM:
         if (you.level_stack.empty())
         {
@@ -599,10 +597,10 @@ level_id stair_destination(dungeon_feature_type feat, const string &dst,
             {
                 if (for_real)
                 {
-                    mpr("Error: no return path. You did create the exit manually, "
-                        "didn't you? Let's go to D:1.", MSGCH_ERROR);
+                    mprf(MSGCH_ERROR, "Error: no return path. You did create "
+                         "the exit manually, didn't you? Let's go to D:1.");
                 }
-                return level_id(BRANCH_MAIN_DUNGEON, 1);
+                return level_id(BRANCH_DUNGEON, 1);
             }
             die("no return path from a portal (%s)",
                 level_id::current().describe().c_str());
@@ -643,7 +641,7 @@ static void _maybe_destroy_trap(const coord_def &p)
 }
 
 // TODO(Zannick): Fully merge with up_stairs into take_stairs.
-void down_stairs(dungeon_feature_type force_stair)
+void down_stairs(dungeon_feature_type force_stair, bool force_known_shaft)
 {
     const level_id old_level = level_id::current();
     const dungeon_feature_type old_feat = grd(you.pos());
@@ -653,9 +651,11 @@ void down_stairs(dungeon_feature_type force_stair)
     // Taking a shaft manually
     const bool known_shaft = (!force_stair
                               && get_trap_type(you.pos()) == TRAP_SHAFT
-                              && stair_find != DNGN_UNDISCOVERED_TRAP);
+                              && stair_find != DNGN_UNDISCOVERED_TRAP)
+                             || (force_stair == DNGN_TRAP_SHAFT
+                                 && force_known_shaft);
     // Latter case is falling down a shaft.
-    const bool shaft = known_shaft || (force_stair == DNGN_TRAP_NATURAL);
+    const bool shaft = known_shaft || force_stair == DNGN_TRAP_SHAFT;
     level_id shaft_dest;
 
     // Up and down both work for portals.
@@ -668,8 +668,8 @@ void down_stairs(dungeon_feature_type force_stair)
     }
 
     // Only check the current position for a legal stair traverse.
-    // If it's a known shaft that we're taking, then we're already good.
-    if (!known_shaft && !_check_stairs(stair_find, true))
+    // If it's a shaft that we're taking, then we're already good.
+    if (!shaft && !_check_stairs(stair_find, true))
         return;
 
     if (_stair_moves_pre(stair_find))
@@ -686,6 +686,10 @@ void down_stairs(dungeon_feature_type force_stair)
         }
 
         shaft_dest = you.shaft_dest(known_shaft);
+    }
+    const int shaft_depth = (shaft ? shaft_dest.depth - you.depth : 1);
+    if (shaft)
+    {
         if (shaft_dest == level_id::current())
         {
             if (known_shaft)
@@ -698,20 +702,52 @@ void down_stairs(dungeon_feature_type force_stair)
             return;
         }
 
-        if (!known_shaft && shaft_dest.depth - you.depth > 1)
+        if (!known_shaft)
         {
             mark_milestone("shaft", "fell down a shaft to "
                                     + short_place_name(shaft_dest) + ".");
         }
 
+        handle_items_on_shaft(you.pos(), false);
+
+        string howfar;
+        if (force_stair && shaft_depth > 1)
+            howfar = make_stringf(" for %d floors", shaft_depth);
+
         if (!you.flight_mode() || force_stair)
-            mpr("You fall through a shaft!");
-        if (you.flight_mode() && !force_stair)
+            mprf("You fall through a shaft%s!", howfar.c_str());
+        else
             mpr("You dive down through the shaft.");
 
         // Shafts are one-time-use.
         mpr("The shaft crumbles and collapses.");
         _maybe_destroy_trap(you.pos());
+    }
+
+    if (stair_find == DNGN_ENTER_VAULTS
+        && !is_existing_level(level_id(BRANCH_VAULTS, 1)))
+    {
+        bool has_rune = false;
+        int i = 0;
+        for (; i < NUM_RUNE_TYPES; i++)
+            if (you.runes[i])
+            {
+                has_rune = true;
+                break;
+            }
+
+        if (!has_rune)
+        {
+            mpr("You need a rune to enter this place.");
+            return;
+        }
+
+        mprf("You insert the %s rune into the lock.", rune_type_name(i));
+        if (silenced(you.pos()))
+            mpr("The gate opens wide!");
+        else
+            mpr("With a loud hiss the gate opens wide!");
+        more();
     }
 
     if (stair_find == DNGN_ENTER_ZOT && !you.opened_zot)
@@ -738,7 +774,7 @@ void down_stairs(dungeon_feature_type force_stair)
 
         ASSERT(runes.size() >= 3);
 
-        random_shuffle(runes.begin(), runes.end());
+        shuffle_array(runes);
         mprf("You insert the %s rune into the lock.", rune_type_name(runes[0]));
 #ifdef USE_TILE_LOCAL
         tiles.add_overlay(you.pos(), tileidx_zap(GREEN));
@@ -766,6 +802,20 @@ void down_stairs(dungeon_feature_type force_stair)
         you.opened_zot = true;
     }
 
+    if (stair_find == DNGN_ENTER_ZIGGURAT)
+    {
+        #define ZIG_RUNES 3
+        int nrune = 0;
+        for (int i = 0; i < NUM_RUNE_TYPES; i++)
+            if (you.runes[i])
+                nrune++;
+        if (nrune < ZIG_RUNES)
+        {
+            mprf("You need at least %d runes to enter this place.", ZIG_RUNES);
+            return;
+        }
+    }
+
     // Bail if any markers veto the move.
     if (_marker_vetoes_level_change())
         return;
@@ -774,6 +824,7 @@ void down_stairs(dungeon_feature_type force_stair)
 
     // Magical level changes (Portal, Banishment) need this.
     clear_trapping_net();
+    end_searing_ray();
 
     // Markers might be deleted when removing portals.
     const string dst = env.markers.property_at(you.pos(), MAT_ANY, "dst");
@@ -810,21 +861,21 @@ void down_stairs(dungeon_feature_type force_stair)
     }
     const coord_def stair_pos = you.pos();
 
-    // XXX: Obsolete, now that labyrinth entrances are only placed via Lua
-    //      with timed markers. Leaving in to reduce the chance of an
-    //      accidental permanent labyrinth entry. [rob]
-    if (stair_find == DNGN_ENTER_LABYRINTH)
+    if (stair_find == DNGN_ENTER_LABYRINTH || stair_find == DNGN_ENTER_ZIGGURAT)
         dungeon_terrain_changed(you.pos(), DNGN_STONE_ARCH);
 
     if (stair_find == DNGN_ENTER_LABYRINTH
+#if TAG_MAJOR_VERSION == 34
         || stair_find == DNGN_ENTER_PORTAL_VAULT
+#endif
         || stair_find == DNGN_ENTER_PANDEMONIUM
-        || stair_find == DNGN_ENTER_ABYSS)
+        || stair_find == DNGN_ENTER_ABYSS
+        || stair_find >= DNGN_ENTER_FIRST_PORTAL
+           && stair_find <= DNGN_ENTER_LAST_PORTAL)
     {
         you.level_stack.push_back(level_pos::current());
     }
 
-    const int shaft_depth = (shaft ? shaft_dest.depth - you.depth : 1);
     _player_change_level_reset();
     if (shaft)
         you.depth         = shaft_dest.depth;
@@ -882,7 +933,7 @@ void down_stairs(dungeon_feature_type force_stair)
     dungeon_feature_type stair_taken = stair_find;
 
     if (shaft)
-        stair_taken = DNGN_TRAP_NATURAL;
+        stair_taken = DNGN_TRAP_SHAFT;
 
     switch (you.where_are_you)
     {
@@ -897,17 +948,17 @@ void down_stairs(dungeon_feature_type force_stair)
     case BRANCH_ABYSS:
         if (old_level.branch == BRANCH_ABYSS)
         {
-            mpr("You plunge deeper into the Abyss.", MSGCH_BANISHMENT);
+            mprf(MSGCH_BANISHMENT, "You plunge deeper into the Abyss.");
             break;
         }
         if (!force_stair)
             mpr("You enter the Abyss!");
 
         mpr("To return, you must find a gate leading back.");
-        if (you.religion == GOD_CHEIBRIADOS)
+        if (you_worship(GOD_CHEIBRIADOS))
         {
-            mpr("You feel Cheibriados slowing down the madness of this place.",
-                MSGCH_GOD, GOD_CHEIBRIADOS);
+            mprf(MSGCH_GOD, GOD_CHEIBRIADOS,
+                 "You feel Cheibriados slowing down the madness of this place.");
         }
 
         // Re-entering the Abyss halves accumulated speed.
@@ -926,9 +977,7 @@ void down_stairs(dungeon_feature_type force_stair)
         break;
 
     default:
-        if (shaft)
-            handle_items_on_shaft(you.pos(), false);
-        else
+        if (!shaft)
             _climb_message(stair_find, false, old_level.branch);
         break;
     }
@@ -1018,14 +1067,13 @@ void down_stairs(dungeon_feature_type force_stair)
     you.stop_being_constricted();
 
     if (!allow_control_teleport(true))
-        mpr("You sense a powerful magical force warping space.", MSGCH_WARN);
+        mprf(MSGCH_WARN, "You sense a powerful magical force warping space.");
 
     trackers_init_new_level(true);
     _update_travel_cache(old_level, stair_pos);
 
-    env.map_shadow = env.map_knowledge;
     // Preventing obvious finding of stairs at your position.
-    env.map_shadow(you.pos()).flags |= MAP_SEEN_FLAG;
+    env.map_seen.set(you.pos());
 
     viewwindow();
 
@@ -1038,7 +1086,6 @@ void down_stairs(dungeon_feature_type force_stair)
     // quick-healing stopovers.
     if (crawl_state.game_is_zotdef())
         start_delay(DELAY_UNINTERRUPTIBLE, 5);
-
 }
 
 static bool _any_glowing_mold()
@@ -1059,13 +1106,16 @@ static void _update_level_state()
 
     vector<coord_def> golub = find_golubria_on_level();
     if (!golub.empty())
-        env.level_state += LSTATE_GOLUBRIA;
+        env.level_state |= LSTATE_GOLUBRIA;
 
     if (_any_glowing_mold())
-        env.level_state += LSTATE_GLOW_MOLD;
+        env.level_state |= LSTATE_GLOW_MOLD;
     for (monster_iterator mon_it; mon_it; ++mon_it)
         if (mons_allows_beogh(*mon_it))
-            env.level_state += LSTATE_BEOGH;
+            env.level_state |= LSTATE_BEOGH;
+    for (rectangle_iterator ri(0); ri; ++ri)
+        if (grd(*ri) == DNGN_SLIMY_WALL)
+            env.level_state |= LSTATE_SLIMY_WALL;
 
     env.orb_pos = orb_position();
     if (player_has_orb())

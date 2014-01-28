@@ -11,11 +11,12 @@
 
 struct bolt;
 
-string zin_recite_text(int* trits, size_t len, int prayertype, int step);
+string zin_recite_text(const int seed, const int prayertype, int step);
 bool zin_check_able_to_recite(bool quiet = false);
 int zin_check_recite_to_monsters(recite_type *prayertype);
 bool zin_recite_to_single_monster(const coord_def& where,
                                   recite_type prayertype);
+void zin_recite_interrupt();
 bool zin_vitalisation();
 void zin_remove_divine_stamina();
 bool zin_remove_all_mutations();
@@ -31,6 +32,8 @@ void elyvilon_remove_divine_vigour();
 bool vehumet_supports_spell(spell_type spell);
 
 bool trog_burn_spellbooks();
+void trog_do_trogs_hand(int power);
+void trog_remove_trogs_hand();
 
 void jiyva_paralyse_jellies();
 bool jiyva_remove_bad_mutation();
@@ -42,7 +45,7 @@ bool yred_can_animate_dead();
 void yred_animate_remains_or_dead();
 void yred_make_enslaved_soul(monster* mon, bool force_hostile = false);
 
-bool kiku_receive_corpses(int pow, coord_def where);
+bool kiku_receive_corpses(int pow);
 bool kiku_take_corpse();
 
 bool fedhas_passthrough_class(const monster_type mc);
@@ -71,4 +74,9 @@ bool ashenzari_end_transfer(bool finished = false, bool force = false);
 
 bool can_convert_to_beogh();
 void spare_beogh_convert();
+
+bool dithmengos_shadow_step();
+void dithmengos_shadow_melee(actor* target);
+void dithmengos_shadow_throw(coord_def target);
+void dithmengos_shadow_spell(coord_def target, spell_type spell);
 #endif

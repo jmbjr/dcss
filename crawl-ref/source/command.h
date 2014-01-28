@@ -3,7 +3,6 @@
  * @brief Misc commands.
 **/
 
-
 #ifndef COMMAND_H
 #define COMMAND_H
 
@@ -18,7 +17,7 @@ void toggle_viewport_monster_hp();
 void show_levelmap_help();
 void show_pickup_menu_help();
 void show_known_menu_help();
-void show_targetting_help();
+void show_targeting_help();
 void show_interlevel_travel_branch_help();
 void show_interlevel_travel_depth_help();
 void show_stash_search_help();

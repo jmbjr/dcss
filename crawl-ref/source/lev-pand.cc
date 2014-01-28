@@ -11,11 +11,9 @@
 
 #include "externs.h"
 #include "colour.h"
-#include "dungeon.h"
 #include "env.h"
 #include "mon-place.h"
 #include "mgen_data.h"
-#include "mon-pick.h"
 #include "random.h"
 
 static colour_t _pan_floor_colour()
@@ -44,7 +42,7 @@ static colour_t _pan_rock_colour()
 
 void init_pandemonium(void)
 {
-    for (int pc = 0; pc < 10; ++pc)
+    for (int pc = 0; pc < PAN_MONS_ALLOC; ++pc)
     {
         env.mons_alloc[pc] = random_choose(
                                 MONS_NEQOXEC,
@@ -115,19 +113,4 @@ void init_pandemonium(void)
 
     env.floor_colour = _pan_floor_colour();
     env.rock_colour  = _pan_rock_colour();
-}
-
-void pandemonium_mons(void)
-{
-    // must leave allowance for monsters rare on pandemonium (wizards, etc.)
-    monster_type pan_mons = env.mons_alloc[random2(10)];
-
-    if (one_chance_in(40))
-        pan_mons = pick_monster_no_rarity(BRANCH_PANDEMONIUM);
-
-    mgen_data mg(pan_mons);
-    mg.place = level_id(BRANCH_PANDEMONIUM);
-    mg.flags |= MG_PERMIT_BANDS;
-
-    mons_place(mg);
 }

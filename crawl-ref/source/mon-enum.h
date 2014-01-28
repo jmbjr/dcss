@@ -9,8 +9,6 @@
 #ifndef MON_ENUM_H
 #define MON_ENUM_H
 
-// #include "tag-version.h"
-
 #define HERD_COMFORT_RANGE 6
 
 enum corpse_effect_type
@@ -114,6 +112,7 @@ enum attack_flavour
     AF_PLAGUE,
     AF_WEAKNESS_POISON,
     AF_SHADOWSTAB,
+    AF_WATERPORT,
 };
 
 // Non-spell "summoning" types to give to monster::mark_summoned(), or
@@ -150,9 +149,7 @@ enum habitat_type
     HT_AMPHIBIOUS,       // Amphibious creatures
     HT_WATER,            // Water critters
     HT_LAVA,             // Lava critters
-    HT_ROCK,             // Rock critters
-    HT_INCORPOREAL,      // Incorporeal things
-    HT_FOREST,           // Forest critters
+    HT_AMPHIBIOUS_LAVA,  // Amphibious w/ lava (salamanders)
 
     NUM_HABITATS
 };
@@ -210,6 +207,7 @@ enum mon_resist_flags
     MR_RES_STEAM         = 1 << 28,
 
     // vulnerabilities
+    MR_VUL_WATER         = 1 << 29,
     MR_VUL_ELEC          = mrd(MR_RES_ELEC, -1),
     MR_VUL_POISON        = mrd(MR_RES_POISON, -1),
     MR_VUL_FIRE          = mrd(MR_RES_FIRE, -1),

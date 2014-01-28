@@ -19,17 +19,17 @@
 
 static bool _mermaid_beholder(const monster* mons)
 {
-    return (mons_genus(mons->type) == MONS_MERMAID);
+    return mons_genus(mons->type) == MONS_MERMAID;
 }
 
 // Add a monster to the list of beholders.
 void player::add_beholder(const monster* mon, bool axe)
 {
-    if (is_sanctuary(you.pos()) && !axe)
+    if (is_sanctuary(pos()) && !axe)
     {
         if (_mermaid_beholder(mon))
         {
-            if (you.can_see(mon))
+            if (can_see(mon))
             {
                 mprf("%s's singing sounds muted, and has no effect on you.",
                      mon->name(DESC_THE).c_str());
@@ -39,7 +39,7 @@ void player::add_beholder(const monster* mon, bool axe)
         }
         else
         {
-            if (you.can_see(mon))
+            if (can_see(mon))
                 mprf("%s's is no longer quite as mesmerising!", mon->name(DESC_THE).c_str());
             else
                 mpr("Your mesmeriser suddenly seems less interesting!");
@@ -50,7 +50,7 @@ void player::add_beholder(const monster* mon, bool axe)
 
     if (!duration[DUR_MESMERISED])
     {
-        you.set_duration(DUR_MESMERISED, 7, 12);
+        set_duration(DUR_MESMERISED, 7, 12);
         beholders.push_back(mon->mindex());
         if (!axe)
         {
@@ -60,7 +60,7 @@ void player::add_beholder(const monster* mon, bool axe)
     }
     else
     {
-        you.increase_duration(DUR_MESMERISED, 5, 12);
+        increase_duration(DUR_MESMERISED, 5, 12);
         if (!beheld_by(mon))
             beholders.push_back(mon->mindex());
     }
@@ -70,7 +70,7 @@ void player::add_beholder(const monster* mon, bool axe)
 bool player::beheld() const
 {
     ASSERT(duration[DUR_MESMERISED] > 0 == !beholders.empty());
-    return (duration[DUR_MESMERISED] > 0);
+    return duration[DUR_MESMERISED] > 0;
 }
 
 // Whether player is mesmerised by the given monster.
@@ -133,7 +133,7 @@ void player::beholders_check_noise(int loudness, bool axe)
 
     if (loudness >= 20 && beheld())
     {
-        mprf("For a moment, your mind becomes perfectly clear!");
+        mpr("For a moment, your mind becomes perfectly clear!");
         clear_beholders();
         _removed_beholder();
     }
@@ -211,6 +211,11 @@ void player::update_beholders()
         {
             beholders.erase(beholders.begin() + i);
             removed = true;
+
+            // If that was the last one, clear the duration before
+            // printing any subsequent messages, or a --more-- can
+            // crash (#6547).
+            _removed_beholder(true);
             _removed_beholder_msg(mon);
         }
     }
@@ -235,14 +240,17 @@ void player::update_beholder(const monster* mon)
 
 // Helper function that resets the duration and messages if the player
 // is no longer mesmerised.
-void player::_removed_beholder()
+void player::_removed_beholder(bool quiet)
 {
     if (beholders.empty())
     {
         duration[DUR_MESMERISED] = 0;
-        mpr(coinflip() ? "You break out of your daze!"
-                       : "You are no longer entranced.",
-            MSGCH_DURATION);
+        if (!quiet)
+        {
+            mprf(MSGCH_DURATION,
+                 coinflip() ? "You break out of your daze!"
+                            : "You are no longer entranced.");
+        }
     }
 }
 
@@ -253,16 +261,17 @@ bool player::possible_beholder(const monster* mon) const
     if (crawl_state.game_is_arena())
         return false;
 
-    return (mon->alive() && !mon->submerged()
-         && see_cell_no_trans(mon->pos()) && mon->see_cell_no_trans(pos())
-         && !mon->wont_attack() && !mon->pacified()
-         && ((mons_genus(mon->type) == MONS_MERMAID
-              || mon->has_spell(SPELL_MESMERISE))
-             && !silenced(pos()) && !silenced(mon->pos())
-             && !mon->has_ench(ENCH_MUTE)
-             && !mon->confused()
-             && !mon->asleep() && !mon->cannot_move()
-             && !mon->berserk() && !mons_is_fleeing(mon)
-             && !is_sanctuary(you.pos())
-           || player_equip_unrand_effect(UNRAND_DEMON_AXE)));
+    return mon->alive() && !mon->submerged()
+        && see_cell_no_trans(mon->pos()) && mon->see_cell_no_trans(pos())
+        && !mon->wont_attack() && !mon->pacified()
+        && ((mons_genus(mon->type) == MONS_MERMAID
+             || mon->has_spell(SPELL_MESMERISE))
+            && !silenced(pos()) && !silenced(mon->pos())
+            && !mon->has_ench(ENCH_MUTE)
+            && !mon->confused()
+            && !mon->asleep() && !mon->cannot_move()
+            && !mon->berserk_or_insane()
+            && !mons_is_fleeing(mon)
+            && !is_sanctuary(pos())
+          || player_equip_unrand(UNRAND_DEMON_AXE));
 }

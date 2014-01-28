@@ -1,5 +1,7 @@
 define([],
 function () {
+    "use strict";
+
     var cols = {
         "black": 0,
         "blue": 1,
@@ -18,20 +20,28 @@ function () {
         "lightred": 12,
         "lightmagenta": 13,
         "yellow": 14,
-        "white": 15
+        "h": 14,
+        "white": 15,
+        "w": 15
     };
+
+    function escape_html(str) {
+        return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    }
 
     function formatted_string_to_html(str)
     {
         var other_open = false;
-        return str.replace(/<(\/?[a-z]+)>/ig, function (str, p1) {
+        var filtered = str.replace(/<?<(\/?[a-z]*)>?|>|&/ig, function (str, p1) {
+            if (p1 === undefined)
+                p1 = "";
             var closing = false;
             if (p1.match(/^\//))
             {
                 p1 = p1.substr(1);
                 closing = true;
             }
-            if (p1 in cols)
+            if (p1 in cols && !str.match(/^<</) && str.match(/>$/))
             {
                 if (closing)
                     return "</span>";
@@ -45,8 +55,18 @@ function () {
                 }
             }
             else
-                return str;
-        }).replace(/<</g, "<");
+            {
+                if (str.match(/^<</))
+                    return escape_html(str.substr(1));
+                else
+                {
+                    return escape_html(str);
+                }
+            }
+        });
+        if (other_open)
+            filtered += "</span>";
+        return filtered;
     }
 
     return {

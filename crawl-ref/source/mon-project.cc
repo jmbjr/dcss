@@ -54,7 +54,7 @@ spret_type cast_iood(actor *caster, int pow, bolt *beam, float vx, float vy,
                 GOD_NO_GOD), true, true);
     if (!mon)
     {
-        mpr("Failed to spawn projectile.", MSGCH_ERROR);
+        mprf(MSGCH_ERROR, "Failed to spawn projectile.");
         return SPRET_ABORT;
     }
 
@@ -92,7 +92,7 @@ spret_type cast_iood(actor *caster, int pow, bolt *beam, float vx, float vy,
     mon->props["iood_caster"].get_string() = caster->as_monster()
         ? caster->name(DESC_PLAIN, true)
         : (caster->is_player()) ? "you" : "";
-    mon->props["iood_mid"].get_int() = caster->mid;
+    mon->summoner = caster->mid;
 
     if (caster->is_player() || caster->type == MONS_PLAYER_GHOST
         || caster->type == MONS_PLAYER_ILLUSION)
@@ -147,11 +147,14 @@ static void _normalize(float &x, float &y)
 // angle measured in chord length
 static bool _in_front(float vx, float vy, float dx, float dy, float angle)
 {
-    return ((dx-vx)*(dx-vx) + (dy-vy)*(dy-vy) <= (angle*angle));
+    return (dx-vx)*(dx-vx) + (dy-vy)*(dy-vy) <= (angle*angle);
 }
 
 static void _iood_stop(monster& mon, bool msg = true)
 {
+    if (!mon.alive())
+        return;
+
     if (mons_is_boulder(&mon))
     {
         // Deduct the energy first - the move they made that just stopped
@@ -203,7 +206,7 @@ static bool _iood_shielded(monster& mon, actor &victim)
     const int con_block = random2(to_hit + victim.shield_block_penalty());
     const int pro_block = victim.shield_bonus();
     dprf("iood shield: pro %d, con %d", pro_block, con_block);
-    return (pro_block >= con_block);
+    return pro_block >= con_block;
 }
 
 static bool _boulder_hit(monster& mon, const coord_def &pos)
@@ -222,7 +225,7 @@ static bool _boulder_hit(monster& mon, const coord_def &pos)
     }
 
     noisy(5, pos);
-    return victim && victim->alive();
+    return victim && victim->alive() || !mon.alive();
 }
 
 static bool _iood_hit(monster& mon, const coord_def &pos, bool big_boom = false)
@@ -235,7 +238,7 @@ static bool _iood_hit(monster& mon, const coord_def &pos, bool big_boom = false)
     beam.flavour = BEAM_NUKE;
     beam.attitude = mon.attitude;
 
-    actor *caster = actor_by_mid(mon.props["iood_mid"].get_int());
+    actor *caster = actor_by_mid(mon.summoner);
     if (!caster)        // caster is dead/gone, blame the orb itself (as its
         caster = &mon;  // friendliness is correct)
     beam.set_agent(caster);
@@ -299,8 +302,9 @@ bool iood_act(monster& mon, bool no_trail)
     // If the target is gone, the orb continues on a ballistic course since
     // picking a new one would require intelligence.
 
-    // Boulders don't home onto their targets.
-    if (iood && foe)
+    // Boulders don't home onto their targets.  IOODs can't home in on a
+    // submerged creature.
+    if (iood && foe && !foe->submerged())
     {
         const coord_def target = foe->pos();
         float dx = target.x - x;
@@ -362,7 +366,7 @@ move_again:
 
     if (iood && mon.props.exists("iood_flawed"))
     {
-        const actor *caster = actor_by_mid(mon.props["iood_mid"].get_int());
+        const actor *caster = actor_by_mid(mon.summoner);
         if (!caster || caster->pos().origin() ||
             (caster->pos() - pos).rdist() > LOS_RADIUS)
         {   // not actual vision, because of the smoke trail
@@ -394,7 +398,6 @@ move_again:
             if (!iood) // boulders need to stop now
             {
                 _iood_stop(mon);
-                // Can't hurt rock worms anyway.
                 return true;
             }
         }

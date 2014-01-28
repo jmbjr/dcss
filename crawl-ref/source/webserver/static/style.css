@@ -17,6 +17,32 @@ body {
     text-align: center;
 }
 
+#prompt {
+    top: 50%;
+    left: 50%;
+    position: absolute;
+    z-index: 4000;
+}
+
+#prompt > div {
+    background-color: black;
+    width: 34em;
+    margin-left: -17em;
+    margin-top: -10ex;
+    padding: 1em 2ex;
+    border: 1px solid white;
+}
+
+#prompt #login {
+    float: none;
+    text-align: left;
+    margin: 2ex 0;
+}
+
+#prompt_game {
+    font-weight: bold;
+}
+
 #player_list {
     width: 100%;
     text-align: left;
@@ -130,6 +156,7 @@ body {
 }
 
 #chat {
+    background: rgba(0, 0, 0, 0.75);
     width: 400px;
     position: fixed;
     bottom: 20px;
@@ -145,6 +172,11 @@ body {
     z-index: 3000;
 }
 
+#chat a {
+    color: inherit;
+    font-weight: inherit;
+}
+
 #chat_caption {
     font-weight: normal;
     text-decoration: none;
@@ -152,6 +184,10 @@ body {
 
 #chat_caption:hover {
     background-color: #111111;
+}
+
+#chat_login_text {
+    border-top: 1px dashed #626262;
 }
 
 #message_count {
@@ -166,6 +202,10 @@ body {
     width: 100%;
     max-height: 200px;
     overflow-y: auto;
+    overflow-x: hidden;
+    text-overflow: ellipsis;
+    word-wrap: break-word;
+    margin-bottom: 3px;
 }
 
 #chat_history {
@@ -178,6 +218,10 @@ body {
 
 #spectator_list .player {
     font-weight: bold;
+}
+
+#spectator_list .watcher {
+    font-weight: normal;
 }
 
 #chat_input {
