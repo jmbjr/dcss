@@ -45,6 +45,7 @@
 #include "mon-stuff.h"
 #include "random.h"
 #include "religion.h"
+#include "spl-damage.h"
 #include "spl-miscast.h"
 #include "spl-util.h"
 #include "state.h"
@@ -995,27 +996,30 @@ static bool _will_starcursed_scream(monster* mon)
 // Returns true if you resist the siren's call.
 static bool _siren_movement_effect(const monster* mons)
 {
-    bool do_resist = (you.attribute[ATTR_HELD] || you.check_res_magic(70) > 0
+    bool do_resist = (you.attribute[ATTR_HELD]
                       || you.cannot_act() || you.asleep()
                       || you.clarity());
 
     if (!do_resist)
     {
-        coord_def dir(coord_def(0,0));
-        if (mons->pos().x < you.pos().x)
-            dir.x = -1;
-        else if (mons->pos().x > you.pos().x)
-            dir.x = 1;
-        if (mons->pos().y < you.pos().y)
-            dir.y = -1;
-        else if (mons->pos().y > you.pos().y)
-            dir.y = 1;
+        // We use a beam tracer here since it is better at navigating
+        // obstructing walls than merely comparing our relative positions
+        bolt tracer;
+        tracer.is_beam = true;
+        tracer.affects_nothing = true;
+        tracer.target = mons->pos();
+        tracer.source = you.pos();
+        tracer.range = LOS_RADIUS;
+        tracer.is_tracer = true;
+        tracer.aimed_at_spot = true;
+        tracer.fire();
 
-        const coord_def newpos = you.pos() + dir;
+        const coord_def newpos = tracer.path_taken[0];
 
         if (!in_bounds(newpos)
             || (is_feat_dangerous(grd(newpos)) && !you.can_cling_to(newpos))
-            || !you.can_pass_through_feat(grd(newpos)))
+            || !you.can_pass_through_feat(grd(newpos))
+            || !cell_see_cell(mons->pos(), newpos, LOS_NO_TRANS))
         {
             do_resist = true;
         }
@@ -2078,24 +2082,29 @@ bool lost_soul_spectralize(monster* mons)
     return false;
 }
 
-void treant_release_wasps(monster* mons)
+void treant_release_fauna(monster* mons)
 {
     int count = mons->number;
     bool created = false;
+
+    monster_type base_t = (one_chance_in(3) ? MONS_YELLOW_WASP
+                                            : MONS_RAVEN);
+
     for (int i = 0; i < count; ++i)
     {
-        monster_type wasp_t = (one_chance_in(3) ? MONS_RED_WASP
-                                                : MONS_YELLOW_WASP);
+        monster_type fauna_t = (base_t == MONS_YELLOW_WASP && one_chance_in(3)
+                                                ? MONS_RED_WASP
+                                                : base_t);
 
-        mgen_data wasp_data(wasp_t, SAME_ATTITUDE(mons),
+        mgen_data fauna_data(fauna_t, SAME_ATTITUDE(mons),
                             mons, 0, SPELL_NO_SPELL, mons->pos(),
                             mons->foe);
-        wasp_data.extra_flags |= MF_WAS_IN_VIEW;
-        monster* wasp = create_monster(wasp_data);
+        fauna_data.extra_flags |= MF_WAS_IN_VIEW;
+        monster* fauna = create_monster(fauna_data);
 
-        if (wasp)
+        if (fauna)
         {
-            wasp->props["band_leader"].get_int() = mons->mid;
+            fauna->props["band_leader"].get_int() = mons->mid;
             created = true;
             mons->number--;
         }
@@ -2103,8 +2112,16 @@ void treant_release_wasps(monster* mons)
 
     if (created && you.can_see(mons))
     {
-        mprf("Angry insects surge out from beneath %s foliage!",
-            mons->name(DESC_ITS).c_str());
+        if (base_t == MONS_YELLOW_WASP)
+        {
+                mprf("Angry insects surge out from beneath %s foliage!",
+                        mons->name(DESC_ITS).c_str());
+        }
+        else if (base_t == MONS_RAVEN)
+        {
+                mprf("Agitated ravens fly out from beneath %s foliage!",
+                        mons->name(DESC_ITS).c_str());
+        }
     }
 }
 
@@ -2114,9 +2131,12 @@ static void _entangle_actor(actor* act)
     {
         you.duration[DUR_GRASPING_ROOTS] = 10;
         you.redraw_evasion = true;
-        you.duration[DUR_FLIGHT] = 0;
-        you.attribute[ATTR_PERM_FLIGHT] = 0;
-        land_player(true);
+        if (you.duration[DUR_FLIGHT] ||  you.attribute[ATTR_PERM_FLIGHT])
+        {
+            you.duration[DUR_FLIGHT] = 0;
+            you.attribute[ATTR_PERM_FLIGHT] = 0;
+            land_player(true);
+        }
     }
     else
     {
@@ -2149,9 +2169,8 @@ bool apply_grasping_roots(monster* mons)
 
         found_hostile = true;
 
-        // Roots don't work in water (even shallow) or lava, but they wait
-        // nearby without expiring.
-        if (!feat_has_dry_floor(grd(ai->pos())))
+        // Roots can't reach things over deep water or lava
+        if (!feat_has_solid_floor(grd(ai->pos())))
             continue;
 
         // Some messages are suppressed for monsters, to reduce message spam.
@@ -2199,7 +2218,7 @@ void check_grasping_roots(actor* act, bool quiet)
         }
     }
 
-    if (!source || !feat_has_dry_floor(grd(act->pos())))
+    if (!source || !feat_has_solid_floor(grd(act->pos())))
     {
         if (act->is_player())
         {
@@ -2248,6 +2267,75 @@ static bool _swoop_attack(monster* mons, actor* defender)
     }
 
     return false;
+}
+
+void shock_serpent_discharge(monster* serpent)
+{
+    int pow = serpent->number;
+    int range = max(1, pow * 2 / 3);
+
+    vector <actor*> targets;
+    for (actor_near_iterator ai(serpent); ai; ++ai)
+    {
+        if (ai->pos().distance_from(serpent->pos()) <= range
+            && !mons_aligned(serpent, *ai) && ai->res_elec() < 3)
+        {
+            targets.push_back(*ai);
+        }
+    }
+
+    if (you.can_see(serpent))
+    {
+        mprf("%s electric aura discharges%s!", serpent->name(DESC_ITS).c_str(),
+             pow > 4 ? "" : " violently");
+    }
+    else if (you.see_cell(serpent->pos()))
+        mpr("The air sparks with electricity!");
+
+    for (unsigned int i = 0; i < targets.size(); ++i)
+    {
+        int amount = roll_dice(2, 5) + div_rand_round(pow * 3, 2);
+        amount = targets[i]->apply_ac(amount, 0, AC_HALF);
+        mprf("The lightning shocks %s", targets[i]->name(DESC_THE).c_str());
+        targets[i]->hurt(serpent, amount, BEAM_ELECTRICITY);
+    }
+
+    serpent->number = 0;
+}
+
+static bool _shock_serpent_torrent(monster* serpent, actor* target)
+{
+    vector<bolt> beams = get_spray_rays(serpent, target->pos(), 8, 3, 5);
+
+    if (beams.size() == 0)
+        return false;
+
+    simple_monster_message(serpent,
+                           " unleashes its stored charge as a torrent of lightning!",
+                           MSGCH_MONSTER_SPELL);
+
+    for (unsigned int i = 0; i < beams.size(); ++i)
+    {
+        beams[i].name           = "torrent of lightning";
+        beams[i].aux_source     = "lightning torrent";
+        beams[i].hit_verb       = "arcs to";
+        beams[i].thrower        = KILL_MON_MISSILE;
+        beams[i].range          = 8;
+        beams[i].hit            = AUTOMATIC_HIT;
+        beams[i].glyph          = dchar_glyph(DCHAR_FIRED_ZAP);
+        beams[i].flavour        = BEAM_ELECTRICITY;
+        beams[i].obvious_effect = true;
+        beams[i].is_beam        = false;
+        beams[i].is_explosion   = false;
+        beams[i].is_tracer      = false;
+        beams[i].colour         = LIGHTBLUE;
+        beams[i].damage         = dice_def(2, 29);
+        beams[i].fire();
+    }
+
+    serpent->number = 0;
+
+    return true;
 }
 
 static inline void _mons_cast_abil(monster* mons, bolt &pbolt,
@@ -3269,6 +3357,72 @@ void move_child_tentacles(monster* mons)
     }
 }
 
+void siren_song(monster* mons)
+{
+    // Only call up drowned souls if we're largely alone; otherwise our
+    // mesmerisation can support the present allies well enough.
+    int ally_hd = 0;
+    for (monster_near_iterator mi(&you); mi; ++mi)
+    {
+        if (*mi != mons && mons_aligned(mons, *mi) && !mons_is_firewood(*mi)
+            && mi->type != MONS_DROWNED_SOUL)
+        {
+            ally_hd += mi->hit_dice;
+        }
+    }
+    if (ally_hd > mons->hit_dice)
+        return;
+
+    // Can only call up drowned souls if there's deep water nearby
+    int deep_water_count = 0;
+    vector<coord_def> deep_water;
+    for (radius_iterator ri(mons->pos(), LOS_RADIUS, C_ROUND); ri; ++ri)
+    {
+        if (grd(*ri) == DNGN_DEEP_WATER)
+        {
+            deep_water_count++;
+            if (!actor_at(*ri))
+                deep_water.push_back(*ri);
+        }
+    }
+
+    if (deep_water_count)
+    {
+        mons->props["song_count"].get_int()++;
+
+        int song_count = mons->props["song_count"].get_int();
+        if (song_count == 4 && you.see_cell(mons->pos()))
+        {
+            mprf("Shadowy forms rise from the deep at %s song!",
+                 mons->name(DESC_ITS).c_str());
+        }
+        else if (song_count > 4 && coinflip())
+        {
+            int num = 1 + x_chance_in_y(song_count, song_count + 25);
+            shuffle_array(deep_water);
+
+            int existing = 0;
+            for (monster_near_iterator mi(mons); mi; ++mi)
+            {
+                if (mi->type == MONS_DROWNED_SOUL)
+                    existing++;
+            }
+            num = min(num, min(5, song_count / 7 + 1) - existing);
+
+            for (int i = 0; i < num; ++i)
+            {
+                monster* soul = create_monster(mgen_data(MONS_DROWNED_SOUL,
+                                 SAME_ATTITUDE(mons), mons, 1, SPELL_NO_SPELL,
+                                 deep_water[i], mons->foe, MG_FORCE_PLACE));
+
+                // Scale down drowned soul damage for low level sirens
+                if (soul)
+                    soul->hit_dice = mons->hit_dice;
+            }
+        }
+    }
+}
+
 //---------------------------------------------------------------
 //
 // mon_special_ability
@@ -3279,7 +3433,7 @@ bool mon_special_ability(monster* mons, bolt & beem)
     bool used = false;
 
     const monster_type mclass = (mons_genus(mons->type) == MONS_DRACONIAN)
-                                  ? draco_subspecies(mons)
+                                  ? draco_or_demonspawn_subspecies(mons)
                                   // Pick a random chimera component
                                   : (mons->type == MONS_CHIMERA ?
                                      get_chimera_part(mons, random2(3) + 1)
@@ -3664,12 +3818,12 @@ bool mon_special_ability(monster* mons, bolt & beem)
         if (mons->has_ench(ENCH_CONFUSION))
             break;
 
-        if (!you.visible_to(mons))
+        // Cannot fire without any spikes left
+        if (mons->number == 0)
             break;
 
-        // The fewer spikes the manticore has left, the less
-        // likely it will use them.
-        if (random2(16) >= static_cast<int>(mons->number))
+        // Will neither fire from melee range nor all the time
+        if (mons->foe_distance() < 2 || !coinflip())
             break;
 
         // Do the throwing right here, since the beam is so
@@ -3678,9 +3832,10 @@ bool mon_special_ability(monster* mons, bolt & beem)
         // Set up the beam.
         beem.name        = "volley of spikes";
         beem.aux_source  = "volley of spikes";
+        beem.hit_verb    = "skewers";
         beem.range       = 6;
-        beem.hit         = 14;
-        beem.damage      = dice_def(2, 10);
+        beem.hit         = 27;
+        beem.damage      = dice_def(2, 13);
         beem.beam_source = mons->mindex();
         beem.glyph       = dchar_glyph(DCHAR_FIRED_MISSILE);
         beem.colour      = LIGHTGREY;
@@ -3825,27 +3980,38 @@ bool mon_special_ability(monster* mons, bolt & beem)
         }
 
         // Don't even try on berserkers. Mermaids know their limits.
-        if (you.berserk())
+        // (Sirens should still sing since their song has other effects)
+        if (mons->type != MONS_SIREN && you.berserk())
             break;
 
         // Reduce probability because of spamminess.
         if (you.species == SP_MERFOLK && !one_chance_in(4))
             break;
 
-        // A wounded invisible mermaid is less likely to give away her position.
-        if (mons->invisible()
-            && mons->hit_points <= mons->max_hit_points / 2
-            && !one_chance_in(3))
-        {
-            break;
-        }
 
         bool already_mesmerised = you.beheld_by(mons);
+
+        if (mons->type == MONS_SIREN && already_mesmerised)
+        {
+            // Don't pull the player if they walked forward voluntarily this
+            // turn (to avoid making you jump two spaces at once)
+            if (!mons->props["foe_approaching"].get_bool())
+            {
+                _siren_movement_effect(mons);
+
+                // Reset foe tracking position so that we won't automatically
+                // veto pulling on a subsequent turn because you 'approached'
+                mons->props["foe_pos"].get_coord() = you.pos();
+            }
+        }
 
         if (one_chance_in(5)
             || mons->foe == MHITYOU && !already_mesmerised && coinflip())
         {
             noisy(LOS_RADIUS, mons->pos(), mons->mindex(), true);
+
+            if (mons->type == MONS_SIREN && !mons->has_ench(ENCH_SIREN_SONG))
+                mons->add_ench(mon_enchant(ENCH_SIREN_SONG, 0, mons, 70));
 
             bool did_resist = false;
             if (you.can_see(mons))
@@ -3855,14 +4021,6 @@ bool mon_special_ability(monster* mons, bolt & beem)
                     already_mesmerised ? "her luring" : "a haunting").c_str(),
                     spl);
 
-                if (mons->type == MONS_SIREN)
-                {
-                    if (_siren_movement_effect(mons))
-                    {
-                        canned_msg(MSG_YOU_RESIST); // flavour only
-                        did_resist = true;
-                    }
-                }
             }
             else
             {
@@ -3889,11 +4047,12 @@ bool mon_special_ability(monster* mons, bolt & beem)
             // anymore.
             if (!already_mesmerised
                 && (you.species == SP_MERFOLK
-                    || you.check_res_magic(100) > 0
+                    || you.check_res_magic(mons->hit_dice * 10 + 20) > 0
                     || you.clarity()))
             {
                 if (!did_resist)
                     canned_msg(MSG_YOU_RESIST);
+                used = true;
                 break;
             }
 
@@ -4236,12 +4395,12 @@ bool mon_special_ability(monster* mons, bolt & beem)
     }
     break;
 
-    case MONS_TREANT:
+    case MONS_SHAMBLING_MANGROVE:
     {
         if (mons->hit_points * 2 < mons->max_hit_points && mons->number > 0)
         {
-            treant_release_wasps(mons);
-            // Intentionally takes no energy; the insects are flying free
+            treant_release_fauna(mons);
+            // Intentionally takes no energy; the creatures are flying free
             // on their own time.
         }
 
@@ -4328,6 +4487,54 @@ bool mon_special_ability(monster* mons, bolt & beem)
                     }
                 }
             }
+        }
+        break;
+
+    case MONS_SHOCK_SERPENT:
+
+        if (mons->has_ench(ENCH_CONFUSION))
+            break;
+
+        if (!mons->has_ench(ENCH_BUILDING_CHARGE))
+        {
+            mons->add_ench(mon_enchant(ENCH_BUILDING_CHARGE, 0, mons,
+                                       random_range(300, 500)));
+            simple_monster_message(mons, " begins to gather electrical charge!");
+        }
+
+        if (mons->number == 5 && one_chance_in(3))
+        {
+            if (_shock_serpent_torrent(mons, mons->get_foe()))
+                used = true;
+        }
+        else if (one_chance_in(6))
+        {
+            // Setup tracer.
+            beem.name        = "bolt of electricity";
+            beem.aux_source  = "bolt of electricity";
+            beem.range       = 8;
+            beem.damage      = dice_def(2, 15);
+            beem.hit         = 35;
+            beem.colour      = LIGHTCYAN;
+            beem.glyph       = dchar_glyph(DCHAR_FIRED_ZAP);
+            beem.flavour     = BEAM_ELECTRICITY;
+            beem.beam_source = mons->mindex();
+            beem.thrower     = KILL_MON;
+            beem.is_beam     = true;
+
+            // Fire tracer.
+            fire_tracer(mons, beem);
+
+            // Good idea?
+            if (mons_should_fire(beem))
+            {
+                make_mons_stop_fleeing(mons);
+                simple_monster_message(mons,
+                                    " shoots out a bolt of electricity!");
+                beem.fire();
+                used = true;
+            }
+            break;
         }
         break;
 
@@ -4842,103 +5049,6 @@ void starcursed_merge(monster* mon, bool forced)
             {
                 simple_monster_message(mon, " shudders and withdraws towards its neighbour.");
                 mon->speed_increment -= 10;
-            }
-        }
-    }
-}
-
-void waterport_touch(monster* nymph, actor* target)
-{
-    // Don't constantly teleport the target if it's already standing in water
-    if (feat_is_water(grd(target->pos())))
-        return;
-
-    coord_def base;
-
-    // If we don't have a 'home', let's at least try to find some water somewhere
-    if (nymph->patrol_point.origin())
-    {
-        // Check within LoS first, but then keep going until we find some water
-        for (distance_iterator di(nymph->pos()); di; ++di)
-        {
-            if (feat_is_water(grd(*di)))
-            {
-                base = *di;
-                break;
-            }
-        }
-
-        // If somehow we haven't found any (none on the level?) just bail
-        if (base.origin())
-            return;
-    }
-    else
-        base = nymph->patrol_point;
-
-    int least_land = 1000;
-    coord_def best_spot;
-    for (int tries = 0; tries < 10; ++tries)
-    {
-        coord_def spot;
-        // MONS_BIG_FISH is just a placeholder for 'find water' here
-        find_habitable_spot_near(base, MONS_BIG_FISH, 6, false, spot);
-
-        if (!target->is_habitable_feat(grd(spot)))
-            continue;
-
-        if (!spot.origin())
-        {
-            int land_count = -1;
-            for (distance_iterator di(spot, false, false, 3); di; ++di)
-                if (feat_has_dry_floor(grd(*di)))
-                    ++land_count;
-            if (land_count < least_land)
-            {
-                least_land = land_count;
-                best_spot = spot;
-            }
-        }
-
-        // Not going to be able to do better than this, so save the effort
-        if (least_land == 0)
-            break;
-    }
-
-    if (!best_spot.origin())
-    {
-        for (adjacent_iterator ai(best_spot); ai; ++ai)
-        {
-            if (feat_is_water(grd(*ai)) && !actor_at(*ai))
-            {
-                string victim_name = target->name(DESC_THE, true);
-
-                const bool could_see_nymph = you.can_see(nymph);
-                const bool could_see_victim = you.can_see(target);
-                nymph->move_to_pos(*ai);
-                target->move_to_pos(best_spot);
-                const bool can_see_nymph = you.can_see(nymph);
-                const bool can_see_victim = you.can_see(target);
-
-                if (could_see_nymph || can_see_nymph)
-                {
-                    if (!could_see_victim && !can_see_victim)
-                        victim_name = "something";
-
-                    mprf("%s draws %s back to %s home.",
-                         nymph->name(DESC_THE, true).c_str(),
-                         victim_name.c_str(),
-                         nymph->pronoun(PRONOUN_POSSESSIVE, true).c_str());
-                }
-                else if (target->is_player())
-                    mpr("You are drawn back into the water.");
-                else
-                {
-                    if (could_see_victim)
-                        mprf("%s disappears!", victim_name.c_str());
-                    if (can_see_victim)
-                        mprf("%s appears with a splash!", victim_name.c_str());
-                }
-                return;
             }
         }
     }

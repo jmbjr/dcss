@@ -311,6 +311,8 @@ enum attribute_type
     ATTR_RECITE_SEED,          // Recite text seed.
     ATTR_RECITE_HP,            // HP on start of recitation.
     ATTR_SWIFTNESS,            // Duration of future antiswiftness.
+    ATTR_BARBS_MSG,            // Have we already printed a message on move?
+    ATTR_BARBS_POW,            // How badly we are currently skewered
     NUM_ATTRIBUTES
 };
 
@@ -400,7 +402,13 @@ enum beam_type                  // bolt::flavour
     BEAM_DIMENSION_ANCHOR,
     BEAM_VULNERABILITY,
     BEAM_MALIGN_OFFERING,
-    BEAM_LAST_ENCHANTMENT = BEAM_MALIGN_OFFERING,
+    BEAM_VIRULENCE,
+    BEAM_IGNITE_POISON,
+    BEAM_AGILITY,
+    BEAM_SAP_MAGIC,
+    BEAM_CORRUPT_BODY,
+    BEAM_CHAOTIC_REFLECTION,
+    BEAM_LAST_ENCHANTMENT = BEAM_CHAOTIC_REFLECTION,
 
     BEAM_MEPHITIC,
 #if TAG_MAJOR_VERSION == 34
@@ -1611,6 +1619,11 @@ enum duration_type
     DUR_ANTENNAE_EXTEND,
 #endif
     DUR_TROGS_HAND,
+    DUR_BARBS,
+    DUR_POISON_VULN,
+    DUR_FROZEN,
+    DUR_SAP_MAGIC,
+    DUR_MAGIC_SAPPED,
     NUM_DURATIONS
 };
 
@@ -1723,6 +1736,17 @@ enum enchant_type
     ENCH_IOOD_CHARGED,
     ENCH_FIRE_VULN,
     ENCH_TORNADO_COOLDOWN,
+    ENCH_SIREN_SONG,
+    ENCH_BARBS,
+    ENCH_BUILDING_CHARGE,
+    ENCH_POISON_VULN,
+    ENCH_ICEMAIL,
+    ENCH_AGILE,
+    ENCH_FROZEN,
+    ENCH_EPHEMERAL_INFUSION,
+    ENCH_BLACK_MARK,
+    ENCH_GRAND_AVATAR,
+    ENCH_SAP_MAGIC,
     // Update enchantment names in mon-ench.cc when adding or removing
     // enchantments.
     NUM_ENCHANTMENTS
@@ -2258,6 +2282,7 @@ enum monster_type                      // menv[].type
     MONS_DANCING_WEAPON,
 #if TAG_MAJOR_VERSION > 34
     MONS_SPECTRAL_WEAPON,
+    MONS_GRAND_AVATAR,
 #endif
     MONS_HARPY,
     MONS_RAVEN,
@@ -2311,7 +2336,25 @@ enum monster_type                      // menv[].type
     MONS_FELID,                 // recolouring + single vault.  Miaow!
     MONS_VAMPIRE_BAT,           // recolouring + vaults
     MONS_DEMIGOD,               // recolouring + single vault
-    MONS_DEMONSPAWN,            // recolouring + single vault... but there are FRs
+    MONS_DEMONSPAWN,
+#if TAG_MAJOR_VERSION > 34
+    MONS_FIRST_DEMONSPAWN = MONS_DEMONSPAWN,
+    MONS_MONSTROUS_DEMONSPAWN,
+    MONS_FIRST_BASE_DEMONSPAWN = MONS_MONSTROUS_DEMONSPAWN,
+    MONS_GELID_DEMONSPAWN,
+    MONS_INFERNAL_DEMONSPAWN,
+    MONS_PUTRID_DEMONSPAWN,
+    MONS_TORTUROUS_DEMONSPAWN,
+    MONS_LAST_BASE_DEMONSPAWN = MONS_LAST_BASE_DEMONSPAWN,
+    MONS_BLOOD_SAINT,
+    MONS_FIRST_NONBASE_DEMONSPAWN = MONS_BLOOD_SAINT,
+    MONS_CHAOS_CHAMPION,
+    MONS_WARMONGER,
+    MONS_CORRUPTER
+    MONS_BLACK_SUN,
+    MONS_LAST_NONBASE_DEMONSPAWN = MONS_BLACK_SUN,
+    MONS_LAST_DEMONSPAWN = MONS_BLACK_SUN,
+#endif
     MONS_GARGOYLE,
     MONS_METAL_GARGOYLE,
     MONS_MOLTEN_GARGOYLE,
@@ -2499,7 +2542,9 @@ enum monster_type                      // menv[].type
 
     // Lava monsters:
     MONS_LAVA_WORM,
+#if TAG_MAJOR_VERSION == 34
     MONS_LAVA_FISH,
+#endif
     MONS_LAVA_SNAKE,
     MONS_SALAMANDER,
     // Water monsters:
@@ -2570,6 +2615,9 @@ enum monster_type                      // menv[].type
     MONS_STARCURSED_MASS,
     MONS_ANCIENT_ZYME,
     MONS_WRETCHED_STAR,
+#if TAG_MAJOR_VERSION > 34
+    MONS_WORLDBINDER,
+#endif
     MONS_ELDRITCH_TENTACLE,
     MONS_ELDRITCH_TENTACLE_SEGMENT,
     MONS_TENTACLED_MONSTROSITY,
@@ -2822,7 +2870,7 @@ enum monster_type                      // menv[].type
 #endif
     MONS_ANCIENT_BEAR,
     MONS_WATER_NYMPH,
-    MONS_TREANT,
+    MONS_SHAMBLING_MANGROVE,
     MONS_THORN_LOTUS,
 #if TAG_MAJOR_VERSION == 34
     MONS_SPECTRAL_WEAPON,
@@ -2842,8 +2890,38 @@ enum monster_type                      // menv[].type
 #if TAG_MAJOR_VERSION == 34
     MONS_DRAGON,                // genus
     MONS_SNAKE,                 // genus
+
+    MONS_MONSTROUS_DEMONSPAWN,
+    MONS_FIRST_DEMONSPAWN = MONS_MONSTROUS_DEMONSPAWN,
+    MONS_FIRST_BASE_DEMONSPAWN = MONS_MONSTROUS_DEMONSPAWN,
+    MONS_GELID_DEMONSPAWN,
+    MONS_INFERNAL_DEMONSPAWN,
+    MONS_PUTRID_DEMONSPAWN,
+    MONS_TORTUROUS_DEMONSPAWN,
+    MONS_LAST_BASE_DEMONSPAWN = MONS_TORTUROUS_DEMONSPAWN,
+    MONS_BLOOD_SAINT,
+    MONS_FIRST_NONBASE_DEMONSPAWN = MONS_BLOOD_SAINT,
+    MONS_CHAOS_CHAMPION,
+    MONS_WARMONGER,
+    MONS_CORRUPTER,
+    MONS_BLACK_SUN,
+    MONS_LAST_NONBASE_DEMONSPAWN = MONS_BLACK_SUN,
+    MONS_LAST_DEMONSPAWN = MONS_BLACK_SUN,
+
+    MONS_WORLDBINDER,
+    MONS_GRAND_AVATAR,
 #endif
     MONS_VINE_STALKER,
+
+    MONS_DROWNED_SOUL,
+
+    MONS_SHOCK_SERPENT,
+    MONS_MANA_VIPER,
+    MONS_NAGA_RITUALIST,
+    MONS_NAGA_SHARPSHOOTER,
+
+    MONS_SALAMANDER_FIREBRAND,
+    MONS_SALAMANDER_MYSTIC,
 
     NUM_MONSTERS,               // used for polymorph
 
@@ -2870,6 +2948,10 @@ enum monster_type                      // menv[].type
 
     RANDOM_MODERATE_OOD, // +5 depth, AKA '9' glyph on maps
     RANDOM_SUPER_OOD, // *2 + 4 depth, AKA '8'
+
+    RANDOM_DEMONSPAWN,
+    RANDOM_BASE_DEMONSPAWN,
+    RANDOM_NONBASE_DEMONSPAWN,
 
     WANDERING_MONSTER = 3500, // only used in monster placement routines - forced limit checks {dlb}
 };
@@ -2974,6 +3056,9 @@ enum mutation_type
     MUT_CLEVER,
     MUT_CLUMSY,
     MUT_COLD_RESISTANCE,
+#if TAG_MAJOR_VERSION > 34
+    MUT_COLD_VULNERABILITY,
+#endif
     MUT_CONSERVE_POTIONS,
     MUT_CONSERVE_SCROLLS,
     MUT_DEFORMED,
@@ -2981,6 +3066,9 @@ enum mutation_type
     MUT_DETERIORATION,
     MUT_DOPEY,
     MUT_HEAT_RESISTANCE,
+#if TAG_MAJOR_VERSION > 34
+    MUT_HEAT_VULNERABILITY,
+#endif
     MUT_HERBIVOROUS,
     MUT_HURL_HELLFIRE,
 
@@ -3054,6 +3142,10 @@ enum mutation_type
     MUT_EXOSKELETON,
     MUT_ANTIMAGIC_BITE,
     MUT_NO_DEVICE_HEAL,
+#if TAG_MAJOR_VERSION == 34
+    MUT_COLD_VULNERABILITY,
+    MUT_HEAT_VULNERABILITY,
+#endif
     NUM_MUTATIONS,
 
     RANDOM_MUTATION,
@@ -3062,6 +3154,7 @@ enum mutation_type
     RANDOM_BAD_MUTATION,
     RANDOM_SLIME_MUTATION,
     RANDOM_NON_SLIME_MUTATION,
+    RANDOM_CORRUPT_MUTATION,
 };
 
 enum object_class_type                 // mitm[].base_type
@@ -3729,6 +3822,23 @@ enum spell_type
     SPELL_SHAFT_SELF,
 #endif
     SPELL_BLINKBOLT,
+    SPELL_INVISIBILITY_OTHER,
+    SPELL_VIRULENCE,
+    SPELL_IGNITE_POISON_SINGLE,
+    SPELL_ORB_OF_ELECTROCUTION,
+    SPELL_EXPLOSIVE_BOLT,
+    SPELL_FLASH_FREEZE,
+    SPELL_LEGENDARY_DESTRUCTION,
+    SPELL_EPHEMERAL_INFUSION,
+    SPELL_FORCEFUL_INVITATION,
+    SPELL_PLANEREND,
+    SPELL_CHAIN_OF_CHAOS,
+    SPELL_CHAOTIC_MIRROR,
+    SPELL_BLACK_MARK,
+    SPELL_GRAND_AVATAR,
+    SPELL_SAP_MAGIC,
+    SPELL_CORRUPT_BODY,
+    SPELL_REARRANGE_PIECES,
     NUM_SPELLS
 };
 

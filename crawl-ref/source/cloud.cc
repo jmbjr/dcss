@@ -269,10 +269,10 @@ static void _cloud_interacts_with_terrain(const cloud_struct &cloud)
                 && feat_is_watery(grd(p))
                 && !cell_is_solid(p) // mangroves
                 && env.cgrid(p) == EMPTY_CLOUD
-                && one_chance_in(10))
+                && one_chance_in(7))
             {
                 _place_new_cloud(CLOUD_STEAM, p, cloud.decay / 2 + 1,
-                                 cloud.whose, cloud.killer, cloud.source);
+                                 cloud.whose, cloud.killer, cloud.source, 22);
             }
         }
     }
@@ -1094,8 +1094,8 @@ int actor_apply_cloud(actor *act)
         maybe_id_resist(cloud_flavour);
     }
 
-    if (player && cloud_flavour != BEAM_NONE)
-        expose_player_to_element(cloud_flavour, 7, true, false);
+    if (cloud_flavour != BEAM_NONE)
+        act->expose_to_element(cloud_flavour, 7, true, false);
 
     const bool side_effects =
         _actor_apply_cloud_side_effects(act, cloud, final_damage);

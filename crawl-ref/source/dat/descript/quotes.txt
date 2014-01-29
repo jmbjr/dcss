@@ -272,6 +272,13 @@ Awaken Forest spell
  — Thor: Bravery knows no limits!
     -Rich Burlew, Order of the Stick, #874
 %%%%
+black sun
+
+“The sky is sad and beautiful, like a vast altar.
+ The sun has drowned in its congealing blood.”
+    -Charles Baudelaire, _Flowers of Evil_, 43: Evening Harmony. 1857.
+     trans. Ruth White, 1969.
+%%%%
 Banishment spell
 
 “An immense river of oblivion is sweeping us away into a nameless abyss.”
@@ -1692,15 +1699,6 @@ lasher statue
  To the lash which whips on the skin
  Which slashes the flesh, lacerates the back”
     -Samael, “Flagellation”
-%%%%
-lava fish
-
-“In the black rocks about Tahiti is found the black noki or lava-fish
-(Emmydrichthys vulcanus), which corresponds perfectly in color and form to a
-piece of lava. This fish is also noteworthy for having envenomed spines in the
-fin on its back.”
-    -Jordan, Kellogg and Heath, _Animal Studies: A Text-book of Elementary
-     Zoology_. 1903.
 %%%%
 lava worm
 

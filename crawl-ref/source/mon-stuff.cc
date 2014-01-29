@@ -245,12 +245,14 @@ monster_type fill_out_corpse(const monster* mons,
             corpse_class = mons_zombie_base(mons);
         }
 
-        if (mons && mons_genus(mtype) == MONS_DRACONIAN)
+        if (mons
+            && (mons_genus(mtype) == MONS_DRACONIAN
+                || mons_genus(mtype) == MONS_DEMONSPAWN))
         {
             if (mons->type == MONS_TIAMAT)
                 corpse_class = MONS_DRACONIAN;
             else
-                corpse_class = draco_subspecies(mons);
+                corpse_class = draco_or_demonspawn_subspecies(mons);
         }
 
         if (mons->has_ench(ENCH_GLOWING_SHAPESHIFTER))
@@ -413,7 +415,10 @@ int place_monster_corpse(const monster* mons, bool silent,
     // "always_corpse" forces monsters to always generate a corpse upon
     // their deaths.
     if (mons->props.exists("always_corpse")
-        || mons_class_flag(mons->type, M_ALWAYS_CORPSE))
+        || mons_class_flag(mons->type, M_ALWAYS_CORPSE)
+        || mons_is_demonspawn(mons->type)
+           && mons_class_flag(draco_or_demonspawn_subspecies(mons),
+                              M_ALWAYS_CORPSE))
     {
         vault_forced = true;
     }
@@ -1849,6 +1854,15 @@ int monster_die(monster* mons, killer_type killer,
         end_spectral_weapon(mons, true, killer == KILL_RESET);
         silent = true;
     }
+    else if (mons->type == MONS_GRAND_AVATAR)
+    {
+        if (!silent)
+        {
+            simple_monster_message(mons, " fades into the ether.",
+                                   MSGCH_MONSTER_DAMAGE, MDAM_DEAD);
+        }
+        silent = true;
+    }
 
     const bool death_message = !silent && !did_death_message
                                && mons_near(mons)
@@ -2556,10 +2570,10 @@ int monster_die(monster* mons, killer_type killer,
     }
     // Give the treant a last chance to release its wasps if it is killed in a
     // single blow from above half health
-    else if (mons->type == MONS_TREANT && !was_banished
+    else if (mons->type == MONS_SHAMBLING_MANGROVE && !was_banished
              && !mons->pacified() && (!summoned || duration > 0) && !wizard)
     {
-        treant_release_wasps(mons);
+        treant_release_fauna(mons);
     }
     else if (mons_is_mimic(mons->type))
         drop_items = false;
@@ -2608,6 +2622,30 @@ int monster_die(monster* mons, killer_type killer,
                             + roll_dice(2, 8);
         if (pbd_dur > you.duration[DUR_POWERED_BY_DEATH])
             you.set_duration(DUR_POWERED_BY_DEATH, pbd_dur);
+    }
+
+    if (corpse >= 0)
+    {
+        // Powered by death.
+        // Find nearby putrid demonspawn.
+        for (monster_near_iterator mi(mons->pos()); mi; ++mi)
+        {
+            monster* mon = *mi;
+            if (mon->alive()
+                && mons_is_demonspawn(mon->type)
+                && draco_or_demonspawn_subspecies(mon)
+                   == MONS_PUTRID_DEMONSPAWN)
+            {
+                // Rather than regen over time, the expected 24 + 2d8 duration
+                // is given as an instant health bonus.
+                // These numbers may need to be adjusted.
+                if (mon->heal(random2avg(24, 2) + roll_dice(2, 8)))
+                {
+                    simple_monster_message(mon,
+                                           " regenerates before your eyes!");
+                }
+            }
+        }
     }
 
     unsigned int player_exp = 0, monster_exp = 0;
@@ -4640,6 +4678,11 @@ string summoned_poof_msg(const monster* mons, bool plural)
             && mons->god == GOD_JIYVA)
         {
             msg = "dissolve%s into a puddle of slime";
+        }
+
+        if (mons->type == MONS_DROWNED_SOUL)
+        {
+            msg = "returns to the deep";
         }
     }
 

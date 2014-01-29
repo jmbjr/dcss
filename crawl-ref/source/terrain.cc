@@ -1921,6 +1921,11 @@ void temp_change_terrain(coord_def pos, dungeon_feature_type newfeat, int dur,
         }
     }
 
+    // If we are trying to change terrain into what it already is, don't actually
+    // add another marker (unless the current terrain is due to some OTHER marker)
+    if (grd(pos) == newfeat && newfeat == old_feat)
+        return;
+
     map_terrain_change_marker *marker =
         new map_terrain_change_marker(pos, old_feat, newfeat, dur, type);
     if (mon)
@@ -2005,6 +2010,19 @@ bool revert_terrain_change(coord_def pos, terrain_change_type ctype)
     }
     else
         return false;
+}
+
+bool is_temp_terrain(coord_def pos)
+{
+    vector<map_marker*> markers = env.markers.get_markers_at(pos);
+
+    for (int i = 0, size = markers.size(); i < size; ++i)
+    {
+        if (markers[i]->get_type() == MAT_TERRAIN_CHANGE)
+            return true;
+    }
+
+    return false;
 }
 
 bool plant_forbidden_at(const coord_def &p, bool connectivity_only)

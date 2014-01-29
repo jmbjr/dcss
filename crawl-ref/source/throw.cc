@@ -37,6 +37,7 @@
 #include "religion.h"
 #include "shout.h"
 #include "skills2.h"
+#include "spl-summoning.h"
 #include "state.h"
 #include "stuff.h"
 #include "teleport.h"
@@ -2085,7 +2086,7 @@ void setup_monster_throw_beam(monster* mons, bolt &beam)
 }
 
 // msl is the item index of the thrown missile (or weapon).
-bool mons_throw(monster* mons, bolt &beam, int msl)
+bool mons_throw(monster* mons, bolt &beam, int msl, bool teleport)
 {
     string ammo_name;
 
@@ -2112,8 +2113,13 @@ bool mons_throw(monster* mons, bolt &beam, int msl)
     mon_inv_type slot = get_mon_equip_slot(mons, mitm[msl]);
     ASSERT(slot != NUM_MONSTER_SLOTS);
 
-    mons->lose_energy(EUT_MISSILE);
+    // Energy is already deducted for the spell cast, if using portal projectile
+    if (!teleport)
+        mons->lose_energy(EUT_MISSILE);
     const int throw_energy = mons->action_energy(EUT_MISSILE);
+
+    actor* victim = actor_at(beam.target);
+    const int old_hp = (victim) ? victim->stat_hp() : 0;
 
     // Dropping item copy, since the launched item might be different.
     item_def item = mitm[msl];
@@ -2140,6 +2146,8 @@ bool mons_throw(monster* mons, bolt &beam, int msl)
         lnchDamBonus = mitm[weapon].plus2;
         lnchBaseDam  = property(mitm[weapon], PWPN_DAMAGE);
     }
+    else if (projected == LRET_THROWN)
+        returning = returning && !teleport;
 
     // FIXME: ammo enchantment
     ammoHitBonus = ammoDamBonus = min(3, div_rand_round(mons->hit_dice , 3));
@@ -2290,7 +2298,9 @@ bool mons_throw(monster* mons, bolt &beam, int msl)
             speed_brand = true;
         }
 
-        mons->speed_increment += speed_delta;
+        // Portal projectile is independent of weapon speed
+        if (!teleport)
+            mons->speed_increment += speed_delta;
     }
 
     // Chaos, flame, and frost.
@@ -2318,9 +2328,13 @@ bool mons_throw(monster* mons, bolt &beam, int msl)
         }
     }
 
+    // Portal projectile accuracy bonus (power / 4):
+    if (teleport)
+        beam.hit += 3 * mons->hit_dice;
+
     // Now, if a monster is, for some reason, throwing something really
     // stupid, it will have baseHit of 0 and damage of 0.  Ah well.
-    string msg = mons->name(DESC_THE);
+    string msg = ((teleport) ? "Magically, " : "") + mons->name(DESC_THE);
     msg += ((projected == LRET_LAUNCHED) ? " shoots " : " throws ");
 
     if (!beam.name.empty() && projected == LRET_LAUNCHED)
@@ -2421,11 +2435,22 @@ bool mons_throw(monster* mons, bolt &beam, int msl)
     // Redraw the screen before firing, in case the monster just
     // came into view and the screen hasn't been updated yet.
     viewwindow();
-    beam.fire();
+    if (teleport)
+    {
+        beam.use_target_as_pos = true;
+        beam.affect_cell();
+        beam.affect_endpoint();
+        if (!really_returns)
+            beam.drop_object();
+    }
+    else
+    {
+        beam.fire();
 
-    // The item can be destroyed before returning.
-    if (really_returns && thrown_object_destroyed(&item, beam.target))
-        really_returns = false;
+        // The item can be destroyed before returning.
+        if (really_returns && thrown_object_destroyed(&item, beam.target))
+            really_returns = false;
+    }
 
     if (really_returns)
     {
@@ -2454,6 +2479,14 @@ bool mons_throw(monster* mons, bolt &beam, int msl)
 
     if (beam.special_explosion != NULL)
         delete beam.special_explosion;
+
+    if (mons->has_ench(ENCH_GRAND_AVATAR))
+    {
+        // We want this to be a ranged attack, like the spell mirroring,
+        // so any spell that fires a battlesphere will do here.
+        // XXX: make triggering of this less hacky
+        trigger_grand_avatar(mons, victim, SPELL_MAGIC_DART, old_hp);
+    }
 
     return true;
 }

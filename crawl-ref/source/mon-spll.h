@@ -1291,9 +1291,9 @@
 
     {  MST_ANTAEUS,
       {
-       SPELL_BOLT_OF_COLD,
+       SPELL_FLASH_FREEZE,
        SPELL_LIGHTNING_BOLT,
-       SPELL_NO_SPELL,
+       SPELL_FLASH_FREEZE,
        SPELL_NO_SPELL,
        SPELL_NO_SPELL,
        SPELL_NO_SPELL
@@ -1949,12 +1949,34 @@
       }
     },
 
-    {  MST_FAUN,
+    {  MST_FAUN_I,
       {
        SPELL_CORONA,
        SPELL_NO_SPELL,
-       SPELL_CORONA,
        SPELL_SLOW,
+       SPELL_SLOW,
+       SPELL_MELEE,
+       SPELL_NO_SPELL
+      }
+    },
+
+    {  MST_FAUN_II,
+      {
+       SPELL_CORONA,
+       SPELL_NO_SPELL,
+       SPELL_SLOW,
+       SPELL_MELEE,
+       SPELL_MELEE,
+       SPELL_NO_SPELL
+      }
+    },
+
+    {  MST_FAUN_III,
+      {
+       SPELL_CORONA,
+       SPELL_NO_SPELL,
+       SPELL_MELEE,
+       SPELL_MELEE,
        SPELL_CONFUSE,
        SPELL_NO_SPELL
       }
@@ -1962,7 +1984,7 @@
 
     {  MST_SATYR,
       {
-       SPELL_NO_SPELL,
+       SPELL_MELEE,
        SPELL_NO_SPELL,
        SPELL_CAUSE_FEAR,
        SPELL_CAUSE_FEAR,
@@ -2276,6 +2298,116 @@
        SPELL_TELEPORT_OTHER,
        SPELL_FIREBALL,
        SPELL_TELEPORT_OTHER
+      }
+    },
+
+    {  MST_NAGA_ENCHANTER,
+      {
+       SPELL_NO_SPELL,
+       SPELL_CONFUSE,
+       SPELL_HASTE,
+       SPELL_INVISIBILITY_OTHER,
+       SPELL_HASTE_OTHER,
+       SPELL_NO_SPELL
+      }
+    },
+
+    {  MST_NAGA_SNIPER,
+      {
+       SPELL_PORTAL_PROJECTILE,
+       SPELL_PORTAL_PROJECTILE,
+       SPELL_NO_SPELL,
+       SPELL_NO_SPELL,
+       SPELL_NO_SPELL,
+       SPELL_NO_SPELL
+      }
+    },
+
+    {  MST_NAGA_RITUALIST,
+      {
+       SPELL_FORCE_LANCE,
+       SPELL_OLGREBS_TOXIC_RADIANCE,
+       SPELL_OLGREBS_TOXIC_RADIANCE,
+       SPELL_VIRULENCE,
+       SPELL_VIRULENCE,
+       SPELL_NO_SPELL
+      }
+    },
+
+    {  MST_SALAMANDER_MYSTIC,
+      {
+       SPELL_ISKENDERUNS_MYSTIC_BLAST,
+       SPELL_BOLT_OF_MAGMA,
+       SPELL_NO_SPELL,
+       SPELL_HASTE_OTHER,
+       SPELL_IGNITE_POISON_SINGLE,
+       SPELL_NO_SPELL
+      }
+    },
+
+    {  MST_WORLDBINDER,
+      {
+       SPELL_FORCEFUL_INVITATION,
+       SPELL_FORCEFUL_INVITATION,
+       SPELL_NO_SPELL,
+       SPELL_FORCEFUL_INVITATION,
+       SPELL_FORCEFUL_INVITATION,
+       SPELL_NO_SPELL
+      }
+    },
+
+    {  MST_DEMONSPAWN_BLOOD_SAINT,
+      {
+       SPELL_LEGENDARY_DESTRUCTION,
+       SPELL_MELEE,
+       SPELL_EPHEMERAL_INFUSION,
+       SPELL_LEGENDARY_DESTRUCTION,
+       SPELL_MELEE,
+       SPELL_EPHEMERAL_INFUSION
+      }
+    },
+
+    {  MST_DEMONSPAWN_CORRUPTER,
+      {
+       SPELL_PLANEREND,
+       SPELL_CORRUPT_BODY,
+       SPELL_NO_SPELL,
+       SPELL_PLANEREND,
+       SPELL_CORRUPT_BODY,
+       SPELL_NO_SPELL
+      }
+    },
+
+    {  MST_DEMONSPAWN_CHAOS_CHAMPION,
+      {
+       SPELL_REARRANGE_PIECES,
+       SPELL_CHAOTIC_MIRROR,
+       SPELL_NO_SPELL,
+       SPELL_REARRANGE_PIECES,
+       SPELL_CHAOTIC_MIRROR,
+       SPELL_NO_SPELL
+      }
+    },
+
+    {  MST_DEMONSPAWN_BLACK_SUN,
+      {
+       SPELL_BOLT_OF_DRAINING,
+       SPELL_MALIGN_OFFERING,
+       SPELL_BLACK_MARK,
+       SPELL_BLACK_MARK,
+       SPELL_DISPEL_UNDEAD,
+       SPELL_DEATHS_DOOR
+      }
+    },
+
+    {  MST_DEMONSPAWN_WARMONGER,
+      {
+       SPELL_MELEE, // heh
+       SPELL_SAP_MAGIC,
+       SPELL_GRAND_AVATAR,
+       SPELL_NO_SPELL,
+       SPELL_NO_SPELL,
+       SPELL_NO_SPELL
       }
     },
 #endif

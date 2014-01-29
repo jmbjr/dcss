@@ -59,6 +59,7 @@
 #include "traps.h"
 #include "hints.h"
 #include "view.h"
+#include "viewchar.h"
 #include "shout.h"
 
 static bool _handle_pickup(monster* mons);
@@ -148,6 +149,21 @@ static void _escape_water_hold(monster* mons)
     }
 }
 
+static void _handle_manticore_barbs(monster* mons)
+{
+    if (mons->has_ench(ENCH_BARBS))
+    {
+        mon_enchant barbs = mons->get_ench(ENCH_BARBS);
+        mons->hurt(monster_by_mid(barbs.source), roll_dice(2, barbs.degree * 2 + 2));
+        bleed_onto_floor(mons->pos(), mons->type, 2, false);
+        if (coinflip())
+        {
+            barbs.duration--;
+            mons->update_ench(barbs);
+        }
+    }
+}
+
 static bool _swap_monsters(monster* mover, monster* moved)
 {
     // Can't swap with a stationary monster.
@@ -227,6 +243,9 @@ static bool _swap_monsters(monster* mover, monster* moved)
     }
 
     _escape_water_hold(mover);
+
+    _handle_manticore_barbs(mover);
+    _handle_manticore_barbs(moved);
 
     return true;
 }
@@ -1493,7 +1512,7 @@ static bool _handle_wand(monster* mons, bolt &beem)
 // the monster hurled.
 //
 //---------------------------------------------------------------
-static bool _handle_throw(monster* mons, bolt & beem)
+bool handle_throw(monster* mons, bolt & beem, bool teleport, bool check_only)
 {
     // Yes, there is a logic to this ordering {dlb}:
     if (mons->incapacitated()
@@ -1515,9 +1534,12 @@ static bool _handle_throw(monster* mons, bolt & beem)
     // Highly-specialised archers are more likely to shoot than talk. (?)
     // If we're standing on liquefied ground, try to stand and fire!
     // (Particularly archers.)
-    if ((liquefied && !archer && one_chance_in(9))
-        || (!liquefied && one_chance_in(archer ? 9 : 5)))
+    if (!teleport
+        && ((liquefied && !archer && one_chance_in(9))
+            || (!liquefied && one_chance_in(archer ? 9 : 5))))
+    {
         return false;
+    }
 
     if (mons_class_flag(mons->type, M_STABBER)
         && mons->get_foe() != NULL)
@@ -1588,14 +1610,18 @@ static bool _handle_throw(monster* mons, bolt & beem)
     beem.item = missile;
 
     // Fire tracer.
-    fire_tracer(mons, beem);
+    if (!teleport)
+        fire_tracer(mons, beem);
 
     // Clear fake damage (will be set correctly in mons_throw).
     beem.damage = dice_def();
 
     // Good idea?
-    if (mons_should_fire(beem))
+    if (teleport || mons_should_fire(beem))
     {
+        if (check_only)
+            return true;
+
         // Monsters shouldn't shoot if fleeing, so let them "turn to attack".
         make_mons_stop_fleeing(mons);
 
@@ -1603,7 +1629,7 @@ static bool _handle_throw(monster* mons, bolt & beem)
             mons->swap_weapons();
 
         beem.name.clear();
-        return mons_throw(mons, beem, mon_item);
+        return mons_throw(mons, beem, mon_item, teleport);
     }
 
     return false;
@@ -1817,6 +1843,103 @@ static void _pre_monster_move(monster* mons)
     mons->check_speed();
 }
 
+static void _grand_avatar_act(monster* mons)
+{
+    if (mons->props.exists(GA_TARGET_MID))
+    {
+        actor* target = actor_by_mid(mons->props[GA_TARGET_MID].get_int());
+        if (!target)
+        {
+            grand_avatar_reset(mons);
+            return;
+        }
+        mons->foe = target->mindex();
+        if (mons->props.exists(GA_SPELL))
+        {
+            if (!mons->firing_pos.origin())
+            {
+                if (mons->pos() != mons->firing_pos)
+                {
+                    mons->target = mons->firing_pos;
+                    return;
+                }
+                mons->firing_pos.reset();
+            }
+            bolt beam;
+            beam.name        = "barrage of energy";
+            beam.source_name = "grand avatar";
+            beam.source      = mons->pos();
+            beam.target      = target->pos();
+            beam.range       = LOS_RADIUS;
+            beam.damage      = dice_def(2, 10);
+            beam.glyph       = dchar_glyph(DCHAR_FIRED_ZAP);
+            beam.colour      = LIGHTGREEN;
+            beam.flavour     = BEAM_MMISSILE;
+            beam.hit         = AUTOMATIC_HIT;
+            beam.is_beam     = false;
+            beam.foe_ratio   = 0;
+            fire_tracer(mons, beam);
+            if (mons_should_fire(beam))
+            {
+                simple_monster_message(mons, " fires!");
+                beam.fire();
+                mons->lose_energy(EUT_SPECIAL);
+                grand_avatar_reset(mons);
+            }
+            else
+            {
+                mons->target = target->pos();
+                for (distance_iterator di(mons->pos(), true, true, 2); di; ++di)
+                {
+                    if (*di == beam.target
+                        || actor_at(*di)
+                        || cell_is_solid(*di))
+                    {
+                        continue;
+                    }
+                    beam.source = *di;
+                    beam.friend_info.reset();
+                    beam.foe_info.reset();
+                    fire_tracer(mons, beam);
+                    if (mons_should_fire(beam))
+                    {
+                        mons->firing_pos = *di;
+                        mons->target = mons->firing_pos;
+                        break;
+                    }
+                }
+            }
+        }
+        else if (mons->props.exists(GA_MELEE))
+            mons->target = target->pos();
+    }
+    else
+    {
+        grand_avatar_reset(mons);
+        if (!mons->alive())
+            return;
+    }
+
+    bolt tracer;
+    tracer.source    = mons->pos();
+    tracer.target    = mons->target;
+    tracer.range     = LOS_RADIUS;
+    tracer.hit       = AUTOMATIC_HIT;
+    tracer.flavour   = BEAM_MMISSILE;
+    tracer.is_tracer = true;
+    fire_tracer(mons, tracer);
+
+    if (tracer.path_taken.back() != mons->target)
+    {
+        coord_def near;
+        if (find_habitable_spot_near(mons->target, mons->type, 2, false, near)
+            && mons->blink_to(near))
+        {
+            mons->lose_energy(EUT_SPECIAL);
+        }
+    }
+}
+
 void handle_monster_move(monster* mons)
 {
     const monsterentry* entry = get_monster_data(mons->type);
@@ -1909,6 +2032,9 @@ void handle_monster_move(monster* mons)
         }
         return;
     }
+
+    if (mons->type == MONS_GRAND_AVATAR)
+        _grand_avatar_act(mons);
 
     mons->shield_blocks = 0;
 
@@ -2170,7 +2296,7 @@ void handle_monster_move(monster* mons)
             }
         }
 
-        if (_handle_throw(mons, beem))
+        if (handle_throw(mons, beem, false, false))
         {
             DEBUG_ENERGY_USE("_handle_throw()");
             return;
@@ -2322,6 +2448,17 @@ static void _post_monster_move(monster* mons)
                     || env.cloud[env.cgrid(*ai)].type == ctype))
             {
                 place_cloud(ctype, *ai, 2 + random2(6), mons);
+            }
+    }
+
+    if (mons->type == MONS_WATER_NYMPH)
+    {
+        for (adjacent_iterator ai(mons->pos(), false); ai; ++ai)
+            if (feat_has_solid_floor(grd(*ai))
+                && (coinflip() || *ai == mons->pos()))
+            {
+                temp_change_terrain(*ai, DNGN_SHALLOW_WATER, random_range(50, 80),
+                                    TERRAIN_CHANGE_FLOOD);
             }
     }
 
@@ -3157,6 +3294,17 @@ bool mon_can_move_to_pos(const monster* mons, const coord_def& delta,
         }
     }
 
+    if (mons->type == MONS_SIREN)
+    {
+        // Don't voluntarily break LoS with a player we're mesmerising
+        if (you.beheld_by(mons) && !you.see_cell(targ))
+            return false;
+
+        // And path around players instead of into them
+        if (you.pos() == targ)
+            return false;
+    }
+
     // Fire elementals avoid water and cold.
     if (mons->type == MONS_FIRE_ELEMENTAL && feat_is_watery(target_grid))
         return false;
@@ -3405,6 +3553,9 @@ static bool _monster_swaps_places(monster* mon, const coord_def& delta)
     mon->seen_context = SC_NONE;
     m2->seen_context = SC_NONE;
 
+    _handle_manticore_barbs(mon);
+    _handle_manticore_barbs(m2);
+
     return false;
 }
 
@@ -3516,6 +3667,8 @@ static bool _do_move_monster(monster* mons, const coord_def& delta)
 
     mons->check_redraw(mons->pos() - delta);
     mons->apply_location_effects(mons->pos() - delta);
+
+    _handle_manticore_barbs(mons);
 
     return true;
 }
@@ -3920,7 +4073,9 @@ static bool _monster_move(monster* mons)
         return _do_move_monster(mons, mmov);
 
     // Battlespheres need to preserve their tracking targets after each move
-    if (mons_is_wandering(mons) && mons->type != MONS_BATTLESPHERE)
+    if (mons_is_wandering(mons)
+        && mons->type != MONS_BATTLESPHERE
+        && mons->type != MONS_GRAND_AVATAR)
     {
         // trigger a re-evaluation of our wander target on our next move -cao
         mons->target = mons->pos();

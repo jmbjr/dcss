@@ -68,6 +68,7 @@ protected:
     tileidx_t m_job_tile;
     tileidx_t m_equ_tile;
     tileidx_t m_shd_tile;
+    bool draco;
 };
 
 class mcache_ghost : public mcache_entry
@@ -404,6 +405,8 @@ bool mcache_monster::get_weapon_offset(tileidx_t mon_tile,
     case TILEP_MONS_NAGA_WARRIOR:
     case TILEP_MONS_GUARDIAN_SERPENT:
     case TILEP_MONS_NAGA_MAGE:
+    case TILEP_MONS_NAGA_ENCHANTER:
+    case TILEP_MONS_MARKSNAGA:
     case TILEP_MONS_THE_ENCHANTRESS:
     case TILEP_MONS_DEEP_DWARF:
     case TILEP_MONS_DEEP_DWARF_BERSERKER:
@@ -615,6 +618,15 @@ bool mcache_monster::get_shield_offset(tileidx_t mon_tile,
         *ofs_y = 1;
         break;
 
+    case TILEP_MONS_NAGA:
+    case TILEP_MONS_NAGA_MAGE:
+    case TILEP_MONS_MARKSNAGA:
+    case TILEP_MONS_NAGA_WARRIOR:
+    case TILEP_MONS_GREATER_NAGA:
+        *ofs_x = -3;
+        *ofs_y = 0;
+        break;
+
     case TILEP_MONS_SPRIGGAN:
     case TILEP_MONS_SPRIGGAN_DEFENDER:
     case TILEP_MONS_SPRIGGAN_BERSERKER:
@@ -680,13 +692,16 @@ bool mcache_monster::valid(const monster_info& mon)
 mcache_draco::mcache_draco(const monster_info& mon)
 {
     ASSERT(mcache_draco::valid(mon));
+    draco = mons_is_draconian(mon.type);
 
-    m_mon_tile = tileidx_draco_base(mon);
+    m_mon_tile = draco ? tileidx_draco_base(mon)
+                       : tileidx_demonspawn_base(mon);
     const item_info* mon_wep = mon.inv[MSLOT_WEAPON].get();
     m_equ_tile = (mon_wep != NULL) ? tilep_equ_weapon(*mon_wep) : 0;
     mon_wep = mon.inv[MSLOT_SHIELD].get();
     m_shd_tile = (mon_wep != NULL) ? tilep_equ_shield(*mon_wep) : 0;
-    m_job_tile = tileidx_draco_job(mon);
+    m_job_tile = draco ? tileidx_draco_job(mon)
+                       : tileidx_demonspawn_job(mon);
 }
 
 int mcache_draco::info(tile_draw_info *dinfo) const
@@ -697,16 +712,26 @@ int mcache_draco::info(tile_draw_info *dinfo) const
     if (m_job_tile)
         dinfo[i++].set(m_job_tile);
     if (m_equ_tile)
-        dinfo[i++].set(m_equ_tile, -2, 0);
+    {
+        if (draco)
+            dinfo[i++].set(m_equ_tile, -2, 0);
+        else
+            dinfo[i++].set(m_equ_tile, -1, 0);
+    }
     if (m_shd_tile)
-        dinfo[i++].set(m_shd_tile, 2, 0);
+    {
+        if (draco)
+            dinfo[i++].set(m_shd_tile, 2, 0);
+        else
+            dinfo[i++].set(m_shd_tile, -4, 2);
+    }
 
     return i;
 }
 
 bool mcache_draco::valid(const monster_info& mon)
 {
-    return mons_is_draconian(mon.type);
+    return mons_is_draconian(mon.type) || mons_is_demonspawn(mon.type);
 }
 
 /////////////////////////////////////////////////////////////////////////////

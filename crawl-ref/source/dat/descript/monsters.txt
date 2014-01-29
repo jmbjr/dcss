@@ -662,6 +662,10 @@ black mamba
 
 A large and astonishingly fast tropical snake whose bite bears a deadly venom.
 %%%%
+black sun
+
+<demonspawn>
+%%%%
 blink frog
 
 A species of giant frog that possesses the ability to blink at will. It can
@@ -671,6 +675,10 @@ commonly found in packs.
 blizzard demon
 
 A greater demon, wreathed in snow and lightning.
+%%%%
+blood saint
+
+<demonspawn>
 %%%%
 blue devil
 
@@ -767,6 +775,10 @@ centaur warrior
 A muscular centaur, a veteran of numerous battles, armed with well-made weapons
 and able to use them skillfully.
 %%%%
+chaos champion
+
+<demonspawn>
+%%%%
 chaos spawn
 
 A being of pure chaos, its form is constantly shifting, growing and then losing
@@ -788,6 +800,10 @@ individual beasts combined into one.
 clay golem
 
 A huge clay statue that has been animated by occult means.
+%%%%
+corrupter
+
+<demonspawn>
 %%%%
 crawling corpse
 
@@ -967,9 +983,8 @@ of short jointed legs and topped with an almost human head.
 %%%%
 demonspawn
 
-The offspring of a human and his or her demon lover, a young demonspawn, before
-its hellish heritage fully asserts itself, closely resembles a human being, but
-with a certain devilish cast to its features.
+The offspring of mortals and demons, with its hellish heritage asserting
+itself through a certain devilish cast to its features.
 %%%%
 diamond obelisk
 
@@ -1031,6 +1046,13 @@ draconian zealot
 
 This draconian derives its hellish powers and demonic allies from the worship
 of dark gods unknown to men, dwarves, elves or orcs.
+%%%%
+drowned soul
+
+A cold and hollow apparition of the drowned dead, chained by some lingering
+attachment to the depths in which it perished. They clamour around the living,
+sharing the last moments of their watery fate with whatever their pale form
+touches.
 %%%%
 dryad
 
@@ -1262,6 +1284,10 @@ goliath beetle
 A huge black beetle with great crunching mandibles and very hard chitinous
 armour.
 %%%%
+gelid demonspawn
+
+<demonspawn>
+%%%%
 giant centipede
 
 A chilopod of quite an unusual size, the giant centipede mostly comes out to
@@ -1380,6 +1406,11 @@ golden eye
 A tiny and shimmering floating eye, swift as the wind and glistening like gold.
 It has a peculiarly hypnotic look.
 %%%%
+grand avatar
+
+An avatar of battle and bloodshed, capable of mimicking sufficiently damaging
+melee attacks and conjurations from its creator and their allies.
+%%%%
 great orb of eyes
 
 A levitating ball, covered in malignant eyes and humming with eldritch
@@ -1447,8 +1478,8 @@ It definitely deserves an axe to the head.
 harpy
 
 Harpies have roamed the coasts as long as seafarers can remember. They strike
-fear in the hearts of all sentient beings, but not for their claws. It is their
-way to devour the food of the unwary, causing many a man to starve to death.
+fear in the hearts of the wary, for their sharp claws and harrying strikes have
+torn many a luckless traveler to shreds.
 %%%%
 hell hound
 
@@ -1583,6 +1614,10 @@ A tiny ball of light that flits and flickers at the edge of your vision.
 iguana
 
 A green lizard with strong jaws and sharp teeth, prized for its flesh.
+%%%%
+infernal demonspawn
+
+<demonspawn>
 %%%%
 inept feature mimic
 
@@ -1734,12 +1769,6 @@ large abomination
 A large and hideous conglomeration of mangled body parts, demonically possessed
 and altered in ways that challenge your sanity.
 %%%%
-lava fish
-
-A bright red fish that swims through hot lava as easily as other fish swim
-through water. The intense heat of the lava that passes through its gills will
-sear anything that gets too close to its mouth.
-%%%%
 lava orc
 
 A tall, muscular humanoid strongly in tune with the elemental forces of fire
@@ -1790,6 +1819,13 @@ mad acolyte of Lugonu
 
 An insane follower of Lugonu. Years of living in the abyss have clearly taken
 their toll on this one's feeble mind.
+%%%%
+mana viper
+
+A violet-scaled serpent with faintly glowing eyes. They are prized as pets by
+naga mystics, and some say their peculiar nature is even a result of their
+esoteric rituals. It thirsts for magic as well as flesh, and its bite can drink
+dry the magical reserves of even a powerful mage in little time.
 %%%%
 manticore
 
@@ -1843,6 +1879,10 @@ molten gargoyle
 A hideous molten stone statue come to life, with fearsome claws and flames
 licking out from its toothy maw.
 %%%%
+monstrous demonspawn
+
+<demonspawn>
+%%%%
 moth
 
 Although this moth is unusually large and aggressive, it is quite mundane
@@ -1881,6 +1921,19 @@ naga mage
 
 A naga that has trained in the use of magic, trailed by an eldritch nimbus. It
 is especially skilled in spells dealing with poison and venom.
+%%%%
+naga sharpshooter
+
+A naga with exceptionally keen eyesight, adept in the use of ranged weaponry
+and simple magics which allows it to snipe at targets across nearly any
+obstruction.
+%%%%
+naga ritualist
+
+An esoteric mystic draped in talismans. Their sect venerate poison as a sacred
+gift and means of spiritual purification, and their affinity for it is even
+stronger than the rest of their kin. By invoking secret rites they can render
+any venom more potent and spread its touch upon all those around them.
 %%%%
 naga warrior
 
@@ -2109,6 +2162,10 @@ purple draconian
 
 A scale-covered humanoid with a reptilian tail and small wings.
 %%%%
+putrid demonspawn
+
+<demonspawn>
+%%%%
 quasit
 
 A cowardly little demon with a long, viciously pointed tail. Its sharp claws
@@ -2229,6 +2286,22 @@ Not the common harmless amphibian, but the far more dangerous mythological
 beast with which that amphibian shares its name. A red, flaming half-human
 half-snake creature, whose affinity for fire is legendary.
 %%%%
+salamander firebrand
+
+The rarest of the salamander castes, possessed of fearsome agility and
+unparallelled martial prowess. Their mastery of fire is woven into every strike
+of their weapons, filling the air around their opponent with sweltering flames.
+So hot does their blood run that even outside their native terrain, few can
+escape their pursuit.
+%%%%
+salamander mystic
+
+A member of the salamander's scholarly caste, possessed of lesser size and
+strength, but wise in the ways of magic. Through hermetic rites, they can
+channel the fire within them to empower their allies, hurl blasts of lava or,
+by fusing their arts with those of their naga brethren, ignite even a single
+drop of poison within the veins of an enemy.
+%%%%
 satyr
 
 A more intelligent relative of the faun, often found in their company, and far
@@ -2283,6 +2356,14 @@ shadow wraith
 A mist-wreathed skeletal shadow hanging in mid-air that leeches away the
 lifeforce of living beings.
 %%%%
+shambling mangrove
+
+A large and gnarled mangrove, possessed of sapience and a cantankerous
+disposition. Its roots run deep through the water and soil of its marshy home
+and can make footing very difficult for those who provoke its ire. Despite their
+kind's sour countenance, marsh fauna are often found nesting within their
+branches; beware, for they may not take kindly to being disturbed.
+%%%%
 shapeshifter
 
 A disturbing creature with the power to change its form. It is very rarely
@@ -2310,6 +2391,13 @@ shining eye
 A huge and strangely deformed floating eyeball, pulsating with flesh-twisting
 energy. Beauty is certainly nowhere to be found in this beholder.
 %%%%
+shock serpent
+
+A sinuous serpent whose body crackles with volatile electricity. Its electric
+shroud inflicts a painful shock on anything that injures it, and if allowed to
+gather sufficient charge, can be unleashed by the serpent as a powerful torrent
+of electric energy.
+%%%%
 silent spectre
 
 The bane of wizards, these terrible spirits bring an unearthly silence to the
@@ -2331,8 +2419,9 @@ An ice replica of a monster that is animated by the powers of necromancy.
 %%%%
 siren
 
-A young woman with a fish tail in place of legs. Sirens are capable of casting
-a powerful spell over their audience.
+A young woman with a fish tail in place of legs. So entrancing is the spell she
+can weave with her song that even the souls of those who drowned in her waters
+will answer it.
 %%%%
 sixfirhy
 
@@ -2606,8 +2695,8 @@ powerful, even among giants.
 %%%%
 thorn hunter
 
-A predatory plant, possessed of motility and a rudimentary intelligence. It
-stalks its prey swiftly, creating sudden profusions of spiny brambles with
+A predatory marsh plant, possessed of motility and a rudimentary intelligence.
+It stalks its prey swiftly, creating sudden profusions of spiny brambles with
 which to ensnare them and then skewering the trapped creatures with accurate
 volleys of its own razor-sharp thorns.
 %%%%
@@ -2633,6 +2722,10 @@ tormentor
 A malign devil covered in all manner of claws, spines, and cruel hooks. It is
 able to inflict torturous agony on those foolish enough to gaze upon it.
 %%%%
+torturous demonspawn
+
+<demonspawn>
+%%%%
 training dummy
 
 A mannequin used for battle practice.
@@ -2641,15 +2734,6 @@ trapdoor spider
 
 A fast-moving arachnid that both surprises its prey and evades its enemies by
 concealing itself in crannies in the dungeon floor.
-%%%%
-treant
-
-At first glance, you might mistake this being for an ordinary tree, but its
-branches sway and creak purposefully, and within the knots and grooves of its
-ruddy bark can be seen the wizened features of an aged forest protector. Though
-it moves with slow deliberateness, its enormous gnarled limbs can match the
-strength of giants and its bark withstand the bite of battleaxes. A curious
-buzzing sound seems to follow it as it moves....
 %%%%
 troll
 
@@ -2754,6 +2838,10 @@ warg
 A particularly large and evil-looking wolf, usually found in the company of
 orcs.
 %%%%
+warmonger
+
+<demonspawn>
+%%%%
 water elemental
 
 A spirit drawn from the elemental plane of water. It exists on this world as
@@ -2803,6 +2891,14 @@ wolf spider
 
 A hairy fast-moving hunting spider with vicious mandibles, roaming the dungeon
 in search of prey, which it kills with its deadly venom.
+%%%%
+worldbinder
+
+A cloud of thick fog, with faint, feeble claws constantly reaching
+out and grasping futily before being pulled back in by the fog.
+Worldbinders tie themselves to specific locations and absorb part of
+the weaker natives banished to the Abyss, enabling them to summon
+echoes from one of many locations against percieved threats.
 %%%%
 worm
 

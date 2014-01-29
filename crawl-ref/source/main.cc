@@ -200,6 +200,7 @@ NORETURN static void _launch_game();
 
 static void _do_berserk_no_combat_penalty(void);
 static void _do_searing_ray(void);
+static void _extract_manticore_spikes(void);
 static void _input(void);
 static void _move_player(int move_x, int move_y);
 static void _move_player(coord_def move);
@@ -1961,6 +1962,7 @@ void process_command(command_type cmd)
     case CMD_WAIT:
         you.check_clinging(false);
         you.turn_is_over = true;
+        _extract_manticore_spikes();
         break;
 
     case CMD_PICKUP:
@@ -2705,6 +2707,10 @@ static void _decrement_durations()
         you.clear_fearmongers();
     }
 
+    _decrement_a_duration(DUR_FROZEN, delay,
+                          "The ice encasing you melts away.",
+                          0, NULL, MSGCH_RECOVERY);
+
     dec_slow_player(delay);
     dec_exhaust_player(delay);
     dec_haste_player(delay);
@@ -2990,6 +2996,15 @@ static void _decrement_durations()
 
     _decrement_a_duration(DUR_SICKENING, delay);
 
+    _decrement_a_duration(DUR_SAP_MAGIC, delay,
+                          "Your magic seems less tainted.");
+
+    if (!you.duration[DUR_SAP_MAGIC])
+    {
+        _decrement_a_duration(DUR_MAGIC_SAPPED, delay,
+                              "You feel more in control of your magic.");
+    }
+
     _decrement_a_duration(DUR_ANTIMAGIC, delay,
                           "You regain control over your magic.");
 
@@ -3050,6 +3065,9 @@ static void _decrement_durations()
 
     _decrement_a_duration(DUR_FIRE_VULN, delay,
                           "You feel less vulnerable to fire.");
+
+    _decrement_a_duration(DUR_POISON_VULN, delay,
+                        "You feel less vulnerable to poison.");
 
     dec_elixir_player(delay);
 
@@ -4355,6 +4373,16 @@ static void _do_searing_ray()
         end_searing_ray();
 }
 
+static void _extract_manticore_spikes()
+{
+    if (_decrement_a_duration(DUR_BARBS, you.time_taken,
+        "You carefully extract the manticore spikes from your body."))
+    {
+        you.attribute[ATTR_BARBS_MSG] = 0;
+        you.attribute[ATTR_BARBS_POW] = 0;
+    }
+}
+
 // Called when the player moves by walking/running. Also calls attack
 // function etc when necessary.
 static void _move_player(int move_x, int move_y)
@@ -4699,6 +4727,28 @@ static void _move_player(coord_def move)
         you.stop_being_constricted();
 
         move_player_to_grid(targ, true, false);
+
+        if (you.duration[DUR_BARBS])
+        {
+            // Always announce the first time they hurt us, otherwise reduce
+            // message spam; hopefully the player has the idea by now.
+            if (!you.attribute[ATTR_BARBS_MSG] || one_chance_in(6))
+            {
+                mpr("The barbed spikes dig painfully into your body as you move.");
+                you.attribute[ATTR_BARBS_MSG] = 1;
+            }
+
+            ouch(roll_dice(2, you.attribute[ATTR_BARBS_POW]), NON_MONSTER,
+                 KILLED_BY_BARBS);
+            bleed_onto_floor(you.pos(), MONS_PLAYER, 2, false);
+
+            // Sometimes decrease duration even when we move.
+            if (one_chance_in(3))
+            {
+                _decrement_a_duration(DUR_BARBS, you.time_taken,
+                    "The manticore spikes snap loose.");
+            }
+        }
 
         if (delay_is_run(current_delay_action()))
             env.travel_trail.push_back(you.pos());

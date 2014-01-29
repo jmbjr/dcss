@@ -107,6 +107,13 @@ enum monster_info_flags
     MB_FIRE_VULN,
     MB_TORNADO,
     MB_TORNADO_COOLDOWN,
+    MB_BARBS,
+    MB_POISON_VULN,
+    MB_ICEMAIL,
+    MB_AGILE,
+    MB_FROZEN,
+    MB_BLACK_MARK,
+    MB_SAP_MAGIC,
     NUM_MB_FLAGS
 };
 
@@ -242,7 +249,7 @@ struct monster_info : public monster_info_base
 
     string constriction_description() const;
 
-    monster_type draco_subspecies() const
+    monster_type draco_or_demonspawn_subspecies() const
     {
         return draco_type;
     }
