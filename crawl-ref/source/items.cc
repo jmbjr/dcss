@@ -21,6 +21,7 @@
 #include "art-enum.h"
 #include "artefact.h"
 #include "beam.h"
+#include "colour.h"
 #include "coord.h"
 #include "coordit.h"
 #include "dactions.h"
@@ -67,6 +68,7 @@
 #include "travel.h"
 #include "hints.h"
 #include "unwind.h"
+#include "view.h"
 #include "viewchar.h"
 #include "xom.h"
 
@@ -1614,6 +1616,7 @@ int move_item_to_player(int obj, int quant_got, bool quiet,
         if (!quiet)
         {
             _fish(it);
+            flash_view_delay(rune_colour(it.plus), 300);
             mprf("You pick up the %s rune and feel its power.",
                  rune_type_name(it.plus));
             int nrunes = runes_in_pack();
@@ -4192,6 +4195,8 @@ void corrode_item(item_def &item, actor *holder)
 // automatically identify it.
 bool maybe_identify_base_type(item_def &item)
 {
+    if (is_artefact(item))
+        return false;
     if (get_ident_type(item) == ID_KNOWN_TYPE)
         return false;
 
